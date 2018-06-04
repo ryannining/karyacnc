@@ -4,7 +4,7 @@ var lastw="";
 var oktosend=1;
 var connectionId = null;
 var eline=0;
-var okwait=1;
+var okwait=0;
 var running=0;
 var px=0;var py=0;var pz=0;
 function comconnect(){
@@ -84,7 +84,7 @@ function sendgcode(g){
   okwait++;
 }
 function nextgcode(){
-	if (okwait) return;
+	if (okwait>17) return;
 	if (!running)return;
 	while(eline<egcodes.length){
 		var g=egcodes[eline];
@@ -141,7 +141,7 @@ var onReadCallback = function(s){
 	//console.log(s);
 	for (var i=0;i<s.length;i++){
 		if ((s[i]=="\n") || (s[i]==" ")){
-			if (lastw.toUpperCase()=="OK"){
+			if (lastw.toUpperCase().indexOf("OK")>=0){
 				okwait--;
 				nextgcode();
 			}
@@ -345,20 +345,34 @@ if (stotype==0){
 
 
 // websocket
+function connectwebsock(){
+	if (window.location.host){
+		var lastcomtype=comtype;
+		comtype=1;
+		function handlemessage(m){
+			msg=m.data;
+			onReadCallback(msg);
+			console.log(msg);
+		}
+
+		ws=new WebSocket('ws://'+window.location.host+':81/', ['arduino']);
+		ws.onerror=function(e){comtype=lastcomtype;} // back to serial if error.
+		ws.onmessage=handlemessage;
+		ws.onopen = function(e) {
+			console.log('Ws Connected!');
+			a=document.getElementById("status");
+			a.innerHTML="Web socket:Connected";
+		};
+
+		ws.onclose = function(e) {
+			console.log('ws Disconnected!');
+			a=document.getElementById("status");
+			a.innerHTML="Web socket:disconnected<button onclick='connectwebsock()'>Reconnect</button>";
+		};	
+	}
+}
 window.onload=function(){
 	a=document.activeElement;
 	if ((a.tagName=="DIV") && (stotype==1))a.hidden=true;
+	connectwebsock();
 };
-if (window.location.host){
-	var lastcomtype=comtype;
-	comtype=1;
-	function handlemessage(m){
-		msg=m.data;
-		onReadCallback(msg);
-		console.log(msg);
-	}
-
-	ws=new WebSocket('ws://'+window.location.host+':81/', ['arduino']);
-	ws.onerror=function(e){comtype=lastcomtype;} // back to serial if error.
-	ws.onmessage=handlemessage;
-}
