@@ -351,7 +351,7 @@ function sortedgcode() {
     setvalue("gcode",s);
     sc=1;
     if (document.getElementById("flipx").checked) sc=-1;
-    setvalue("pgcode",getvalue("pup")+"\nM3 S255 P150\nG0 F10000 X" + mround(sc*xmin) + " Y" + mround(ymin) + "\nM3 S255 P150\nG0 X" + mround(sc*xmax) + "\nM3 S255 P150\nG0 Y" + mround(ymax) + "\nM3 S255 P150\nG0 X" + mround(sc*xmin) + " \nM3 S255 P150\nG0 Y" + mround(ymin) + "\n");
+    setvalue("pgcode",getvalue("pup")+"\nM3 S255 P10\nG0 F10000 X" + mround(sc*xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc*xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc*xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

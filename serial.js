@@ -1,12 +1,12 @@
 //console.log("App Running");
-
+var wsconnected=0;
 var lastw="";
 var oktosend=1;
 var connectionId = null;
 var eline=0;
 var okwait=0;
 var running=0;
-var px=0;var py=0;var pz=0;
+var px=0;var py=0;var pz=0;var pe=0;
 function comconnect(){
   var bt=document.getElementById('btconnect');
 	if (bt.innerHTML=="Connect"){
@@ -41,18 +41,21 @@ function homing(){
 	px=0;
 	py=0;
 	pz=0;
+	pe=0;
 }
 function setashome2(){
 	sendgcode("G92 X0 Y0 Z0 E0");
 	px=0;
 	py=0;
 	pz=0;
+	pe=0;
 }
 function setashome3(){
 	sendgcode("G92 X0 Y0 Z2 E0");
 	px=0;
 	py=0;
 	pz=2;
+	pe=0;
 }
 function setashome(){
    sendgcode("G0 Z0");
@@ -69,8 +72,9 @@ function hardstop(){
 
 var comtype=0; // 0 serial, 1 websocket
 var egcodes=[];
-
+var debugs=0;
 function sendgcode(g){
+  if (debugs&1)console.log(g);
   if (comtype==0){
 	  try {
 		writeSerial(g+"\n");
@@ -81,16 +85,20 @@ function sendgcode(g){
   if (comtype==1){
 	ws.send(g+"\n");
   }
-  okwait++;
 }
 function nextgcode(){
-	if (okwait>17) return;
+	if (comtype==1 && !wsconnected){
+		//setTimeout(nextgcode,1000);
+		return;	
+	}; // wait until socket connected
+	if (okwait) return;
 	if (!running)return;
 	while(eline<egcodes.length){
 		var g=egcodes[eline];
 		eline++;
 		if ((g) && (g[0]!=';')) {
 			sendgcode(g.split(";")[0]);
+			okwait=1;
 			return;
 		}
 	}
@@ -109,6 +117,7 @@ function execute(gcodes){
 	running=egcodes.length;
 	okwait=0;
 	nextgcode();
+	sendgcode("M105");
 }
 function executegcodes(){
   var bt=document.getElementById('btexecute');
@@ -136,13 +145,34 @@ function pause(){
     bt.innerHTML="PAUSE";
   }
 }
-
+var ss="";
+var eeprom={}; 
+var ineeprom=0;var eppos=0;
 var onReadCallback = function(s){
-	//console.log(s);
 	for (var i=0;i<s.length;i++){
+		if (s[i]=="\n"){
+			
+			if (debugs&2)console.log(ss);
+			ss="";
+		} else ss+=s[i];
 		if ((s[i]=="\n") || (s[i]==" ")){
+			if (ineeprom>0){
+				if (ineeprom==3)eppos=lastw;
+				if (ineeprom==2)eeprom[eppos]=lastw;				
+				if (ineeprom==1){
+					var sel=document.getElementById("eepromid");
+					sel.innerHTML+="<option value=\""+eeprom[eppos]+":"+eppos+"\">"+lastw+"</option>";
+				}					
+				ineeprom--;
+			}
+			if (lastw.toUpperCase().indexOf("EPR:")>=0){
+				ineeprom=3;
+			}
+			if (lastw.toUpperCase().indexOf("T:")>=0){
+				document.getElementById("info3d").innerHTML=lastw;
+			}
 			if (lastw.toUpperCase().indexOf("OK")>=0){
-				okwait--;
+				okwait=0;				
 				nextgcode();
 			}
 			lastw="";
@@ -292,8 +322,43 @@ setevent("change","cmode",modechange);
 
 setevent("change","material",changematerial);
 
+// 3d printer
+
+setclick("bt3home",function(){sendgcode("g28");pe=0});
+setclick("bt3pla",function(){sendgcode("m104 s180");});
+setclick("bt3t0",function(){sendgcode("m104 s0");});
+setclick("bt3read",function(){sendgcode("m105");});
+setclick("bt3limit",function(){sendgcode("m119");});
+setclick("bt3eeprom",function(){
+	document.getElementById("eepromid").innerHTML="";
+	sendgcode("m205");
+	});
+setclick("bt3seteeprom",function(){
+	sendgcode("M206 P"+eppos+" S"+getvalue("eepromval"));
+	
+});
+setclick("bt3Eup",function(){pe-=1*getvalue("extmm");sendgcode("g0 E"+pe);});
+setclick("bt3Edn",function(){pe+=1*getvalue("extmm");sendgcode("g0 E"+pe);});
+setevent("change","eepromid",function (){var v=getvalue("eepromid").split(":");setvalue("eepromval",v[0]);eppos=v[1];});
+
+// gcode editor
+
 setclick("btcopy1",function(){copy_to_clipboard('gcode');});
 setclick("btcopy2",function(){copy_to_clipboard('pgcode');});
+
+setclick("tracingbt",function(){
+	tr=document.getElementById('tracing');
+	tb=document.getElementById('tracingbt');
+	if (tb.innerHTML=="GCODE SENDER"){
+		tb.innerHTML="TRACING IMAGE";
+		tr.hidden=true;
+	} else {
+		tb.innerHTML="GCODE SENDER";
+		tr.hidden=false;
+	}
+
+});
+
 var stotype=0;
 try {
 storage=chrome.storage.local;
@@ -352,7 +417,7 @@ function connectwebsock(){
 		function handlemessage(m){
 			msg=m.data;
 			onReadCallback(msg);
-			console.log(msg);
+			if (debugs&2)console.log(msg);
 		}
 
 		ws=new WebSocket('ws://'+window.location.host+':81/', ['arduino']);
@@ -362,12 +427,15 @@ function connectwebsock(){
 			console.log('Ws Connected!');
 			a=document.getElementById("status");
 			a.innerHTML="Web socket:Connected";
+			wsconnected=1;
+			nextgcode();
 		};
 
 		ws.onclose = function(e) {
 			console.log('ws Disconnected!');
 			a=document.getElementById("status");
 			a.innerHTML="Web socket:disconnected<button onclick='connectwebsock()'>Reconnect</button>";
+			wsconnected=0;
 		};	
 	}
 }

@@ -1,6 +1,6 @@
 {
-  "name": "Costy CNC X",
-  "description": "Laser Cutting Karya Controller software",
+  "name": "KaryaCNC",
+  "description": "CNC Laser Cutting Karya Controller software",
   "version": "1.0",
   "manifest_version": 2,
   "icons": {
