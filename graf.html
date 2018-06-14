@@ -2,32 +2,42 @@
 <html>
 <body>
 Copy image from other source and paste here.<br>
-<table><tr valign=top><td>
+<table width=100%><tr valign=top><td>
 <b>Option</b>
-<br>Width <input id=width value=500 size=4>pixel
-<br>Dither method <select id=metode>
+<br>Width <input id=width value=200 size=4 class=saveit>pixel
+<br>Dither method <select id=metode class=saveit>
 <option value=0>Grayscale</option>
-<option value=1>Floyd steinberg</option>
+<option value=1 selected>Floyd steinberg</option>
 <option value=2>Sierra 2 row</option>
 <option value=3>Clustered</option>
 <option value=4>Halftone</option>
 </select><br>
 <div id=halftoneoption hidden>
 <b>Halftone setting</b>
-<br>Angle <input id=htangle value=45 size=4>
-<br>Spacing <input id=htspacing value=8 size=4>
-<br>Wave Amp<input id=htamp value=0 size=4>
-<br>Wave Freq<input id=htfreq value=10 size=4>
+<br>Angle <input id=htangle value=45 size=4 class=saveit>
+<br>Spacing <input id=htspacing value=8 size=4 class=saveit>
+<br>Wave Amp<input id=htamp value=0 size=4 class=saveit>
+<br>Wave Freq<input id=htfreq value=10 size=4 class=saveit>
 </div>
 <b>Color setting</b>
-<br>Gamma correct <input id=gamma value=1 size=4>
-<br>Random threshold <input id=rnd value=0 size=4>
-<br><button id=redither>Re dither </button>
+<br>Gamma correct <input id=gamma value=1 size=4 class=saveit>
+<br>Random threshold <input id=rnd value=0 size=4 class=saveit>
+<br>Invert color <input id=invert type=checkbox size=3 class=saveit>
 <hr>
 <b>Gcode option</b>
-<br>Render width <input id=mwidth value=100 size=3>milimeter
-<br>Invert color <input id=invert type=checkbox size=3>
-<br>Tools on<input id=tool1 size=10 value="S255"> off <input id=tool1 size=10 value="S0">
+<br>Machine <select id=mtype class=saveit>
+<option value=0 selected>CNC</option>
+<option value=1>Laser</option>
+</select>
+<br>Render width <input id=mwidth value=100 size=3 class=saveit>milimeter
+<br><b>LASER</b>
+<br>Speed<input id=speed1 size=10 value="100" class=saveit>mm/s 
+<br>Tools on<input id=tool2 size=10 value="M3 S255" class=saveit> off <input id=tool1 size=10 value="M3 S0" class=saveit>
+<br><b>CNC</b>
+<br>Speed<input id=speed2 size=10 value="100" class=saveit>mm/s 
+<br>Tools on<input id=tool4 size=10 value="G1 Z=cncz F1000" class=saveit> off <input id=tool3 size=10 value="G0 Z2" class=saveit>
+<br>CNC Z-down <input id=zdown value=3 size=3 class=saveit>milimeter
+<br><br><button id=redither>Re process </button>
 
 
 <hr>
@@ -36,11 +46,15 @@ Copy image from other source and paste here.<br>
 <canvas id="myCanvas" width="220" height="277" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
 <td><B>GCODE</b><hr>
-<textarea id=gcode>
+<textarea id=gcode style="font-size: 10;width:250px;height:500px" >
 </textarea>
 </table>
 
 <script>
+function mround(x) {
+    return Math.round(x * 1000.0) / 1000.0;
+}
+
 function getvalue(el){
 	return document.getElementById(el).value;
 }
@@ -114,6 +128,17 @@ ditherit = function() {
     // invert colors
     var i,j;
     var row=c.width*4;
+	var mtype=getvalue("mtype");
+	var zdown=getvalue("zdown");
+	if (mtype==1){
+		var tool1=getvalue("tool1");
+		var tool2=getvalue("tool2");
+		var speed=getvalue("speed1")*60;
+	} else {
+		var tool1=getvalue("tool3");
+		var tool2=getvalue("tool4");
+		var speed=getvalue("speed2")*60;
+	}
 	var metode=getvalue("metode")*1;
 	var dx,dy;
 	var c4x4=[191.25, 95.625, 159.375, 63.75, 15.9375, 255, 223.125, 111.5625, 127.5, 207.1875, 239.0625, 31.875, 47.8125, 143.4375, 79.6875, 175.3125];
@@ -124,83 +149,193 @@ ditherit = function() {
 		dy=2;
 	}
 	// make it grayscale first
+	var inv=document.getElementById("invert").checked;
 	var gamma=getvalue("gamma")*1.0;
+	var mw=getvalue("mwidth")*1.0;
+	var mh=mw*c.height/c.width;
+	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
+	var gcode="G92 E0\n"+tool1+"\n";
 	for (j = 0; j < c.height; j += 1) {
     for (i = 0; i < c.width; i += 1) {
     	var a=j*row+i*4;
-        oldr=(0.2*bm.data[a] + 0.7*bm.data[a+1] +0.1*bm.data[a+2]);
+        oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
+		if (inv)oldr=255-oldr;
 		oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+		
 		bm.data[a]=oldr;
 		bm.data[a+1]=oldr;
 		bm.data[a+2]=oldr;
 	}}
 	// dither it
 	if (metode<4){
+		var num=3;
+		var dv=num/256.0;
+		var mul=(255.0/(num-1));
 		var rndt=getvalue("rnd");
 		var rndt2=rndt/2.0;
 		for (j = 0; j < c.height-dy; j += 1) {
-		for (i = dx; i < c.width-dx; i += 1) {
-			var a=j*row+i*4;
-			gr=rndt*Math.random()-(rndt2);
-			oldr=bm.data[a];
-			if (metode==0){
-				newr=oldr+gr;
-			} else if (metode<3){
-				gr+=128;
-				newr=oldr>gr?255:0;
-			} else if (metode==3) {
-				newr=oldr+gr>=c4x4[(j%4*4+i%4)]?255:0;
-			}
-			err=oldr-newr;
-			bm.data[a+0]=newr;
-			bm.data[a+1]=newr;
-			bm.data[a+2]=newr;
-			if (metode==0){
-				// 7 3 5 1 floyd
-				a1=a+4; a2=err*7.0/16;bm.data[a1]+=a2;
-				a+=row;
-				a1=a-4; a2=err*4.0/16;bm.data[a1]+=a2;
-				a1=a;   a2=err*4.0/16;bm.data[a1]+=a2;
-				a1=a+4; a2=err*1.0/16;bm.data[a1]+=a2;
-			}
-			else if (metode==1){
-				// 7 3 5 1 floyd
-				a1=a+4; a2=err*7.0/16;bm.data[a1]+=a2;
-				a+=row;
-				a1=a-4; a2=err*4.0/16;bm.data[a1]+=a2;
-				a1=a;   a2=err*4.0/16;bm.data[a1]+=a2;
-				a1=a+4; a2=err*1.0/16;bm.data[a1]+=a2;
-			}
-			else if (metode==2){
-				// sierra 2 row
-				a1=a+4; a2=err*5.0/32;bm.data[a1]+=a2;
-				a1=a+8; a2=err*3.0/32;bm.data[a1]+=a2;
-				a+=row;
-				a1=a-8; a2=err*2.0/32;bm.data[a1]+=a2;
-				a1=a-4; a2=err*4.0/32;bm.data[a1]+=a2;
-				a1=a;   a2=err*5.0/32;bm.data[a1]+=a2;
-				a1=a+4; a2=err*4.0/32;bm.data[a1]+=a2;
-				a1=a+8; a2=err*2.0/32;bm.data[a1]+=a2;
-				a+=row;
-				a1=a-4; a2=err*2.0/32;bm.data[a1]+=a2;
-				a1=a;   a2=err*3.0/32;bm.data[a1]+=a2;
-				a1=a+4; a2=err*2.0/32;bm.data[a1]+=a2;
+			gc="";
+			for (i = dx; i < c.width-dx; i += 1) {
+				var a=j*row+i*4;
+				gr=rndt*Math.random()-(rndt2);
+				oldr=bm.data[a];
+				if (metode==0){
+					newr=oldr+gr;
+				} else if (metode<3){
+					gr+=128;
+					newr=oldr>gr?255:0;
+					//newr=Math.floor(oldr*dv)*mul;
+					//if (newr>255)newr=255;
+				} else if (metode==3) {
+					newr=oldr+gr>=c4x4[(j%4*4+i%4)]?255:0;
+				}
+				err=oldr-newr;
 				
+				
+				gc+=String.fromCharCode(newr/10+97)
+				bm.data[a+0]=newr;
+				bm.data[a+1]=newr;
+				bm.data[a+2]=newr;
+				if (metode==0){
+					// 7 3 5 1 floyd
+					err=err/16;
+					a1=a+4; bm.data[a1]+=err*7;
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*4;
+					a1=a;   bm.data[a1]+=err*4;
+					a1=a+4; bm.data[a1]+=err*1;
+				}
+				else if (metode==1){
+					// 7 3 5 1 floyd
+					err=err/16;
+					a1=a+4; bm.data[a1]+=err*7;
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*4;
+					a1=a;   bm.data[a1]+=err*4;
+					a1=a+4; bm.data[a1]+=err*1;
+				}
+				else if (metode==2){
+					// sierra 2 row
+					err=err/32;
+					a1=a+4; bm.data[a1]+=err*5;
+					a1=a+8; bm.data[a1]+=err*3;
+					a+=row;
+					a1=a-8; bm.data[a1]+=err*2;
+					a1=a-4; bm.data[a1]+=err*4;
+					a1=a;   bm.data[a1]+=err*5;
+					a1=a+4; bm.data[a1]+=err*4;
+					a1=a+8; bm.data[a1]+=err*2;
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*2;
+					a1=a;   bm.data[a1]+=err*3;
+					a1=a+4; bm.data[a1]+=err*2;
+					
 				}
 			}
+			// save the laser raster
+			if (mtype==1){
+				gcode+="G0 F"+speed+" X0 Y"+mround((j)*ystep)+"\n";
+				gcode+="G4\n";
+				gcode+="G7 S"+(gc.length)+" ["+gc+"]\n";
+				gcode+="G1 F"+speed+" X"+mw+" E"+c.width+"\n";
+				// next y
+				gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
+				gcode+="G1 X0 E0\n";
+			} 
+			// cnc mill, down
+			if (mtype==0){
+				if (j &1){
+					dir=-1;
+					idx=gc.length-1;
+				}else {
+					dir=1;
+					idx=0;
+				}
+				xstep=mw/gc.length;
+				zstep=zdown/25;
+				lv=" ";
+				x=xstep*idx;
+				gcode+=tool1+"\nG0 F"+speed+" X"+mround(x)+" Y"+mround((j)*ystep)+"\n";
+				for (var i=0;i<gc.length;i++){
+					v=gc[idx];
+					x=xstep*idx;
+					if (v!='z'){
+						gcode+="G0 F"+speed+" X"+mround(x)+"\n";
+						z=25-(gc.charCodeAt(idx)-97);
+						z=-z*zstep;
+						gcode+=tool2.replace("=cncz",mround(z))+"\n"+tool1+" F"+speed+"\n";
+						lv=v;
+					}
+					
+					idx+=dir;
+				}
+
+			} 
 		}
 	} else {
 	// halftoner
 	}
+	gcode+=tool1+"\n";
+	document.getElementById("gcode").innerHTML=gcode;
     ctx.putImageData(bm, 0, 0);
 	img.width=220;
+	savesetting();
 };
 
 setclick("redither",ditherit);
 setevent("change","metode",function(){
-document.getElementById("halftoneoption").hidden=getvalue("metode")!=4;
-ditherit();
-}); 
+	document.getElementById("halftoneoption").hidden=getvalue("metode")!=4;
+	ditherit();
+	});
+
+var stotype=0;
+try {
+storage=chrome.storage.local;
+
+} catch(e){
+stotype=1;
+storage=localStorage;
+}
+
+function savesetting(){
+   a=document.getElementsByClassName("saveit");
+   sett={};
+   for (var i=0;i<a.length;i++){
+         sett[a[i].id]=a[i].value;
+   }
+   text1=document.getElementById("gcode").innerHTML;
+   if (stotype==1){
+     storage.setItem("settings",JSON.stringify(sett));
+     storage.setItem("text1",text1);
+   } else {
+     storage.set({"settings":sett,"text1":text1});
+   }
+}
+//setclick("btsaveset",savesetting);
+
+
+if (stotype==0){
+	try {
+	   storage.get("text1",function(r){document.getElementById("gcode").innerHTML=r.text1;})
+	   storage.get("settings",function(r){
+		  sett=r.settings;
+		  for (var k in sett){
+				setvalue(k,sett[k]);
+		  }
+	   });
+	} catch (e) {
+	}
+} else {
+   text1=storage.text1;
+   if (text1==undefined)text1="";
+   if (storage.settings!=undefined){
+	   sett=JSON.parse(storage.settings);
+	   for (var k in sett){
+			setvalue(k,sett[k]);
+	   }
+   }
+   document.getElementById("gcode").innerHTML=text1;
+}	
 </script>
 
 
