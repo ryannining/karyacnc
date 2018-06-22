@@ -29,23 +29,25 @@ Copy image from other source and paste here.<br>
 <option value=0 selected>CNC</option>
 <option value=1>Laser</option>
 </select>
+<br>DPI <input id=mdpi value=72 size=3 class=saveit>milimeter
 <br>Render width <input id=mwidth value=100 size=3 class=saveit>milimeter
 <br><b>LASER</b>
 <br>Speed<input id=speed1 size=10 value="100" class=saveit>mm/s 
+<br>Pixel shift<input id=shf size=10 value="1" class=saveit> 
 <br>Tools on<input id=tool2 size=10 value="M3 S255" class=saveit> off <input id=tool1 size=10 value="M3 S0" class=saveit>
 <br><b>CNC</b>
 <br>Speed<input id=speed2 size=10 value="100" class=saveit>mm/s 
 <br>Tools on<input id=tool4 size=10 value="G1 Z=cncz F1000" class=saveit> off <input id=tool3 size=10 value="G0 Z2" class=saveit>
-<br>CNC Z-down <input id=zdown value=3 size=3 class=saveit>milimeter
+<br>CNC Z-down <input id=zdown1 value=3 size=3 class=saveit>milimeter
 <br><br><button id=redither>Re process </button>
 
 
 <hr>
-<img id="thepic" alt="The Pic" >
+<img id="thepic" src="rose.jpg" alt="The Pic" >
 <td>
 <canvas id="myCanvas" width="220" height="277" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
-<td><B>GCODE</b><hr>
+<td><B>GCODE</b><button id=btcopy2a>Copy</button><hr>
 <textarea id=gcode style="font-size: 10;width:250px;height:500px" >
 </textarea>
 </table>
@@ -119,7 +121,10 @@ function createImage(source, blob) {
 
 ditherit = function() {
     var c = document.getElementById("myCanvas");
-    var img = document.getElementById("thepic");img.width=getvalue("width")*1;
+    var img = document.getElementById("thepic");
+    var scale = 25.4 / getvalue('mdpi');
+	rwidth=scale*img.naturalWidth;
+	img.width=getvalue("width")*1;
     c.width=img.width;
     c.height=img.height;
     var ctx = c.getContext("2d");
@@ -129,7 +134,7 @@ ditherit = function() {
     var i,j;
     var row=c.width*4;
 	var mtype=getvalue("mtype");
-	var zdown=getvalue("zdown");
+	var zdown=getvalue("zdown1");
 	if (mtype==1){
 		var tool1=getvalue("tool1");
 		var tool2=getvalue("tool2");
@@ -151,10 +156,11 @@ ditherit = function() {
 	// make it grayscale first
 	var inv=document.getElementById("invert").checked;
 	var gamma=getvalue("gamma")*1.0;
-	var mw=getvalue("mwidth")*1.0;
+	var mw=rwidth*1.0;
+	setvalue("mwidth",mround(mw));
 	var mh=mw*c.height/c.width;
 	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
-	var gcode="G92 E0\n"+tool1+"\n";
+	var gcode="G7 S0\nG92 E0\n"+tool1+"\n";
 	for (j = 0; j < c.height; j += 1) {
     for (i = 0; i < c.width; i += 1) {
     	var a=j*row+i*4;
@@ -172,16 +178,22 @@ ditherit = function() {
 		var dv=num/256.0;
 		var mul=(255.0/(num-1));
 		var rndt=getvalue("rnd");
+		var shf=1.0*getvalue("shf");;
 		var rndt2=rndt/2.0;
 		for (j = 0; j < c.height-dy; j += 1) {
-			gc="";
+			gc="aa";
 			for (i = dx; i < c.width-dx; i += 1) {
 				var a=j*row+i*4;
 				gr=rndt*Math.random()-(rndt2);
 				oldr=bm.data[a];
 				if (metode==0){
+					rmax=255;
 					newr=oldr+gr;
+					if (newr<4)newr=4;
+					if (newr>250)newr=250;
+					
 				} else if (metode<3){
+					rmax=255;
 					gr+=128;
 					newr=oldr>gr?255:0;
 					//newr=Math.floor(oldr*dv)*mul;
@@ -192,7 +204,7 @@ ditherit = function() {
 				err=oldr-newr;
 				
 				
-				gc+=String.fromCharCode(newr/10+97)
+				gc+=String.fromCharCode((rmax-newr)/10+97)
 				bm.data[a+0]=newr;
 				bm.data[a+1]=newr;
 				bm.data[a+2]=newr;
@@ -232,15 +244,17 @@ ditherit = function() {
 					
 				}
 			}
+			gc+="aa";
 			// save the laser raster
 			if (mtype==1){
+				w=gc.length*1.0-1;
 				gcode+="G0 F"+speed+" X0 Y"+mround((j)*ystep)+"\n";
-				gcode+="G4\n";
-				gcode+="G7 S"+(gc.length)+" ["+gc+"]\n";
-				gcode+="G1 F"+speed+" X"+mw+" E"+c.width+"\n";
+				gcode+="G4\nG92 E0\n";
+				gcode+="G7 ["+gc+"]\n";
+				gcode+="G1 S255 F"+speed+" X"+mround(mw)+" E"+mround(w)+"\nG0 E"+mround(w+shf)+"\n";
 				// next y
 				gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
-				gcode+="G1 X0 E0\n";
+				gcode+="G1 S255 X0 E"+mround(shf)+"\n";
 			} 
 			// cnc mill, down
 			if (mtype==0){
@@ -275,13 +289,19 @@ ditherit = function() {
 	} else {
 	// halftoner
 	}
-	gcode+=tool1+"\n";
+	gcode+=tool1+"\nG4\nG7\n";
 	document.getElementById("gcode").innerHTML=gcode;
     ctx.putImageData(bm, 0, 0);
 	img.width=220;
 	savesetting();
 };
+function copy_to_clipboard(id) {
+    document.getElementById(id).select();
+    document.execCommand('copy');
+}
 
+
+setclick("btcopy2a",function(){copy_to_clipboard('gcode');});
 setclick("redither",ditherit);
 setevent("change","metode",function(){
 	document.getElementById("halftoneoption").hidden=getvalue("metode")!=4;

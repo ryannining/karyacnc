@@ -441,6 +441,6 @@ function connectwebsock(){
 }
 window.onload=function(){
 	a=document.activeElement;
-	if ((a.tagName=="DIV") && (stotype==1))a.hidden=true;
+	if ((a.tagName=="DIV") && (stotype==1))a.remove();
 	connectwebsock();
 };
