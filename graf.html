@@ -47,7 +47,7 @@ Copy image from other source and paste here.<br>
 <td>
 <canvas id="myCanvas" width="220" height="277" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
-<td><B>GCODE</b><button id=btcopy2a>Copy</button><hr>
+<td><div id=waktu>Waktu Kerja:</div><B>GCODE</b><button id=btcopy2a>Copy</button><hr>
 <textarea id=gcode style="font-size: 10;width:250px;height:500px" >
 </textarea>
 </table>
@@ -118,6 +118,11 @@ function createImage(source, blob) {
     pastedImage.src = source;
 }
 
+var sierra2=[6,2 ,1,4,7,4,1 ,1,5,1];
+
+sierra2=[5, 3, 2, 4, 5, 4, 2, 2, 3, 2];
+
+var floyd1=[7, 4,4,1];
 
 ditherit = function() {
     var c = document.getElementById("myCanvas");
@@ -154,6 +159,9 @@ ditherit = function() {
 		dy=2;
 	}
 	// make it grayscale first
+	var waktu=0;
+	var w0=0;
+	var w1=0;
 	var inv=document.getElementById("invert").checked;
 	var gamma=getvalue("gamma")*1.0;
 	var mw=rwidth*1.0;
@@ -203,8 +211,9 @@ ditherit = function() {
 				}
 				err=oldr-newr;
 				
-				
-				gc+=String.fromCharCode((rmax-newr)/10+97)
+				cc=String.fromCharCode((rmax-newr)/10+97);
+				if (cc=='a') w0++; else w1++;
+				gc+=cc;
 				bm.data[a+0]=newr;
 				bm.data[a+1]=newr;
 				bm.data[a+2]=newr;
@@ -219,28 +228,32 @@ ditherit = function() {
 				}
 				else if (metode==1){
 					// 7 3 5 1 floyd
+					em=floyd1;
 					err=err/16;
-					a1=a+4; bm.data[a1]+=err*7;
+					a1=a+4; bm.data[a1]+=err*em[0];
 					a+=row;
-					a1=a-4; bm.data[a1]+=err*4;
-					a1=a;   bm.data[a1]+=err*4;
-					a1=a+4; bm.data[a1]+=err*1;
+					a1=a-4; bm.data[a1]+=err*em[1];
+					a1=a;   bm.data[a1]+=err*em[2];
+					a1=a+4; bm.data[a1]+=err*em[3];
 				}
 				else if (metode==2){
 					// sierra 2 row
 					err=err/32;
-					a1=a+4; bm.data[a1]+=err*5;
-					a1=a+8; bm.data[a1]+=err*3;
+//					em=[5,2 ,2,4,5,4,2 ,2,3,2];
+					
+					em=sierra2;
+					a1=a+4; bm.data[a1]+=err*em[0];
+					a1=a+8; bm.data[a1]+=err*em[1];
 					a+=row;
-					a1=a-8; bm.data[a1]+=err*2;
-					a1=a-4; bm.data[a1]+=err*4;
-					a1=a;   bm.data[a1]+=err*5;
-					a1=a+4; bm.data[a1]+=err*4;
-					a1=a+8; bm.data[a1]+=err*2;
+					a1=a-8; bm.data[a1]+=err*em[2];
+					a1=a-4; bm.data[a1]+=err*em[3];
+					a1=a;   bm.data[a1]+=err*em[4];
+					a1=a+4; bm.data[a1]+=err*em[5];
+					a1=a+8; bm.data[a1]+=err*em[6];
 					a+=row;
-					a1=a-4; bm.data[a1]+=err*2;
-					a1=a;   bm.data[a1]+=err*3;
-					a1=a+4; bm.data[a1]+=err*2;
+					a1=a-4; bm.data[a1]+=err*em[7];
+					a1=a;   bm.data[a1]+=err*em[8];
+					a1=a+4; bm.data[a1]+=err*em[9];
 					
 				}
 			}
@@ -255,6 +268,7 @@ ditherit = function() {
 				// next y
 				gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
 				gcode+="G1 S255 X0 E"+mround(shf)+"\n";
+				waktu+=2.0*mw/speed;
 			} 
 			// cnc mill, down
 			if (mtype==0){
@@ -289,6 +303,9 @@ ditherit = function() {
 	} else {
 	// halftoner
 	}
+	pc=100*w1/(w1+w0);
+	total=15*pc*waktu;
+	document.getElementById("waktu").innerHTML="<b>TOTAL BIAYA:Rp "+mround(total)+"</b><br>Waktu:"+mround(waktu)+"menit, laser "+mround(pc)+"%";
 	gcode+=tool1+"\nG4\nG7\n";
 	document.getElementById("gcode").innerHTML=gcode;
     ctx.putImageData(bm, 0, 0);
