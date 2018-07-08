@@ -3,6 +3,16 @@
   "description": "CNC Laser Cutting Karya Controller software",
   "version": "1.0",
   "manifest_version": 2,
+  "sockets": {
+    "tcp": {
+      "connect": "*"
+    },
+
+    "tcpServer": {
+      "listen": "*"
+    }
+  },
+  
   "icons": {
     "16": "serial.png",
     "128": "serial.png"

@@ -1,11 +1,21 @@
+function $(id) {
+  return document.getElementById(id);
+}
+sqrt=Math.sqrt;
+sqr=function(x){return x*x;}
+
+function log(text) {
+  $('log').value += text + '\n';
+}
+
 function getvalue(el){
-	return document.getElementById(el).value;
+	return $(el).value;
 }
 function setvalue(el,val){
-	document.getElementById(el).value=val;
+	$(el).value=val;
 }
 function setevent(ev,bt,act){
-	document.getElementById(bt).addEventListener(ev, act,false);
+	$(bt).addEventListener(ev, act,false);
 }
 
 function setclick(bt,act){
@@ -16,9 +26,9 @@ function replaceAll(str, find, replace) {
 }
 
 
-var div = ""; //= document.getElementById('mytext');
-var area_dimension = document.getElementById('area_dimension');
-var div1; // = document.getElementById('mytext1');
+var div = ""; //= $('mytext');
+var area_dimension = $('area_dimension');
+var div1; // = $('mytext1');
 
 var text1;
 
@@ -45,6 +55,7 @@ var gcodes = [];
 var harga=1000;
 var cncz=0;
 
+
 function gcoden(g, f, x2, y2) {
     div = div + 'G' + g + ' F' + (f) + ' X' + mround(x2) + ' Y' + mround(y2) + '\n';
     x1 = x2;
@@ -63,12 +74,49 @@ function gcode0(f, x2, y2) {
 function gcode1(f, x2, y2) {
     x1 -= x2;
     y1 -= y2;
-    lenmm = lenmm + Math.sqrt(x1 * x1 + y1 * y1);
+    lenmm = lenmm + sqrt(x1 * x1 + y1 * y1);
     gcoden(1, f, x2, y2);
 }
 var sgcodes = [];
 
+/*
 
+lines = [[f,x,y,len],...]
+
+len is total length until this point
+
+*/
+
+function isClockwise(poly,px=1,py=2) {
+    var sum = 0;
+    for (var i=0; i<poly.length-1; i++) {
+        var cur = poly[i];
+        var next = poly[i+1];
+        sum += (next[px] - cur[px]) * (next[py] + cur[py]);
+    }
+    return sum > 0;
+}
+function sharp(poly,px=1,py=2,idx=0,num=2) {
+    var sum = 0;
+	ci=idx;
+	nci=ci+1;
+	pci=ci-1;
+	if (nci>=poly.length)nci-=poly.length;
+	if (pci<0)pci+=poly.length;
+	prev = poly[pci];
+	cur = poly[ci];
+	next = poly[nci];
+	
+	vec1=[cur[px]-prev[px],cur[py]-prev[py]];
+	vec2=[next[px]-cur[px],next[py]-cur[py]];
+	
+	
+	
+	d1=sqrt(vec1[0]*vec1[0]+vec1[1]*vec1[1]);
+	d2=sqrt(vec2[0]*vec2[0]+vec2[1]*vec2[1]);
+	sum = (vec1[0]/d1 - vec2[0]/d2) * (vec1[1]/d1 - vec2[1]/d2);
+    return Math.abs(sum);
+}
 var jmltravel=0;
 function draw_line(num, lcol, lines) {
    if (sxmax < sxmin);
@@ -82,21 +130,52 @@ function draw_line(num, lcol, lines) {
    var cymax = 0;
    var n = 0;
    var sc=1;
-   if (document.getElementById("flipx").checked)sc=-1;
+   if ($("flipx").checked)sc=-1;
    var ro=1;
-   if (document.getElementById("rotate").checked)ro=-1;
-   var c = document.getElementById("myCanvas1");
+   if ($("rotate").checked)ro=-1;
+   var c = $("myCanvas1");
    //alert(c);
    var ctx = c.getContext("2d");
    ctx.font = "8px Arial";
    var g = 0;
    var X1=0;
    var Y1=0;
-   for (var i=0;i<lines.length;i++){
-      g = i;
-      x=lines[i][1];
-      y=lines[i][2];
-      if (ro==-1){
+   var srl=[];
+   tl=0;
+   
+   seg=$("segment").checked;
+
+   start=0;
+   if (0*seg){
+   for (var i=1;i<lines.length;i++){
+	  sr=sharp(lines,1,2,i);
+	  if ((sr>.6))start=i;
+	}
+   }
+   lsx=-10;
+   lsy=0;
+   for (var ii=0;ii<lines.length;ii++){
+      g = ii;
+	  i=ii;+start;
+	  if (i>=lines.length)i-=lines.length; 	
+	  
+	  tl=lines[i][3];
+      x=lines[i][1]+10/dpm;
+      y=lines[i][2]+10/dpm;
+	  if (seg){
+		  sr=sharp(lines,1,2,i);
+		  if ((sr>.9)|| (ii==0)|| (ii==lines.length-1)) {
+			  sx=x*dpm;
+			  sy=y*dpm;
+			  if (!srl.length || (sqrt(sqr(lsx-sx)+sqr(lsy-sy))>10)){
+				  srl.push([x*dpm,y*dpm,sr,tl,i]);
+				  lsx=sx;
+				  lsy=sy;
+			  }
+			
+		  }
+      }
+	  if (ro==-1){
          xx=x;
          x=y;
          y=xx;
@@ -104,7 +183,7 @@ function draw_line(num, lcol, lines) {
       if (sc==-1)x=sxmax-x;
       if (g >= 0) {
            ctx.beginPath();
-           if (g == 0) {X1=x*dpm;Y1=y*dpm;jmltravel++;ctx.strokeStyle = "#FFeeee";}
+           if (g == 0) {X1=x*dpm;Y1=y*dpm;jmltravel++;ctx.strokeStyle = "#FFaaaa";}
            if (g > 0) ctx.strokeStyle = lcol;
            cxmin = Math.min(cxmin, x);
            cymin = Math.min(cymin, y);
@@ -114,14 +193,39 @@ function draw_line(num, lcol, lines) {
            lx = x * dpm;
            ly = y * dpm;
            ctx.lineTo(lx, ly);
+		   //ctx.arc(lx,ly,2,0,2*Math.PI);
            ctx.stroke();
       }
       //ctx.endPath();
    }
+   d1=sqrt(sqr(lx-X1)+sqr(ly-Y1))/dpm;
    ctx.beginPath();
    ctx.moveTo(lx, ly);
    ctx.lineTo(X1, Y1);
    ctx.stroke();
+   //ctx.endPath();
+   srl.push([X1,Y1,0,tl+d1,0]);
+   if (seg) {
+		ctx.font = "10px Arial";
+		sg="[#"+num+"] ";
+	   for (i=0;i<srl.length-1;i++){
+		   if (i)sg+=",";
+		   
+		ctx.beginPath();
+		ctx.strokeStyle = getRandomColor();
+		ctx.arc(srl[i][0],srl[i][1],3,0,2*Math.PI);
+
+		ctx.stroke();
+		ctx.fillStyle = "#0000cc";
+		ni=i+1;
+		if (ni>=srl.length)ni=0;
+		ti=Math.floor((srl[i][4]+srl[ni][4])/2);
+		l=mround(srl[ni][3]-srl[i][3]);
+		sg+=l;
+		ctx.fillText(l,(lines[ti][1]*dpm)+10,(lines[ti][2]*dpm)+10);
+	   }
+	   $("segm").value+=sg+"\n";
+	}
    //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
    if (cxmin < cxmax) ctx.fillText("#" + num,dpm*((cxmax-cxmin)/2+cxmin),dpm*cymax+10);
 }
@@ -151,12 +255,12 @@ function lines2gcode(num,data,z,cuttabz) {
    var Y1=data[3];
    var lines=data[4];
    var sc=1;
-   if (document.getElementById("flipx").checked){
+   if ($("flipx").checked){
       sc=-1;
       X1=sxmax-X1;
    }
    var ro=1;
-   if (document.getElementById("rotate").checked){
+   if ($("rotate").checked){
       ro=-1;
       XX=X1;
       X1=Y1;
@@ -272,13 +376,14 @@ function getRandomColor() {
 }
 
 function gcode_verify() {
-    var c = document.getElementById("myCanvas1");
+    var c = $("myCanvas1");
     //alert(c);
     lx = 0;
     ly = 0;
     jmltravel=0;
     var ctx = c.getContext("2d");
     var sfinal = 0;
+	$("segm").value="";
     ctx.clearRect(0, 0, c.width, c.height);
     for (var i = 0; i < sgcodes.length; i++) {
         draw_line(i + 1, getRandomColor(), sgcodes[i][4]);
@@ -292,7 +397,9 @@ function gcode_verify() {
     var menit=mround((sfinal+jmltravel*10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
     menit=menit*re;
-    area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + menit + " menit <br>Biaya Cut:" + Math.round(menit*1500)+" bahan:"+mround(w*h*harga)+" TOTAL:"+mround(menit*1500+w*h*harga);
+	text=$("material");
+	mat=text.options[text.selectedIndex].innerText;
+    area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + menit + " menit <br>Biaya Cut:" + Math.round(menit*1500)+" bahan ("+mat+"):"+mround(w*h*harga)+" TOTAL:"+mround(menit*1500+w*h*harga);
 }
 
 function sortedgcode() {
@@ -316,7 +423,7 @@ function sortedgcode() {
 
             var dx=gcodes[i][2]-lx;
             var dy=gcodes[i][3]-ly;
-            var dis=Math.sqrt(dx*dx+dy*dy)+gcodes[i][0];
+            var dis=sqrt(dx*dx+dy*dy)+gcodes[i][0];
             if ((gcodes[i][0] > 0) && (dis < bg)) {
                 cs = i;
                 bg = dis;
@@ -350,7 +457,7 @@ function sortedgcode() {
     s = s + '\nG00 F3000 Y0 \n G00 X0\n';
     setvalue("gcode",s);
     sc=1;
-    if (document.getElementById("flipx").checked) sc=-1;
+    if ($("flipx").checked) sc=-1;
     setvalue("pgcode",getvalue("pup")+"\nM3 S255 P10\nG0 F10000 X" + mround(sc*xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc*xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc*xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
@@ -379,10 +486,10 @@ function myFunction(scale1) {
     lines=[];
     var scale = 25.4 / getvalue('scale');
     if (scale1) scale = 1;
-    //var division = document.getElementById('division').value;
+    //var division = $('division').value;
 
     //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
-    //document.getElementById("gsvg").value=text1;
+    //$("gsvg").value=text1;
     var cmd = getvalue('cmode');
     var pw1 = 1;
     var pw2 = 0;//getvalue('pwm');
@@ -534,15 +641,15 @@ function myFunction(scale1) {
 
             var a = p1x - xincep
             var b = p1y - yincep
-            var a = Math.sqrt(a * a + b * b);
+            var a = sqrt(a * a + b * b);
 
             var b = p2x - p1x
             var c = p2y - p1y
-            var b = Math.sqrt(b * b + c * c);
+            var b = sqrt(b * b + c * c);
 
             var c = xsfar - p2x
             var d = ysfar - p2y
-            var c = Math.sqrt(c * c + d * d);
+            var c = sqrt(c * c + d * d);
 
             //g=1/((a+b+c)*division);
             g = det / (a + b + c);
@@ -652,7 +759,7 @@ var openFile = function(event) {
     var reader = new FileReader();
     reader.onload = function() {
         var dataURL = reader.result;
-        //var output = document.getElementById('output');
+        //var output = $('output');
         //output.src = dataURL;
 
     };
@@ -742,7 +849,7 @@ window.addEventListener('Xdrop', function(e) {
             reader.onload = function(event) {
                 var dataURL = reader.result;
                 //event.target.result;
-                //var output = document.getElementById('output');
+                //var output = $('output');
                 //output.src = dataURL;
 
                 if (reader.tipe.indexOf("svg") !== -1) {
@@ -820,6 +927,9 @@ function refreshgcode() {
 }
 
 function copy_to_clipboard(id) {
-    document.getElementById(id).select();
+    $(id).select();
     document.execCommand('copy');
 }
+
+
+// Web socket server to allow other karyacnc apps send gcode and task to this software
