@@ -146,25 +146,21 @@ function draw_line(num, lcol, lines) {
    seg=$("segment").checked;
 
    start=0;
-   if (0*seg){
-   for (var i=1;i<lines.length;i++){
-	  sr=sharp(lines,1,2,i);
-	  if ((sr>.6))start=i;
-	}
-   }
+   sharpv=$("sharp").value;
    lsx=-10;
    lsy=0;
+   
    for (var ii=0;ii<lines.length;ii++){
       g = ii;
 	  i=ii;+start;
 	  if (i>=lines.length)i-=lines.length; 	
 	  
 	  tl=lines[i][3];
-      x=lines[i][1]+10/dpm;
-      y=lines[i][2]+10/dpm;
+      x=lines[i][1];
+      y=lines[i][2];
 	  if (seg){
 		  sr=sharp(lines,1,2,i);
-		  if ((sr>.9)|| (ii==0)|| (ii==lines.length-1)) {
+		  if ((sr>sharpv)|| (ii==0)|| (ii==lines.length-1)) {
 			  sx=x*dpm;
 			  sy=y*dpm;
 			  if (!srl.length || (sqrt(sqr(lsx-sx)+sqr(lsy-sy))>10)){
@@ -183,7 +179,7 @@ function draw_line(num, lcol, lines) {
       if (sc==-1)x=sxmax-x;
       if (g >= 0) {
            ctx.beginPath();
-           if (g == 0) {X1=x*dpm;Y1=y*dpm;jmltravel++;ctx.strokeStyle = "#FFaaaa";}
+           if (g == 0) {X1=x*dpm;Y1=y*dpm;jmltravel++;ctx.strokeStyle = "#88888888";}
            if (g > 0) ctx.strokeStyle = lcol;
            cxmin = Math.min(cxmin, x);
            cymin = Math.min(cymin, y);
