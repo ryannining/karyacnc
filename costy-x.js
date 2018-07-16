@@ -107,15 +107,15 @@ function sharp(poly,px=1,py=2,idx=0,num=2) {
 	cur = poly[ci];
 	next = poly[nci];
 	
-	vec1=[cur[px]-prev[px],cur[py]-prev[py]];
+	vec1=[prev[px]-cur[px],prev[py]-cur[py]];
 	vec2=[next[px]-cur[px],next[py]-cur[py]];
 	
 	
 	
 	d1=sqrt(vec1[0]*vec1[0]+vec1[1]*vec1[1]);
 	d2=sqrt(vec2[0]*vec2[0]+vec2[1]*vec2[1]);
-	sum = (vec1[0]/d1 - vec2[0]/d2) * (vec1[1]/d1 - vec2[1]/d2);
-    return Math.abs(sum);
+	sum = (vec1[0]/d1 * vec2[0]/d2) + (vec1[1]/d1 * vec2[1]/d2);
+    return (sum);
 }
 var jmltravel=0;
 function draw_line(num, lcol, lines) {
@@ -290,7 +290,7 @@ function lines2gcode(num,data,z,cuttabz) {
    }
    gcode0(f1,X1,Y1);
 
-   div = div + "G0 Z"+lastz+"\n";
+   if (cmode==3)div = div + "G0 Z"+lastz+"\n";
    lastz=z;
 
    // activate tools and prepare the speed
@@ -494,6 +494,8 @@ function myFunction(scale1) {
     var f1 = getvalue('trav') * 60;
     var f2 =getvalue('feed') * 60;
 	var det=getvalue('feed')/15.0;
+	var seg=$("segment").checked;
+	if (seg) det*=4;
     if (cmd == 2) {
         pw1 = pw2;
         f1 = f2;

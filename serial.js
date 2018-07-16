@@ -78,6 +78,7 @@ function sendgcode(g){
   if (comtype==0){
 	  try {
 		writeSerial(g+"\n");
+		okwait++;
 	  } catch (e) {
 
 	  }
@@ -98,7 +99,6 @@ function nextgcode(){
 		eline++;
 		if ((g) && (g[0]!=';')) {
 			sendgcode(g.split(";")[0]);
-			okwait=1;
 			return;
 		}
 	}
@@ -172,7 +172,7 @@ var onReadCallback = function(s){
 				document.getElementById("info3d").innerHTML=lastw;
 			}
 			if (lastw.toUpperCase().indexOf("OK")>=0){
-				okwait=0;				
+				okwait--;				
 				nextgcode();
 			}
 			lastw="";
