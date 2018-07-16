@@ -493,7 +493,7 @@ function myFunction(scale1) {
     var pdn = getvalue('pdn');
     var f1 = getvalue('trav') * 60;
     var f2 =getvalue('feed') * 60;
-	var det=getvalue('feed')/15.0;
+	var det=getvalue('feed')/15.0; 
 	var seg=$("segment").checked;
 	if (seg) det*=4;
     if (cmd == 2) {

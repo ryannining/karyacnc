@@ -92,7 +92,7 @@ function nextgcode(){
 		//setTimeout(nextgcode,1000);
 		return;	
 	}; // wait until socket connected
-	if (okwait) return;
+	if (okwait) return; 
 	if (!running)return;
 	while(eline<egcodes.length){
 		var g=egcodes[eline];
