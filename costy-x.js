@@ -41,6 +41,9 @@ var lenmm = 0;
 var lastf = 0;
 var x1 = 0;
 var y1 = 0;
+var z1 = 0;
+var e1 = 0;
+var cmd=0;
 var xmin = 100000;
 var ymin = 100000;
 var xmax = 0;
@@ -56,10 +59,17 @@ var harga=1000;
 var cncz=0;
 
 
-function gcoden(g, f, x2, y2) {
-    div = div + 'G' + g + ' F' + (f) + ' X' + mround(x2) + ' Y' + mround(y2) + '\n';
+function gcoden(g, f, x2, y2,z2=10000,e2=1000000) {
+	var xs=1;
+	if (cmd==4)xs=-1;
+    div = div + 'G' + g + ' F' + (f) + ' X' + mround(x2*xs) + ' Y' + mround(y2) ;
+	if (z2!=10000)div+=" Z"+mround(z2);
+	if (e2!=1000000)div+=" E"+mround(e2);
+	div+= '\n';
     x1 = x2;
     y1 = y2;
+    if(z2!=10000)z1 = z2;
+    if(e2!=1000000)e1 = e2;
     lastf = f;
     xmin = Math.min(xmin, x2);
     ymin = Math.min(ymin, y2);
@@ -67,15 +77,33 @@ function gcoden(g, f, x2, y2) {
     ymax = Math.max(ymax, y2);
 }
 
-function gcode0(f, x2, y2) {
-    gcoden(0, f, x2, y2);
+var inretract=0;
+function gcode0(f, x2, y2,z2=10000,e2=1000000) {
+    if (cmd==4){
+		if (!inretract){
+			inretract=1;
+			div+="G1 F60 E"+mround(e1-1)+"\n";
+		}
+	}
+	gcoden(0, f, x2, y2);
 }
-
-function gcode1(f, x2, y2) {
+var layerheight=0.3;
+var filamentD=1.75;
+var extrude=(layerheight*layerheight)/(filamentD*filamentD);
+function gcode1(f, x2, y2,z2=10000,e2=1000000) {
     x1 -= x2;
     y1 -= y2;
-    lenmm = lenmm + sqrt(x1 * x1 + y1 * y1);
-    gcoden(1, f, x2, y2);
+// if 3d mode, then calculate the E
+    lenn=sqrt(x1 * x1 + y1 * y1);
+	if (cmd==4){
+		if (inretract){
+			div+="G1 F60 E"+mround(e1)+"\n";
+			inretract=0;
+		}
+		e2=e1+lenn*extrude;
+	}
+    lenmm += lenn;
+    gcoden(1, f, x2, y2,z2,e2);
 }
 var sgcodes = [];
 
@@ -226,6 +254,7 @@ function draw_line(num, lcol, lines) {
    if (cxmin < cxmax) ctx.fillText("#" + num,dpm*((cxmax-cxmin)/2+cxmin),dpm*cymax+10);
 }
 var lastz=0;
+var lasee=0;
 function lines2gcode(num,data,z,cuttabz) {
    // the idea is make a cutting tab in 4 posisiton,:
    //
@@ -267,7 +296,7 @@ function lines2gcode(num,data,z,cuttabz) {
    var ly=Y1;
 
    // turn off tool and move up if needed
-  var cmd = getvalue('cmode');
+  cmd = getvalue('cmode');
   var pw1 = 1;
   var pw2 = 0;//getvalue('pwm');
   var pup = getvalue('pup');
@@ -278,7 +307,16 @@ function lines2gcode(num,data,z,cuttabz) {
        pw1 = pw2;
        f1 = f2;
   }
+  if (cmd==4){
+	  z=-z; // if 3D then move up
+	if (z<=layerheight) {
+		f2=800;
+		extrude=7*(layerheight*layerheight)/(filamentD*filamentD);
 
+	} else {
+		extrude=4.5*(layerheight*layerheight)/(filamentD*filamentD);
+	}
+  }
    div="";
    if (sxmax < sxmin) return cdiv;
    // deactivate tools and move to cut position
@@ -373,6 +411,7 @@ function getRandomColor() {
 
 function gcode_verify() {
     var c = $("myCanvas1");
+    cmd = getvalue('cmode');
     //alert(c);
     lx = 0;
     ly = 0;
@@ -412,6 +451,7 @@ function sortedgcode() {
     var divs = '';
     var lx=0;
     var ly=0;
+	e1=0;
     for (var j = 0; j < gcodes.length; j++) {
         var cs = -1;
         var bg = 10000000;
@@ -434,6 +474,7 @@ function sortedgcode() {
             divs = divs + gcodes[cs][1];
         }
     }
+	if (cmd==4)setvalue("repeat",Math.ceil(getvalue("zdown")/layerheight));
     var re = getvalue("repeat");
     s = "";//;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     cncdeep=- getvalue("zdown");
@@ -441,16 +482,22 @@ function sortedgcode() {
     var cuttab=0;
     lastz=0;
 
-    var cmd = getvalue('cmode');
+    cmd = getvalue('cmode');
     cuttab=cncdeep+getvalue("tabc")*1;
+	if (cmd==4){
+		s="g28\ng0 z10 f1000\nm109 s180\ng92 E0\n";
+	}
     for (var i = 0; i < re; i++) {
       for (var j=0;j<sgcodes.length;j++){
         s += lines2gcode(j+1,sgcodes[j],cncz,cuttab);
-     }
+      }
      cncz+=cncdeep/re;
     }
     s=s+getvalue("pup");
     s = s + '\nG00 F3000 Y0 \n G00 X0\n';
+	if (cmd==4){
+		s+="g28";
+	}
     setvalue("gcode",s);
     sc=1;
     if ($("flipx").checked) sc=-1;
@@ -476,6 +523,7 @@ function myFunction(scale1) {
     var p1y = 0;
     var p2x = 0;
     var p2y = 0;
+	e1=0;
     var xsfar = 0;
     var ysfar = 0;
     var n1 = 0;
@@ -486,14 +534,14 @@ function myFunction(scale1) {
 
     //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
     //$("gsvg").value=text1;
-    var cmd = getvalue('cmode');
+    cmd = getvalue('cmode');
     var pw1 = 1;
     var pw2 = 0;//getvalue('pwm');
     var pup = getvalue('pup');
     var pdn = getvalue('pdn');
     var f1 = getvalue('trav') * 60;
     var f2 =getvalue('feed') * 60;
-	var det=getvalue('feed')/15.0; 
+	var det=getvalue('feed')/45.0; 
 	var seg=$("segment").checked;
 	if (seg) det*=4;
     if (cmd == 2) {

@@ -272,7 +272,7 @@ function changematerial(){
 function modechange(){
   val=getvalue("cmode");
   if (val==1) {
-    setvalue("pup","M3 S0");
+    setvalue("pup","");
     setvalue("pdn","M3 S255");
   }
   if (val==2) {
@@ -283,6 +283,11 @@ function modechange(){
     setvalue("pup","G0 Z2 F1000");
     setvalue("pdn","G0 Z=cncz F60");
     setvalue("feed","3");
+  }
+  if (val==4) {
+    setvalue("pup","");
+    setvalue("pdn","G0 Z=cncz F60");
+    setvalue("feed","30");
   }
 }
 //onclick="setashome();"
