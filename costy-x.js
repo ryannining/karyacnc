@@ -1,26 +1,31 @@
 function $(id) {
-  return document.getElementById(id);
+    return document.getElementById(id);
 }
-sqrt=Math.sqrt;
-sqr=function(x){return x*x;}
+sqrt = Math.sqrt;
+sqr = function(x) {
+    return x * x;
+}
 
 function log(text) {
-  $('log').value += text + '\n';
+    $('log').value += text + '\n';
 }
 
-function getvalue(el){
-	return $(el).value;
-}
-function setvalue(el,val){
-	$(el).value=val;
-}
-function setevent(ev,bt,act){
-	$(bt).addEventListener(ev, act,false);
+function getvalue(el) {
+    return $(el).value;
 }
 
-function setclick(bt,act){
-	setevent("click",bt,act);
+function setvalue(el, val) {
+    $(el).value = val;
 }
+
+function setevent(ev, bt, act) {
+    $(bt).addEventListener(ev, act, false);
+}
+
+function setclick(bt, act) {
+    setevent("click", bt, act);
+}
+
 function replaceAll(str, find, replace) {
     return str.replace(new RegExp(find, 'g'), replace);
 }
@@ -33,7 +38,7 @@ var div1; // = $('mytext1');
 var text1;
 
 function mround(x) {
-    return Math.round(x * 100.0) / 100.0;
+    return parseFloat(x).toFixed(2);
 }
 var X1 = 0;
 var Y1 = 0;
@@ -43,7 +48,7 @@ var x1 = 0;
 var y1 = 0;
 var z1 = 0;
 var e1 = 0;
-var cmd=0;
+var cmd = 0;
 var xmin = 100000;
 var ymin = 100000;
 var xmax = 0;
@@ -52,24 +57,30 @@ var sxmin = 100000;
 var symin = 100000;
 var sxmax = 0;
 var symax = 0;
-var calcmax=0;
+var calcmax = 0;
 
 var gcodes = [];
-var harga=1000;
-var cncz=0;
+var harga = 1000;
+var cncz = 0;
+
+var layerheight = 0.4;
+var filamentD = 1.75;
+var retract = 0;
+var overlap = 10;
+var extrude = (layerheight * layerheight) / (filamentD * filamentD);
 
 
-function gcoden(g, f, x2, y2,z2=10000,e2=1000000) {
-	var xs=1;
-	if (cmd==4)xs=-1;
-    div = div + 'G' + g + ' F' + (f) + ' X' + mround(x2*xs) + ' Y' + mround(y2) ;
-	if (z2!=10000)div+=" Z"+mround(z2);
-	if (e2!=1000000)div+=" E"+mround(e2);
-	div+= '\n';
+function gcoden(g, f, x2, y2, z2 = 10000, e2 = 1000000) {
+    var xs = 1;
+    if (cmd == 4) xs = -1;
+    div = div + 'G' + g + ' F' + mround(f) + ' X' + mround(x2 * xs) + ' Y' + mround(y2);
+    if (z2 != 10000) div += " Z" + mround(z2);
+    if (e2 != 1000000) div += " E" + mround(e2);
+    div += '\n';
     x1 = x2;
     y1 = y2;
-    if(z2!=10000)z1 = z2;
-    if(e2!=1000000)e1 = e2;
+    if (z2 != 10000) z1 = z2;
+    if (e2 != 1000000) e1 = e2;
     lastf = f;
     xmin = Math.min(xmin, x2);
     ymin = Math.min(ymin, y2);
@@ -77,33 +88,32 @@ function gcoden(g, f, x2, y2,z2=10000,e2=1000000) {
     ymax = Math.max(ymax, y2);
 }
 
-var inretract=0;
-function gcode0(f, x2, y2,z2=10000,e2=1000000) {
-    if (cmd==4){
-		if (!inretract){
-			inretract=1;
-			div+="G1 F60 E"+mround(e1-1)+"\n";
-		}
-	}
-	gcoden(0, f, x2, y2);
+var inretract = 0;
+
+function gcode0(f, x2, y2, z2 = 10000, e2 = 1000000) {
+    if (retract && (cmd == 4)) {
+        if (!inretract) {
+            inretract = 1;
+            div += "G1 F60 E" + mround(e1 - 1) + "\n";
+        }
+    }
+    gcoden(0, f, x2, y2);
 }
-var layerheight=0.3;
-var filamentD=1.75;
-var extrude=(layerheight*layerheight)/(filamentD*filamentD);
-function gcode1(f, x2, y2,z2=10000,e2=1000000) {
+
+function gcode1(f, x2, y2, z2 = 10000, e2 = 1000000) {
     x1 -= x2;
     y1 -= y2;
-// if 3d mode, then calculate the E
-    lenn=sqrt(x1 * x1 + y1 * y1);
-	if (cmd==4){
-		if (inretract){
-			div+="G1 F60 E"+mround(e1)+"\n";
-			inretract=0;
-		}
-		e2=e1+lenn*extrude;
-	}
+    // if 3d mode, then calculate the E
+    lenn = sqrt(x1 * x1 + y1 * y1);
+    if (cmd == 4) {
+        if (inretract) {
+            div += "G1 F60 E" + mround(e1) + "\n";
+            inretract = 0;
+        }
+        e2 = e1 + lenn * extrude;
+    }
     lenmm += lenn;
-    gcoden(1, f, x2, y2,z2,e2);
+    gcoden(1, f, x2, y2, z2, e2);
 }
 var sgcodes = [];
 
@@ -115,291 +125,369 @@ len is total length until this point
 
 */
 
-function isClockwise(poly,px=1,py=2) {
+function isClockwise(poly, px = 1, py = 2) {
     var sum = 0;
-    for (var i=0; i<poly.length-1; i++) {
+    for (var i = 0; i < poly.length - 1; i++) {
         var cur = poly[i];
-        var next = poly[i+1];
+        var next = poly[i + 1];
         sum += (next[px] - cur[px]) * (next[py] + cur[py]);
     }
     return sum > 0;
 }
-function sharp(poly,px=1,py=2,idx=0,num=2) {
+
+function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
     var sum = 0;
-	ci=idx;
-	nci=ci+1;
-	pci=ci-1;
-	if (nci>=poly.length)nci-=poly.length;
-	if (pci<0)pci+=poly.length;
-	prev = poly[pci];
-	cur = poly[ci];
-	next = poly[nci];
-	
-	vec1=[prev[px]-cur[px],prev[py]-cur[py]];
-	vec2=[next[px]-cur[px],next[py]-cur[py]];
-	
-	
-	
-	d1=sqrt(vec1[0]*vec1[0]+vec1[1]*vec1[1]);
-	d2=sqrt(vec2[0]*vec2[0]+vec2[1]*vec2[1]);
-	sum = (vec1[0]/d1 * vec2[0]/d2) + (vec1[1]/d1 * vec2[1]/d2);
+    ci = idx;
+    nci = ci + 1;
+    pci = ci - 1;
+    if (nci >= poly.length) nci -= poly.length;
+    if (pci < 0) pci += poly.length;
+    prev = poly[pci];
+    cur = poly[ci];
+    next = poly[nci];
+
+    vec1 = [prev[px] - cur[px], prev[py] - cur[py]];
+    vec2 = [next[px] - cur[px], next[py] - cur[py]];
+
+
+
+    d1 = sqrt(vec1[0] * vec1[0] + vec1[1] * vec1[1]);
+    d2 = sqrt(vec2[0] * vec2[0] + vec2[1] * vec2[1]);
+    sum = (vec1[0] / d1 * vec2[0] / d2) + (vec1[1] / d1 * vec2[1] / d2);
     return (sum);
 }
-var jmltravel=0;
+var jmltravel = 0;
+
 function draw_line(num, lcol, lines) {
-   if (sxmax < sxmin);
-   var dpm = 440.0 / (sxmax);
-   dpm = Math.min(dpm, 440.0 / (symax));
-   var x = lx / dpm;
-   var y = ly / dpm;
-   var cxmin = 100000;
-   var cymin = 100000;
-   var cxmax = 0;
-   var cymax = 0;
-   var n = 0;
-   var sc=1;
-   if ($("flipx").checked)sc=-1;
-   var ro=1;
-   if ($("rotate").checked)ro=-1;
-   var c = $("myCanvas1");
-   //alert(c);
-   var ctx = c.getContext("2d");
-   ctx.font = "8px Arial";
-   var g = 0;
-   var X1=0;
-   var Y1=0;
-   var srl=[];
-   tl=0;
-   
-   seg=$("segment").checked;
+    if (sxmax < sxmin);
+    var dpm = 440.0 / (sxmax);
+    dpm = Math.min(dpm, 440.0 / (symax));
+    var x = lx / dpm;
+    var y = ly / dpm;
+    var cxmin = 100000;
+    var cymin = 100000;
+    var cxmax = 0;
+    var cymax = 0;
+    var n = 0;
+    var sc = 1;
+    if ($("flipx").checked) sc = -1;
+    var ro = 1;
+    if ($("rotate").checked) ro = -1;
+    var c = $("myCanvas1");
+    //alert(c);
+    var ctx = c.getContext("2d");
+    ctx.font = "8px Arial";
+    var g = 0;
+    var X1 = 0;
+    var Y1 = 0;
+    var srl = [];
+    tl = 0;
 
-   start=0;
-   sharpv=$("sharp").value;
-   lsx=-10;
-   lsy=0;
-   
-   for (var ii=0;ii<lines.length;ii++){
-      g = ii;
-	  i=ii;+start;
-	  if (i>=lines.length)i-=lines.length; 	
-	  
-	  tl=lines[i][3];
-      x=lines[i][1];
-      y=lines[i][2];
-	  if (seg){
-		  sr=sharp(lines,1,2,i);
-		  if ((sr>sharpv)|| (ii==0)|| (ii==lines.length-1)) {
-			  sx=x*dpm;
-			  sy=y*dpm;
-			  if (!srl.length || (sqrt(sqr(lsx-sx)+sqr(lsy-sy))>10)){
-				  srl.push([x*dpm,y*dpm,sr,tl,i]);
-				  lsx=sx;
-				  lsy=sy;
-			  }
-			
-		  }
-      }
-	  if (ro==-1){
-         xx=x;
-         x=y;
-         y=xx;
-      }
-      if (sc==-1)x=sxmax-x;
-      if (g >= 0) {
-           ctx.beginPath();
-           if (g == 0) {X1=x*dpm;Y1=y*dpm;jmltravel++;ctx.strokeStyle = "#88888888";}
-           if (g > 0) ctx.strokeStyle = lcol;
-           cxmin = Math.min(cxmin, x);
-           cymin = Math.min(cymin, y);
-           cxmax = Math.max(cxmax, x);
-           cymax = Math.max(cymax, y);
-           ctx.moveTo(lx, ly);
-           lx = x * dpm;
-           ly = y * dpm;
-           ctx.lineTo(lx, ly);
-		   //ctx.arc(lx,ly,2,0,2*Math.PI);
-           ctx.stroke();
-      }
-      //ctx.endPath();
-   }
-   d1=sqrt(sqr(lx-X1)+sqr(ly-Y1))/dpm;
-   ctx.beginPath();
-   ctx.moveTo(lx, ly);
-   ctx.lineTo(X1, Y1);
-   ctx.stroke();
-   //ctx.endPath();
-   srl.push([X1,Y1,0,tl+d1,0]);
-   if (seg) {
-		ctx.font = "10px Arial";
-		sg="[#"+num+"] ";
-	   for (i=0;i<srl.length-1;i++){
-		   if (i)sg+=",";
-		   
-		ctx.beginPath();
-		ctx.strokeStyle = getRandomColor();
-		ctx.arc(srl[i][0],srl[i][1],3,0,2*Math.PI);
+    seg = $("segment").checked;
 
-		ctx.stroke();
-		ctx.fillStyle = "#0000cc";
-		ni=i+1;
-		if (ni>=srl.length)ni=0;
-		ti=Math.floor((srl[i][4]+srl[ni][4])/2);
-		l=mround(srl[ni][3]-srl[i][3]);
-		sg+=l;
-		ctx.fillText(l,(lines[ti][1]*dpm)+10,(lines[ti][2]*dpm)+10);
-	   }
-	   $("segm").value+=sg+"\n";
-	}
-   //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
-   if (cxmin < cxmax) ctx.fillText("#" + num,dpm*((cxmax-cxmin)/2+cxmin),dpm*cymax+10);
-}
-var lastz=0;
-var lasee=0;
-function lines2gcode(num,data,z,cuttabz) {
-   // the idea is make a cutting tab in 4 posisiton,:
-   //
-   var len=Math.abs(data[0]);
-   if (len<50)cuttabz=z;
-   var lenc=0;
-   var cuttablen=8;
-   var cut=[];
-   if (len>150) {
-	lc=len/4;
-   } else {
-	lc=len/2;
-   }
-   slc=lc/2;
-   cut[0]=lc-slc - cuttablen;
-   cut[1]=lc*2-slc - cuttablen;
-   cut[2]=lc*3-slc - cuttablen;
-   cut[3]=lc*4-slc - cuttablen;
-   
-   
-   cutat=0;
-   var X1=data[2];
-   var Y1=data[3];
-   var lines=data[4];
-   var sc=1;
-   if ($("flipx").checked){
-      sc=-1;
-      X1=sxmax-X1;
-   }
-   var ro=1;
-   if ($("rotate").checked){
-      ro=-1;
-      XX=X1;
-      X1=Y1;
-      Y1=XX;
-   }
+    start = 0;
+    sharpv = $("sharp").value;
+    lsx = -10;
+    lsy = 0;
 
-   var lx=X1;
-   var ly=Y1;
+    for (var ii = 0; ii < lines.length; ii++) {
+        g = ii;
+        i = ii; + start;
+        if (i >= lines.length) i -= lines.length;
 
-   // turn off tool and move up if needed
-  cmd = getvalue('cmode');
-  var pw1 = 1;
-  var pw2 = 0;//getvalue('pwm');
-  var pup = getvalue('pup');
-  var pdn = getvalue('pdn');
-  var f1 = getvalue('trav') * 60;
-  var f2 =getvalue('feed') * 60;
-  if (cmd == 2) {
-       pw1 = pw2;
-       f1 = f2;
-  }
-  if (cmd==4){
-	  z=-z; // if 3D then move up
-	if (z<=layerheight) {
-		f2=800;
-		extrude=7*(layerheight*layerheight)/(filamentD*filamentD);
+        tl = lines[i][3];
+        x = lines[i][1];
+        y = lines[i][2];
+        if (seg) {
+            sr = sharp(lines, 1, 2, i);
+            if ((sr > sharpv) || (ii == 0) || (ii == lines.length - 1)) {
+                sx = x * dpm;
+                sy = y * dpm;
+                if (!srl.length || (sqrt(sqr(lsx - sx) + sqr(lsy - sy)) > 10)) {
+                    srl.push([x * dpm, y * dpm, sr, tl, i]);
+                    lsx = sx;
+                    lsy = sy;
+                }
 
-	} else {
-		extrude=4.5*(layerheight*layerheight)/(filamentD*filamentD);
-	}
-  }
-   div="";
-   if (sxmax < sxmin) return cdiv;
-   // deactivate tools and move to cut position
-   div = div + "\n;SHAPE #"+num+"\n";
-   if (pw2) div = div + "M106 S" + pw1 + "\n";
-   div = div + pup + '\n';
-   if (cmd==2){
-      gcode0(f1,X1,0);
-   }
-   gcode0(f1,X1,Y1);
-
-   if (cmode==3)div = div + "G0 Z"+lastz+"\n";
-   lastz=z;
-
-   // activate tools and prepare the speed
-   if (pw2) div = div + "M106 S" + pw2 + "\n";
-   div = div + pdn.replace("=cncz",mround(z)) + '\n';
-   var incut=0;
-   for (var i=0;i<lines.length;i++){
-      x=lines[i][1];
-      y=lines[i][2];
-      if (sc==-1){
-         x=sxmax-x;
-      }
-      if (ro==-1){
-         xx=x;
-         x=y;
-         y=xx;
-      }
-      var iscut=0;
-      if ((cuttabz>z) && (cutat<4)) {
-         // if cut1 is in lenc and lencnext then cut the line
-         // and dont increase the i counter
-         if ((cut[cutat]>=lenc) && (cut[cutat]<=lines[i][3])){
-            // split lines
-            iscut=1;
-            dx=x-lx;
-            dy=y-ly;
-            llen=lines[i][3]-lenc;
-            lcut=cut[cutat]-lenc;
-            x=lx+dx*(lcut/llen);
-            y=ly+dy*(lcut/llen);
-            lenc=cut[cutat];
-
-            //lines[i][1]=x;
-            //lines[i][2]=y;
-            //lines[i][3]-=lcut;
-
-            if ((incut==1)){
-               incut=0;
-               cutat++;
-            } else {
-               incut=1;
-               cut[cutat]+=cuttablen;
             }
-         }
-      }
-      gcode1(f2, x, y);
-      lx=x;
-      ly=y;
-      if (iscut){
-         if (incut==1){
-            // move up
-            div = div + pdn.replace("=cncz",mround(cuttabz)) + '\n';
-         } else {
-            // move back down
-            div = div + pdn.replace("=cncz",mround(z)) + '\n';
-         }
-         i--;
-      } else {
-         lenc=lines[i][3];
-      }
-   }
-   //close loop
-   gcode1(f2, X1, Y1);
-   if (cmd == 2) {
-      // if foam mode must move up
-        gcode0(f1,X1,0);
+        }
+        if (ro == -1) {
+            xx = x;
+            x = y;
+            y = xx;
+        }
+        if (sc == -1) x = sxmax - x;
+        if (g >= 0) {
+            ctx.beginPath();
+            if (g == 0) {
+                X1 = x * dpm;
+                Y1 = y * dpm;
+                jmltravel++;
+                ctx.strokeStyle = "#88888888";
+            }
+            if (g > 0) ctx.strokeStyle = lcol;
+            cxmin = Math.min(cxmin, x);
+            cymin = Math.min(cymin, y);
+            cxmax = Math.max(cxmax, x);
+            cymax = Math.max(cymax, y);
+            ctx.moveTo(lx, ly);
+            lx = x * dpm;
+            ly = y * dpm;
+            ctx.lineTo(lx, ly);
+            //ctx.arc(lx,ly,2,0,2*Math.PI);
+            ctx.stroke();
+        }
+        //ctx.endPath();
     }
-    gcode0(f1,X1,Y1);
+    d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
+    ctx.beginPath();
+    ctx.moveTo(lx, ly);
+    ctx.lineTo(X1, Y1);
+    ctx.stroke();
+    //ctx.endPath();
+    srl.push([X1, Y1, 0, tl + d1, 0]);
+    if (seg) {
+        ctx.font = "10px Arial";
+        sg = "[#" + num + "] ";
+        for (i = 0; i < srl.length - 1; i++) {
+            if (i) sg += ",";
 
-   return div;
+            ctx.beginPath();
+            ctx.strokeStyle = getRandomColor();
+            ctx.arc(srl[i][0], srl[i][1], 3, 0, 2 * Math.PI);
+
+            ctx.stroke();
+            ctx.fillStyle = "#0000cc";
+            ni = i + 1;
+            if (ni >= srl.length) ni = 0;
+            ti = Math.floor((srl[i][4] + srl[ni][4]) / 2);
+            l = mround(srl[ni][3] - srl[i][3]);
+            sg += l;
+            ctx.fillText(l, (lines[ti][1] * dpm) + 10, (lines[ti][2] * dpm) + 10);
+        }
+        $("segm").value += sg + "\n";
+    }
+    //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
+    if (cxmin < cxmax) ctx.fillText("#" + num, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
+var lastz = 0;
+var lasee = 0;
+
+function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
+    // the idea is make a cutting tab in 4 posisiton,:
+    //
+    var len = Math.abs(data[0]);
+    if (len < 50) cuttabz = z;
+    var lenc = 0;
+
+    var cuttablen = 8;
+    var cut = [];
+    if (len > 150) {
+        lc = len / 4;
+    } else {
+        lc = len / 2;
+    }
+    slc = lc / 2;
+    cut[0] = lc - slc - cuttablen;
+    cut[1] = lc * 2 - slc - cuttablen;
+    cut[2] = lc * 3 - slc - cuttablen;
+    cut[3] = lc * 4 - slc - cuttablen;
+
+
+    cutat = 0;
+    var X1 = data[2];
+    var Y1 = data[3];
+    var lines = data[4];
+    var sc = 1;
+    if ($("flipx").checked) {
+        sc = -1;
+        X1 = sxmax - X1;
+    }
+    var ro = 1;
+    if ($("rotate").checked) {
+        ro = -1;
+        XX = X1;
+        X1 = Y1;
+        Y1 = XX;
+    }
+
+    var lx = X1;
+    var ly = Y1;
+
+    // turn off tool and move up if needed
+    cmd = getvalue('cmode');
+    var pw1 = 1;
+    var pw2 = 0; //getvalue('pwm');
+    var pup = getvalue('pup');
+    var pdn = getvalue('pdn');
+    var f1 = getvalue('trav') * 60;
+    var f2 = getvalue('feed') * 60;
+    if (cmd == 2) {
+        pw1 = pw2;
+        f1 = f2;
+    }
+    if (cmd == 4) {
+        z = -z; // if 3D then move up
+        if (z <= layerheight) {
+            f2 = 800;
+            extrude = 3 * (layerheight * layerheight) / (filamentD * filamentD);
+
+        } else {
+            extrude = 2 * (layerheight * layerheight) / (filamentD * filamentD);
+        }
+    }
+    var oextrude = extrude;
+    div = "";
+    if (sxmax < sxmin) return cdiv;
+    // deactivate tools and move to cut position
+    div = div + "\n;SHAPE #" + num + "\n";
+    if (pw2) div = div + "M106 S" + pw1 + "\n";
+    div = div + pup + '\n';
+    if (cmd == 2) {
+        gcode0(f1, X1, 0);
+    }
+    gcode0(f1, X1, Y1);
+
+    if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
+
+    // activate tools and prepare the speed
+    if (pw2) div = div + "M106 S" + pw2 + "\n";
+    if (cmd == 3) div = div + pdn.replace("=cncz", mround(z)) + '\n';
+    var incut = 0;
+    var lenctr = 0;
+    var fm = 1;
+    for (var i = 0; i < lines.length; i++) {
+        //vary speed on first few mm
+        if (cmd == 4) {
+            extrude = oextrude;
+            fm = 1;
+            if (lenctr <= 20) {
+                fm = Math.ceil(100 * (lenctr + 20) / 40.0) / 100.0;
+                //extrude*=(1.9-fm);
+            } else if (len - lenctr < 10) {
+                // reduce extrude before few last mm
+                extrude *= 0.7;
+            }
+        }
+        lenctr += lines[i][3];
+        x = lines[i][1];
+        y = lines[i][2];
+        if (sc == -1) {
+            x = sxmax - x;
+        }
+        if (ro == -1) {
+            xx = x;
+            x = y;
+            y = xx;
+        }
+        var iscut = 0;
+        if ((cuttabz > z) && (cutat < 4)) {
+            // if cut1 is in lenc and lencnext then cut the line
+            // and dont increase the i counter
+            if ((cut[cutat] >= lenc) && (cut[cutat] <= lines[i][3])) {
+                // split lines
+                iscut = 1;
+                dx = x - lx;
+                dy = y - ly;
+                llen = lines[i][3] - lenc;
+                lcut = cut[cutat] - lenc;
+                x = lx + dx * (lcut / llen);
+                y = ly + dy * (lcut / llen);
+                lenc = cut[cutat];
+
+                //lines[i][1]=x;
+                //lines[i][2]=y;
+                //lines[i][3]-=lcut;
+
+                if ((incut == 1)) {
+                    incut = 0;
+                    cutat++;
+                } else {
+                    incut = 1;
+                    cut[cutat] += cuttablen;
+                }
+            }
+        }
+        gcode1(f2 * fm, x, y);
+        lx = x;
+        ly = y;
+        if (iscut) {
+            if (incut == 1) {
+                // move up
+                div = div + pdn.replace("=cncz", mround(cuttabz)) + '\n';
+            } else {
+                // move back down
+                div = div + pdn.replace("=cncz", mround(z)) + '\n';
+            }
+            i--;
+        } else {
+            lenc = lines[i][3];
+        }
+    }
+    //close loop
+    if (!lastlayer && (cmd == 4)) {
+        // if 3d then move along some mm
+        lenctr = 0;
+        lenc = 0;
+        cutat = overlap;
+        var dz = z - lastz;
+        div = div + "; move up and overlap " + cutat + "mm\n";
+        var oe1 = e1;
+        extrude = oextrude * -0.1;
+        for (var i = 0; i < lines.length; i++) {
+            //vary speed on first few mm
+            x = lines[i][1];
+            y = lines[i][2];
+            if (sc == -1) {
+                x = sxmax - x;
+            }
+            if (ro == -1) {
+                xx = x;
+                x = y;
+                y = xx;
+            }
+            // if cut1 is in lenc and lencnext then cut the line
+            // and dont increase the i counter
+            var iscut = 0;
+            if ((cutat >= lenc) && (cutat <= lines[i][3])) {
+                // split lines
+                iscut = 1;
+                dx = x - lx;
+                dy = y - ly;
+                llen = lines[i][3] - lenc;
+                lcut = cutat - lenc;
+                x = lx + dx * (lcut / llen);
+                y = ly + dy * (lcut / llen);
+                lenc = cutat;
+
+                //lines[i][1]=x;
+                //lines[i][2]=y;
+                //lines[i][3]-=lcut;
+
+            }
+            zz = lastz + dz * (lenc / cutat);
+            gcode1(f2 * fm, x, y, zz);
+            lx = x;
+            ly = y;
+            if (iscut) break;
+            lenc = lines[i][3];
+            if (lenc > cutat) break;
+        }
+        e1 = oe1;
+        // if not 3d	
+    } else gcode1(f2 * fm, X1, Y1);
+
+
+    if (cmd == 2) {
+        // if foam mode must move up
+        gcode0(f1, X1, 0);
+    }
+    //gcode0(f1,X1,Y1);
+    lastz = z;
+
+    return div;
+}
+
 function getRandomColor() {
     var letters = '0123456789ABCDEF';
     var color = '#';
@@ -415,10 +503,10 @@ function gcode_verify() {
     //alert(c);
     lx = 0;
     ly = 0;
-    jmltravel=0;
+    jmltravel = 0;
     var ctx = c.getContext("2d");
     var sfinal = 0;
-	$("segm").value="";
+    $("segm").value = "";
     ctx.clearRect(0, 0, c.width, c.height);
     for (var i = 0; i < sgcodes.length; i++) {
         draw_line(i + 1, getRandomColor(), sgcodes[i][4]);
@@ -426,40 +514,40 @@ function gcode_verify() {
     }
     //sfinal+=jmltravel*10;
     ctx.font = "12px Arial";
-    w=mround((xmax - xmin)/10);
-    h=mround((ymax - ymin)/10);
-    ctx.fillText("W:" + w + " H:" + h + " Luas:"+mround(w*h)+" cm2", 0, c.height - 20);
-    var menit=mround((sfinal+jmltravel*10) / getvalue('feed') / 60.0);
+    w = mround((xmax - xmin) / 10);
+    h = mround((ymax - ymin) / 10);
+    ctx.fillText("W:" + w + " H:" + h + " Luas:" + mround(w * h) + " cm2", 0, c.height - 20);
+    var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
-    menit=menit*re;
-	text=$("material");
-	mat=text.options[text.selectedIndex].innerText;
-    area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + menit + " menit <br>Biaya Cut:" + Math.round(menit*1500)+" bahan ("+mat+"):"+mround(w*h*harga)+" TOTAL:"+mround(menit*1500+w*h*harga);
+    menit = menit * re;
+    text = $("material");
+    mat = text.options[text.selectedIndex].innerText;
+    area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + menit + " menit <br>Biaya Cut:" + Math.round(menit * 1500) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * 1500 + w * h * harga);
 }
 
 function sortedgcode() {
     sgcodes = [];
-    sxmax=xmax;
-    symax=ymax;
-    sxmin=xmin;
-    symin=ymin;
-    xmax=-10000;
-    ymax=-10000;
-    xmin=100000;
-    ymin=100000;
+    sxmax = xmax;
+    symax = ymax;
+    sxmin = xmin;
+    symin = ymin;
+    xmax = -10000;
+    ymax = -10000;
+    xmin = 100000;
+    ymin = 100000;
     var sm = -1;
     var divs = '';
-    var lx=0;
-    var ly=0;
-	e1=0;
+    var lx = 0;
+    var ly = 0;
+    e1 = 0;
     for (var j = 0; j < gcodes.length; j++) {
         var cs = -1;
         var bg = 10000000;
         for (var i = 0; i < gcodes.length; i++) {
 
-            var dx=gcodes[i][2]-lx;
-            var dy=gcodes[i][3]-ly;
-            var dis=sqrt(dx*dx+dy*dy)+gcodes[i][0];
+            var dx = gcodes[i][2] - lx;
+            var dy = gcodes[i][3] - ly;
+            var dis = sqrt(dx * dx + dy * dy) + gcodes[i][0];
             if ((gcodes[i][0] > 0) && (dis < bg)) {
                 cs = i;
                 bg = dis;
@@ -468,40 +556,44 @@ function sortedgcode() {
         // smalles in cs
         if (cs >= 0) {
             sgcodes.push(gcodes[cs]);
-            gcodes[cs][0]=-gcodes[cs][0];
-            lx=gcodes[cs][2];
-            ly=gcodes[cs][3];
+            gcodes[cs][0] = -gcodes[cs][0];
+            lx = gcodes[cs][2];
+            ly = gcodes[cs][3];
             divs = divs + gcodes[cs][1];
         }
     }
-	if (cmd==4)setvalue("repeat",Math.ceil(getvalue("zdown")/layerheight));
+    if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
-    s = "";//;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
-    cncdeep=- getvalue("zdown");
-    cncz=cncdeep/re;
-    var cuttab=0;
-    lastz=0;
+    s = ""; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+    cncdeep = -getvalue("zdown");
+    cncz = cncdeep / re;
+    var cuttab = 0;
+    lastz = 0;
 
     cmd = getvalue('cmode');
-    cuttab=cncdeep+getvalue("tabc")*1;
-	if (cmd==4){
-		s="g28\ng0 z10 f1000\nm109 s180\ng92 E0\n";
-	}
-    for (var i = 0; i < re; i++) {
-      for (var j=0;j<sgcodes.length;j++){
-        s += lines2gcode(j+1,sgcodes[j],cncz,cuttab);
-      }
-     cncz+=cncdeep/re;
+    if (cmd == 4) {
+        lastz = layerheight * 0.7;
+        cncz -= lastz;
+        s += "g0 f1000 z" + mround(lastz);
     }
-    s=s+getvalue("pup");
+    cuttab = cncdeep + getvalue("tabc") * 1;
+    for (var i = 0; i < re; i++) {
+        for (var j = 0; j < sgcodes.length; j++) {
+            s += lines2gcode(j + 1, sgcodes[j], cncz, cuttab,i==re-1);
+        }
+        cncz += cncdeep / re;
+    }
+    s = s + getvalue("pup");
     s = s + '\nG00 F3000 Y0 \n G00 X0\n';
-	if (cmd==4){
-		s+="g28";
-	}
-    setvalue("gcode",s);
-    sc=1;
-    if ($("flipx").checked) sc=-1;
-    setvalue("pgcode",getvalue("pup")+"\nM3 S255 P10\nG0 F10000 X" + mround(sc*xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc*xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc*xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
+    sc = 1;
+    if ($("flipx").checked) sc = -1;
+    if (cmd == 4) {
+        // make it center
+        s = "g28\ng0 z10 f1000\nm109 s180\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
+        s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
+    }
+    setvalue("gcode", s);
+    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F10000 X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -511,7 +603,7 @@ function destroyClickedElement(event) {
     document.body.removeChild(event.target);
 }
 
-var lines=[];
+var lines = [];
 
 function myFunction(scale1) {
     //text1=Potrace.getSVG(1);
@@ -523,11 +615,11 @@ function myFunction(scale1) {
     var p1y = 0;
     var p2x = 0;
     var p2y = 0;
-	e1=0;
+    e1 = 0;
     var xsfar = 0;
     var ysfar = 0;
     var n1 = 0;
-    lines=[];
+    lines = [];
     var scale = 25.4 / getvalue('scale');
     if (scale1) scale = 1;
     //var division = $('division').value;
@@ -536,14 +628,14 @@ function myFunction(scale1) {
     //$("gsvg").value=text1;
     cmd = getvalue('cmode');
     var pw1 = 1;
-    var pw2 = 0;//getvalue('pwm');
+    var pw2 = 0; //getvalue('pwm');
     var pup = getvalue('pup');
     var pdn = getvalue('pdn');
     var f1 = getvalue('trav') * 60;
-    var f2 =getvalue('feed') * 60;
-	var det=getvalue('feed')/45.0; 
-	var seg=$("segment").checked;
-	if (seg) det*=4;
+    var f2 = getvalue('feed') * 60;
+    var det = getvalue('feed') / 45.0;
+    var seg = $("segment").checked;
+    if (seg) det *= 4;
     if (cmd == 2) {
         pw1 = pw2;
         f1 = f2;
@@ -568,7 +660,7 @@ function myFunction(scale1) {
     div = "";
     lenmm = 0;
     var cnts = 0;
-	var line=[];
+    var line = [];
     //alert(div.innerHTML);
     while (1) {
         if (handleM) {
@@ -590,17 +682,17 @@ function myFunction(scale1) {
             cnts = cnts + 1;
             // close shape loop
             if (cnts > 1) {
-               gcode1(f2, X1, Y1);
-               line.push([f2,X1,Y1,lenmm]);
+                gcode1(f2, X1, Y1);
+                line.push([f2, X1, Y1, lenmm]);
                 if (cmd == 2) {
-                   // if foam mode must move up
+                    // if foam mode must move up
                     div = div + 'G00 Y0 \n';
                 }
-                gcodes.push([lenmm, div,X1,Y1,line]);
+                gcodes.push([lenmm, div, X1, Y1, line]);
                 lines.push(line);
 
             }
-            line=[];
+            line = [];
             div = "";
             lenmm = 0;
 
@@ -615,7 +707,7 @@ function myFunction(scale1) {
             // activate tools and prepare the speed
             if (pw2) div = div + "M106 S" + pw2 + "\n";
             div = div + pdn + '\n';
-            div = div + 'G01 F' + f2 + '\n';
+            div = div + 'G01 F' + mround(f2) + '\n';
 
             lastf = f2;
             handleM = 0;
@@ -628,14 +720,14 @@ function myFunction(scale1) {
             p1x = xy[0] * scale;
             p1y = xy[1] * scale;
             gcode1(f2, p1x, p1y);
-			   line.push([f2,p1x,p1y,lenmm]);
+            line.push([f2, p1x, p1y, lenmm]);
         } else if (cr == 'H') {
             var n2 = text1.indexOf(' ', n + 3);
             var xy = text1.slice(n + 3, n2);
             p1x = xy * scale;
 
             gcode1(f2, p1x, y1);
-			   line.push([f2,p1x,y1,lenmm]);
+            line.push([f2, p1x, y1, lenmm]);
             n = n + 3;
         } else if (cr == 'V') {
             var n2 = text1.indexOf(' ', n + 3);
@@ -643,7 +735,7 @@ function myFunction(scale1) {
             p1y = xy * scale;
 
             gcode1(f2, y1, p1y);
-            line.push([f2,y1,p1y,lenmm]);
+            line.push([f2, y1, p1y, lenmm]);
 
             n = n + 3;
         } else if (cr == 'C') {
@@ -707,7 +799,7 @@ function myFunction(scale1) {
                 var x = bezierx(i, xincep, p1x, p2x, xsfar);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
                 gcode1(lastf, x, y);
-                line.push([lastf,x, y,lenmm]);
+                line.push([lastf, x, y, lenmm]);
             }
 
             //******************************************************************
@@ -728,7 +820,7 @@ function myFunction(scale1) {
             //console.log(res);
             p1y = res;
             gcode1(lastf, p1x, p1y);
-            line.push([lastf,p1x, p1y,lenmm]);
+            line.push([lastf, p1x, p1y, lenmm]);
 
             var n = text1.indexOf(' ', n + 3);
             var res = scale * parseFloat(text1.slice(n + 1, n + 10));
@@ -743,7 +835,7 @@ function myFunction(scale1) {
 
             p2y = res;
             gcode1(lastf, p2x, p2y);
-            line.push([lastf,p2x, p2y,lenmm]);
+            line.push([lastf, p2x, p2y, lenmm]);
 
             xincep = p2x;
             yincep = p2y;
@@ -760,7 +852,7 @@ function myFunction(scale1) {
             //console.log("lenght depasit");
             break;
         } else {
-            console.log("unknown :"+text1.slice(n + 1, n + 10));
+            console.log("unknown :" + text1.slice(n + 1, n + 10));
             var n = text1.indexOf(' d="M', n + 1);
             if (n < 1) break;
             n = n + 5;
@@ -772,12 +864,12 @@ function myFunction(scale1) {
     // close loop
     if (cnts > 0) {
         gcode1(f2, X1, Y1);
-        line.push([lastf,X1, Y1,lenmm]);
+        line.push([lastf, X1, Y1, lenmm]);
         if (cmd == 2) {
-           // for foam, must move up first
+            // for foam, must move up first
             div = div + 'G00 Y0 \n';
         }
-        gcodes.push([lenmm, div,X1,Y1,line]);
+        gcodes.push([lenmm, div, X1, Y1, line]);
         div = "";
     }
 
@@ -814,7 +906,7 @@ var openFile = function(event) {
     Potrace.process(function() {
         //displayImg();
         //displaySVG(scale);
-        text1 = Potrace.getSVG(1);//.toUpperCase();
+        text1 = Potrace.getSVG(1); //.toUpperCase();
         refreshgcode();
 
     });
@@ -899,7 +991,7 @@ window.addEventListener('Xdrop', function(e) {
                 //output.src = dataURL;
 
                 if (reader.tipe.indexOf("svg") !== -1) {
-                    text1 = event.target.result;//.toUpperCase();
+                    text1 = event.target.result; //.toUpperCase();
                     myFunction(1);
                     gcode_verify();
                 } else {}
@@ -913,7 +1005,7 @@ window.addEventListener('Xdrop', function(e) {
                 Potrace.process(function() {
                     //displayImg();
                     //displaySVG(scale);
-                    text1 = Potrace.getSVG(1);//.toUpperCase();
+                    text1 = Potrace.getSVG(1); //.toUpperCase();
 
                     refreshgcode();
                 });
@@ -950,7 +1042,7 @@ function createImage(source, blob) {
         Potrace.process(function() {
             //displayImg();
             //displaySVG(scale);
-            text1 = Potrace.getSVG(1);//.toUpperCase();
+            text1 = Potrace.getSVG(1); //.toUpperCase();
 
             refreshgcode();
 
