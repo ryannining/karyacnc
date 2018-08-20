@@ -63,10 +63,12 @@ var gcodes = [];
 var harga = 1000;
 var cncz = 0;
 
-var layerheight = 0.4;
+var layerheight = 0.5;
 var filamentD = 1.75;
+var filamentTemp=180;
 var retract = 0;
-var overlap = 10;
+var overlap = 15;
+var extrudeMul=1.5;
 var extrude = (layerheight * layerheight) / (filamentD * filamentD);
 
 
@@ -110,7 +112,7 @@ function gcode1(f, x2, y2, z2 = 10000, e2 = 1000000) {
             div += "G1 F60 E" + mround(e1) + "\n";
             inretract = 0;
         }
-        e2 = e1 + lenn * extrude;
+        e2 = e1 + lenn * extrude*extrudeMul;
     }
     lenmm += lenn;
     gcoden(1, f, x2, y2, z2, e2);
@@ -157,6 +159,10 @@ function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
     return (sum);
 }
 var jmltravel = 0;
+
+
+// hole inside always clockwise, outer path are counter clockwise
+// to check if some hole belongs to which outer path, need to check bounding box each hole
 
 function draw_line(num, lcol, lines) {
     if (sxmax < sxmin);
@@ -214,7 +220,7 @@ function draw_line(num, lcol, lines) {
         if (ro == -1) {
             xx = x;
             x = y;
-            y = xx;
+            y = sxmax-xx;
         }
         if (sc == -1) x = sxmax - x;
         if (g >= 0) {
@@ -234,7 +240,8 @@ function draw_line(num, lcol, lines) {
             lx = x * dpm;
             ly = y * dpm;
             ctx.lineTo(lx, ly);
-            //ctx.arc(lx,ly,2,0,2*Math.PI);
+			
+            //ctx.arc(lx,ly,2+ii/10.0,0,2*Math.PI);
             ctx.stroke();
         }
         //ctx.endPath();
@@ -268,11 +275,14 @@ function draw_line(num, lcol, lines) {
         $("segm").value += sg + "\n";
     }
     //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
-    if (cxmin < cxmax) ctx.fillText("#" + num, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
+	clw="<";
+	if (isClockwise(lines))clw=">";
+    if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
 var lastz = 0;
 var lasee = 0;
-
+var lx;
+var ly;
 function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
@@ -308,11 +318,14 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
         ro = -1;
         XX = X1;
         X1 = Y1;
-        Y1 = XX;
+        Y1 = sxmax-XX;
     }
-
-    var lx = X1;
-    var ly = Y1;
+	if (!(lx===undefined)){
+		pdis=sqrt(sqr(lx-X1)+sqr(ly-Y1)); 
+	} else pdis=0;
+	
+    lx = X1;
+    ly = Y1;
 
     // turn off tool and move up if needed
     cmd = getvalue('cmode');
@@ -326,6 +339,10 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
         pw1 = pw2;
         f1 = f2;
     }
+    div = "";
+    if (sxmax < sxmin) return cdiv;
+    // deactivate tools and move to cut position
+    div = div + "\n;SHAPE #" + num + "\n";
     if (cmd == 4) {
         z = -z; // if 3D then move up
         if (z <= layerheight) {
@@ -335,12 +352,12 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
         } else {
             extrude = 2 * (layerheight * layerheight) / (filamentD * filamentD);
         }
+		// extra from after travel
+		div+=";extra feed\nG92 E"+mround(e1-(pdis/350.0))+"\n";
     }
     var oextrude = extrude;
-    div = "";
-    if (sxmax < sxmin) return cdiv;
-    // deactivate tools and move to cut position
-    div = div + "\n;SHAPE #" + num + "\n";
+
+
     if (pw2) div = div + "M106 S" + pw1 + "\n";
     div = div + pup + '\n';
     if (cmd == 2) {
@@ -352,24 +369,27 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
 
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
-    if (cmd == 3) div = div + pdn.replace("=cncz", mround(z)) + '\n';
+    if (cmd != 4) div = div + pdn.replace("=cncz", mround(z)) + '\n';
     var incut = 0;
     var lenctr = 0;
     var fm = 1;
     for (var i = 0; i < lines.length; i++) {
         //vary speed on first few mm
+        nlenctr = lenctr;
+        lenctr += lines[i][3];
         if (cmd == 4) {
+			nlenctr=(nlenctr+lenctr)/2;
             extrude = oextrude;
             fm = 1;
-            if (lenctr <= 20) {
-                fm = Math.ceil(100 * (lenctr + 20) / 40.0) / 100.0;
-                //extrude*=(1.9-fm);
-            } else if (len - lenctr < 10) {
+			
+            if (nlenctr <= 20) {
+                fm = Math.ceil(100 * (nlenctr + 2) / 32.0) / 100.0;
+                extrude*=(1.5-fm);
+            } else if (len - nlenctr < 10) {
                 // reduce extrude before few last mm
-                extrude *= 0.7;
+                if (!lastlayer)extrude *= 0.85;
             }
         }
-        lenctr += lines[i][3];
         x = lines[i][1];
         y = lines[i][2];
         if (sc == -1) {
@@ -378,7 +398,7 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
         if (ro == -1) {
             xx = x;
             x = y;
-            y = xx;
+            y = sxmax-xx;
         }
         var iscut = 0;
         if ((cuttabz > z) && (cutat < 4)) {
@@ -433,7 +453,7 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
         var dz = z - lastz;
         div = div + "; move up and overlap " + cutat + "mm\n";
         var oe1 = e1;
-        extrude = oextrude * -0.1;
+        extrude = oextrude * 0.4;
         for (var i = 0; i < lines.length; i++) {
             //vary speed on first few mm
             x = lines[i][1];
@@ -522,7 +542,13 @@ function gcode_verify() {
     menit = menit * re;
     text = $("material");
     mat = text.options[text.selectedIndex].innerText;
-    area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + menit + " menit <br>Biaya Cut:" + Math.round(menit * 1500) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * 1500 + w * h * harga);
+	if (cmd==4){
+		gram=e1/333;
+		
+		area_dimension.innerHTML = 'Total filament =' + mround(gram) + "gram Time:" + mround(menit) + " menit <br>Biaya Total:" + Math.round(gram * 1500);
+	} else {
+		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Biaya Cut:" + Math.round(menit * 1500) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * 1500 + w * h * harga);
+	}
 }
 
 function sortedgcode() {
@@ -540,19 +566,22 @@ function sortedgcode() {
     var lx = 0;
     var ly = 0;
     e1 = 0;
+	sortit=1;
     for (var j = 0; j < gcodes.length; j++) {
-        var cs = -1;
-        var bg = 10000000;
-        for (var i = 0; i < gcodes.length; i++) {
+		if (sortit){
+			var cs = -1;
+			var bg = 10000000;
+			for (var i = 0; i < gcodes.length; i++) {
 
-            var dx = gcodes[i][2] - lx;
-            var dy = gcodes[i][3] - ly;
-            var dis = sqrt(dx * dx + dy * dy) + gcodes[i][0];
-            if ((gcodes[i][0] > 0) && (dis < bg)) {
-                cs = i;
-                bg = dis;
-            }
-        }
+				var dx = gcodes[i][2] - lx;
+				var dy = gcodes[i][3] - ly;
+				var dis = sqrt(dx * dx + dy * dy) + gcodes[i][0];
+				if ((gcodes[i][0] > 0) && (dis < bg)) {
+					cs = i;
+					bg = dis;
+				}
+			}
+		} else cs=j;
         // smalles in cs
         if (cs >= 0) {
             sgcodes.push(gcodes[cs]);
@@ -589,7 +618,7 @@ function sortedgcode() {
     if ($("flipx").checked) sc = -1;
     if (cmd == 4) {
         // make it center
-        s = "g28\ng0 z10 f1000\nm109 s180\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
+        s = "g28\ng0 z10 f1000\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
     setvalue("gcode", s);
