@@ -167,6 +167,7 @@ ditherit = function() {
 	var mw=rwidth*1.0;
 	setvalue("mwidth",mround(mw));
 	var mh=mw*c.height/c.width;
+	var dotscale=mw/img.width;
 	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
 	var gcode="G7 S0\nG92 E0\n"+tool1+"\n";
 	for (j = 0; j < c.height; j += 1) {
@@ -189,7 +190,10 @@ ditherit = function() {
 		var shf=1.0*getvalue("shf");;
 		var rndt2=rndt/2.0;
 		for (j = 0; j < c.height-dy; j += 1) {
-			gc="aa";
+			gc="";
+			var skip=1;
+			var pxstart=c.width;
+			var pxstop=0;
 			for (i = dx; i < c.width-dx; i += 1) {
 				var a=j*row+i*4;
 				gr=rndt*Math.random()-(rndt2);
@@ -207,12 +211,18 @@ ditherit = function() {
 					//newr=Math.floor(oldr*dv)*mul;
 					//if (newr>255)newr=255;
 				} else if (metode==3) {
-					newr=oldr+gr>=c4x4[(j%4*4+i%4)]?255:0;
+					rmax=255;
+					//newr=oldr+gr>=c4x4[(j%4*4+i%4)]?255:0;
+					newr=oldr+gr>128?255:0;
 				}
 				err=oldr-newr;
 				
 				cc=String.fromCharCode((rmax-newr)/10+97);
-				if (cc=='a') w0++; else w1++;
+				if (cc=='a') w0++; else {
+					skip=0;w1++;
+					pxstart=Math.min(pxstart,i);
+					pxstop=Math.max(pxstop,i);
+				}
 				gc+=cc;
 				bm.data[a+0]=newr;
 				bm.data[a+1]=newr;
@@ -257,47 +267,53 @@ ditherit = function() {
 					
 				}
 			}
-			gc+="aa";
+			gc+="";
 			// save the laser raster
-			if (mtype==1){
-				w=gc.length*1.0-1;
-				gcode+="G0 F"+speed+" X0 Y"+mround((j)*ystep)+"\n";
-				gcode+="G4\nG92 E0\n";
-				gcode+="G7 ["+gc+"]\n";
-				gcode+="G1 S255 F"+speed+" X"+mround(mw)+" E"+mround(w)+"\nG0 E"+mround(w+shf)+"\n";
-				// next y
-				gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
-				gcode+="G1 S255 X0 E"+mround(shf)+"\n";
-				waktu+=2.0*mw/speed;
-			} 
-			// cnc mill, down
-			if (mtype==0){
-				if (j &1){
-					dir=-1;
-					idx=gc.length-1;
-				}else {
-					dir=1;
-					idx=0;
-				}
-				xstep=mw/gc.length;
-				zstep=zdown/25;
-				lv=" ";
-				x=xstep*idx;
-				gcode+=tool1+"\nG0 F"+speed+" X"+mround(x)+" Y"+mround((j)*ystep)+"\n";
-				for (var i=0;i<gc.length;i++){
-					v=gc[idx];
-					x=xstep*idx;
-					if (v!='z'){
-						gcode+="G0 F"+speed+" X"+mround(x)+"\n";
-						z=25-(gc.charCodeAt(idx)-97);
-						z=-z*zstep;
-						gcode+=tool2.replace("=cncz",mround(z))+"\n"+tool1+" F"+speed+"\n";
-						lv=v;
+			if (!skip){
+				// move to start position
+				px1=mround(dotscale*pxstart);
+				px2=mround(dotscale*pxstop);
+				if (mtype==1){
+					w=pxstop;
+					//gcode+="G4\nG92 E0\n";
+					//gcode+="G92 E0\n";
+					gcode+="G4\nG92 E"+pxstart+"\n";
+					gcode+="G0 F"+speed+" X"+px1+" Y"+mround((j)*ystep)+"\n";
+					gcode+="G7 ["+gc+"]\n";
+					gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\n";
+					// next y
+					gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
+					gcode+="G1 S255 X"+px1+" E"+pxstart+"\n";
+					waktu+=2.0*mw/speed;
+				} 
+				// cnc mill, down
+				if (mtype==0){
+					if (j &1){
+						dir=-1;
+						idx=gc.length-1;
+					}else {
+						dir=1;
+						idx=0;
 					}
-					
-					idx+=dir;
+					xstep=mw/gc.length;
+					zstep=zdown/25;
+					lv=" ";
+					x=xstep*idx;
+					gcode+=tool1+"\nG0 F"+speed+" X"+mround(x)+" Y"+mround((j)*ystep)+"\n";
+					for (var i=0;i<gc.length;i++){
+						v=gc[idx];
+						x=xstep*idx;
+						if (v!='z'){
+							gcode+="G0 F"+speed+" X"+mround(x)+"\n";
+							z=25-(gc.charCodeAt(idx)-97);
+							z=-z*zstep;
+							gcode+=tool2.replace("=cncz",mround(z))+"\n"+tool1+" F"+speed+"\n";
+							lv=v;
+						}
+						
+						idx+=dir;
+					}
 				}
-
 			} 
 		}
 	} else {
