@@ -100,7 +100,6 @@ function hardstop() {
 var comtype = 0; // 0 serial, 1 websocket
 var egcodes = [];
 var debugs = 2;
-
 function sendgcode(g) {
     if (debugs & 1) console.log(g);
 	try {
@@ -120,6 +119,7 @@ function nextgcode() {
     while (eline < egcodes.length) {
         var g = egcodes[eline];
         eline++;
+		if (g==";PAUSE")pause();
         if ((g) && (g[0] != ';')) {
 			okwait=1;
             sendgcode(g.split(";")[0]);
@@ -468,10 +468,13 @@ function savesetting() {
     }
 }
 setclick("btsaveset", savesetting);
+setclick("btgcode2vec",function(){
+	text1=gcodetoText1(getvalue("gcode"));
+	refreshgcode();
+});
 
-
+try {
 if (stotype == 0) {
-    try {
         storage.get("text1", function(r) {
             text1 = r.text1;
         })
@@ -482,7 +485,6 @@ if (stotype == 0) {
             }
             refreshgcode();
         });
-    } catch (e) {}
 } else {
     text1 = storage.text1;
     if (text1 == undefined) text1 = "";
@@ -494,7 +496,8 @@ if (stotype == 0) {
     }
     if (text1) refreshgcode();
 }
-
+    } catch (e) {}
+	
 
 // websocket
 function connectwebsock() {
@@ -562,24 +565,55 @@ function createCORSRequest(method, url) {
 
 
 
-function loadgcodeurl(){
-	url=getvalue("gcurl");
-	if (!url)return;
-    // read text from URL location
-	var xhr = createCORSRequest('GET', url);
-	if (!xhr) {
-	  throw new Error('CORS not supported');
-	} else {
-		xhr.onload = function() {
-		 setvalue("gcode",xhr.responseText);
-		 // process the response.
-		};
+// web socket server, to receive gcode from other
+var port = 9999;
+var isServer = false;
+if (http.Server && http.WebSocketServer) {
+  // Listen for HTTP connections.
+  var server = new http.Server();
+  var wsServer = new http.WebSocketServer(server);
+  server.listen(port);
+  isServer = true;
 
-		xhr.onerror = function() {
-		  console.log('There was an error!');
-		};
-		xhr.send();
-	}
+  server.addEventListener('request', function(req) {
+    var url = req.headers.url;
+    if (url == '/') url = '/engrave';
+    if (url == '/engrave') url = '/graf.html';
+    // Serve the pages of this chrome application.
+    req.serveUrl(url);
+    return true;
+  });
+
+  // A list of connected websockets.
+  var connectedSockets = [];
+
+  wsServer.addEventListener('request', function(req) {
+    console.log('Client connected');
+    var socket = req.accept();
+    connectedSockets.push(socket);
+
+    // When a message is received on one socket, rebroadcast it on all
+    // connected sockets.
+	var buff="";
+    socket.addEventListener('message', function(e) {
+			if (e.data==">FINISH"){
+				setvalue("gcode",buff);
+				buff="";
+			} else {
+				buff+=e.data;
+			}
+	  });
+
+    // When a socket is closed, remove it from the list of connected sockets.
+    socket.addEventListener('close', function() {
+      console.log('Client disconnected');
+      for (var i = 0; i < connectedSockets.length; i++) {
+        if (connectedSockets[i] == socket) {
+          connectedSockets.splice(i, 1);
+          break;
+        }
+      }
+    });
+    return true;
+  });
 }
-
-setclick("loadurl", loadgcodeurl);

@@ -9,7 +9,7 @@ Copy image from other source and paste here.<br>
 <option value=0>Grayscale</option>
 <option value=1 selected>Floyd steinberg</option>
 <option value=2>Sierra 2 row</option>
-<option value=3>Clustered</option>
+<option value=3>Black White</option>
 <option value=4>Halftone</option>
 </select><br>
 <div id=halftoneoption hidden>
@@ -47,12 +47,19 @@ Copy image from other source and paste here.<br>
 <td>
 <canvas id="myCanvas" width="220" height="277" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
-<td><div id=waktu>Waktu Kerja:</div><B>GCODE</b><button id=btcopy2a>Copy</button><hr>
+<td><div id=waktu>Waktu Kerja:</div><B>GCODE</b><button id=btcopy2a>Copy</button><button id=btcopy2b>Send to KaryaCNC</button><hr>
 <textarea id=gcode style="font-size: 10;width:250px;height:500px" >
 </textarea>
 </table>
 
 <script>
+function $(id) {
+  return document.getElementById(id);
+}
+
+function log(text) {
+  console.log(text);
+}
 function mround(x) {
     return Math.round(x * 1000.0) / 1000.0;
 }
@@ -158,6 +165,10 @@ ditherit = function() {
 		dx=2;
 		dy=2;
 	}
+	if (metode==3){
+		dx=0;
+		dy=0;
+	}
 	// make it grayscale first
 	var waktu=0;
 	var w0=0;
@@ -192,6 +203,7 @@ ditherit = function() {
 		for (j = 0; j < c.height-dy; j += 1) {
 			gc="";
 			var skip=1;
+			var bp=(j&3)*(img.width+5);
 			var pxstart=c.width;
 			var pxstop=0;
 			for (i = dx; i < c.width-dx; i += 1) {
@@ -271,19 +283,28 @@ ditherit = function() {
 			// save the laser raster
 			if (!skip){
 				// move to start position
+				//pxstart=Math.max(0,pxstart-2);
+				//pxstop=Math.min(c.width-dx,pxstop+2);
+				//pxstart=0;
+				//pxstop=c.width-dx;
 				px1=mround(dotscale*pxstart);
 				px2=mround(dotscale*pxstop);
 				if (mtype==1){
 					w=pxstop;
+					pxstart+=bp;
+					pxstop+=bp;
+					if (bp==0)gcode+="G4\n";
 					//gcode+="G4\nG92 E0\n";
-					//gcode+="G92 E0\n";
-					gcode+="G4\nG92 E"+pxstart+"\n";
-					gcode+="G0 F"+speed+" X"+px1+" Y"+mround((j)*ystep)+"\n";
-					gcode+="G7 ["+gc+"]\n";
-					gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\n";
+					//gcode+="G0 +"\n";
+					gcode+="G7 P"+bp+" ["+gc+"aaa]\n";
+					ccc=10; // move back to allow acceleration
+					gcode+="G0 F"+speed+" E"+pxstart+" X"+mround(px1-ccc)+" Y"+mround((j)*ystep)+"\n";
+					gcode+="G0 X"+mround(px1)+"\n";
+					gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\nG0 X"+mround(px2+ccc)+"\n";
 					// next y
-					gcode+="G0 Y"+mround((j+0.5)*ystep)+"\n";
-					gcode+="G1 S255 X"+px1+" E"+pxstart+"\n";
+					gcode+="G0 X"+px2+" Y"+mround((j+0.5)*ystep)+" E"+(pxstop+shf)+"\n";
+					gcode+="G1 S255 X"+(px1)+" E"+(pxstart+shf)+"\n";
+					//gcode+="G0 X"+mround(px1-ccc)+"\n";
 					waktu+=2.0*mw/speed;
 				} 
 				// cnc mill, down
@@ -322,7 +343,7 @@ ditherit = function() {
 	pc=100*w1/(w1+w0);
 	total=15*pc*waktu;
 	document.getElementById("waktu").innerHTML="<b>TOTAL BIAYA:Rp "+mround(total)+"</b><br>Waktu:"+mround(waktu)+"menit, laser "+mround(pc)+"%";
-	gcode+=tool1+"\nG4\nG7\n";
+	gcode+=tool1+"\nG4\nG7\nG0 X0 Y0\n";
 	document.getElementById("gcode").innerHTML=gcode;
     ctx.putImageData(bm, 0, 0);
 	img.width=220;
@@ -332,9 +353,19 @@ function copy_to_clipboard(id) {
     document.getElementById(id).select();
     document.execCommand('copy');
 }
+function copy_to_server(id) {
+//	var address = window.location.href.replace('http', 'ws');
+//	var ws= new WebSocket(address);
+//	ws.addEventListener('open', function() {
+		var lines=document.getElementById(id).value.split("\n");
+		for (x in lines){ws.send(lines[x]);ws.send("\n");}
+		ws.send(">FINISH");
+//	});
+}
 
 
 setclick("btcopy2a",function(){copy_to_clipboard('gcode');});
+setclick("btcopy2b",function(){copy_to_server('gcode');});
 setclick("redither",ditherit);
 setevent("change","metode",function(){
 	document.getElementById("halftoneoption").hidden=getvalue("metode")!=4;
@@ -389,6 +420,23 @@ if (stotype==0){
    }
    document.getElementById("gcode").innerHTML=text1;
 }	
+
+// websocket
+var ws =0;
+document.addEventListener('DOMContentLoaded', function() {
+// FIXME: Wait for 1s so that HTTP Server socket is listening...
+  var address = window.location.href.replace('http', 'ws');
+  ws= new WebSocket(address);
+  ws.addEventListener('open', function() {
+    log('Connected');
+  });
+  ws.addEventListener('close', function() {
+    log('Connection lost');
+  });
+  ws.addEventListener('message', function(e) {
+    log(e.data);
+  });
+});
 </script>
 
 

@@ -136,7 +136,7 @@ function isClockwise(poly, px = 1, py = 2) {
     }
     return sum > 0;
 }
-
+var overcut=[0,0];
 function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
     var sum = 0;
     ci = idx;
@@ -155,17 +155,67 @@ function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
 
     d1 = sqrt(vec1[0] * vec1[0] + vec1[1] * vec1[1]);
     d2 = sqrt(vec2[0] * vec2[0] + vec2[1] * vec2[1]);
-    sum = (vec1[0] / d1 * vec2[0] / d2) + (vec1[1] / d1 * vec2[1] / d2);
-    return (sum);
+    vec1 = [vec1[0]/d1, vec1[1]/d1];
+    vec2 = [vec2[0]/d2, vec2[1]/d2];
+    dot = (vec1[0] * vec2[0] ) + (vec1[1]  * vec2[1] );
+    cross = (vec1[0] * vec2[1] ) - (vec2[0]  * vec1[1] );
+
+	// corner overcut
+	
+    if (cross<0)
+    overcut = [vec1[0]+vec2[0], vec1[1]+vec2[1]];
+	else overcut=[0,0];
+	//overcut=[cur[px]-vec3[0]/4,cur[py]-vec3[1]/4];
+	
+
+    return (dot);
 }
 var jmltravel = 0;
 
 
 // hole inside always clockwise, outer path are counter clockwise
 // to check if some hole belongs to which outer path, need to check bounding box each hole
+var srl = [];
+var disable_ovc=[];
+var disable_tab=[];
+var disable_cut=[];
+var pause_at=[];
+var shapectr=0;
+function prepare_line(lenmm,lines) {
+	shapectr++;
+	newlines=[];
+	srl=[];
+	lx=0;
+	ly=0;
+	if (disable_ovc.indexOf(shapectr+"")>=0)return lines;
+    if (lenmm<10)return lines;
+	sharpv = $("sharp").value;
+    ov = $("overcut").value/10.0;
+    for (var i = 0; i < lines.length; i++) {
+        
+		tl = lines[i][3];
+        x = lines[i][1];
+        y = lines[i][2];
+		if (ov!=0){
+			sr = sharp(lines, 1, 2, i);
+			if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
+				//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
+				newlines.push(lines[i]);
+				newlines.push([lines[i][0],x-overcut[0]*ov,y-overcut[1]*ov,tl]);
+				srl.push([x, y, sr, tl, i,overcut]);
+				lx=x;
+				ly=y;
+				//}
+			}
+		}
+		newlines.push(lines[i]);
+    }
+	return newlines;
+}
 
-function draw_line(num, lcol, lines) {
-    if (sxmax < sxmin);
+
+function draw_line(num, lcol, lines,srl,dash) {
+    //if (sxmax < sxmin);
     var dpm = 440.0 / (sxmax);
     dpm = Math.min(dpm, 440.0 / (symax));
     var x = lx / dpm;
@@ -186,37 +236,28 @@ function draw_line(num, lcol, lines) {
     var g = 0;
     var X1 = 0;
     var Y1 = 0;
-    var srl = [];
+    
     tl = 0;
 
     seg = $("segment").checked;
 
     start = 0;
     sharpv = $("sharp").value;
+    ov = $("overcut").value/10.0;
     lsx = -10;
     lsy = 0;
 
+	ctx.beginPath();
+	ctx.setLineDash([1,4]);
+	ctx.moveTo(lx, ly);
     for (var ii = 0; ii < lines.length; ii++) {
         g = ii;
-        i = ii; + start;
+        i = ii;// + start;
         if (i >= lines.length) i -= lines.length;
 
         tl = lines[i][3];
         x = lines[i][1];
         y = lines[i][2];
-        if (seg) {
-            sr = sharp(lines, 1, 2, i);
-            if ((sr > sharpv) || (ii == 0) || (ii == lines.length - 1)) {
-                sx = x * dpm;
-                sy = y * dpm;
-                if (!srl.length || (sqrt(sqr(lsx - sx) + sqr(lsy - sy)) > 10)) {
-                    srl.push([x * dpm, y * dpm, sr, tl, i]);
-                    lsx = sx;
-                    lsy = sy;
-                }
-
-            }
-        }
         if (ro == -1) {
             xx = x;
             x = y;
@@ -224,7 +265,6 @@ function draw_line(num, lcol, lines) {
         }
         if (sc == -1) x = sxmax - x;
         if (g >= 0) {
-            ctx.beginPath();
             if (g == 0) {
                 X1 = x * dpm;
                 Y1 = y * dpm;
@@ -236,24 +276,30 @@ function draw_line(num, lcol, lines) {
             cymin = Math.min(cymin, y);
             cxmax = Math.max(cxmax, x);
             cymax = Math.max(cymax, y);
-            ctx.moveTo(lx, ly);
             lx = x * dpm;
             ly = y * dpm;
-            ctx.lineTo(lx, ly);
 			
+			ctx.lineTo(lx, ly);
+			if (g==0){
+				ctx.stroke();
+				ctx.beginPath();
+				ctx.setLineDash(dash);
+				ctx.moveTo(lx, ly);
+			}
             //ctx.arc(lx,ly,2+ii/10.0,0,2*Math.PI);
-            ctx.stroke();
         }
         //ctx.endPath();
     }
+	ctx.stroke();
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
     ctx.beginPath();
+	ctx.setLineDash([2]);
     ctx.moveTo(lx, ly);
-    ctx.lineTo(X1, Y1);
+    //ctx.lineTo(X1, Y1);
     ctx.stroke();
     //ctx.endPath();
     srl.push([X1, Y1, 0, tl + d1, 0]);
-    if (seg) {
+    //if (seg) {
         ctx.font = "10px Arial";
         sg = "[#" + num + "] ";
         for (i = 0; i < srl.length - 1; i++) {
@@ -261,19 +307,27 @@ function draw_line(num, lcol, lines) {
 
             ctx.beginPath();
             ctx.strokeStyle = getRandomColor();
-            ctx.arc(srl[i][0], srl[i][1], 3, 0, 2 * Math.PI);
-
+			oc=srl[i][5];
+			sx=srl[i][0]*dpm;
+			sy=srl[i][1]*dpm;
+			
+            if (seg)ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
+			ctx.moveTo(sx, sy);
+			ctx.lineTo(sx-oc[0]*ov, sy-oc[1]*ov);
+            
             ctx.stroke();
-            ctx.fillStyle = "#0000cc";
-            ni = i + 1;
-            if (ni >= srl.length) ni = 0;
-            ti = Math.floor((srl[i][4] + srl[ni][4]) / 2);
-            l = mround(srl[ni][3] - srl[i][3]);
-            sg += l;
-            ctx.fillText(l, (lines[ti][1] * dpm) + 10, (lines[ti][2] * dpm) + 10);
-        }
-        $("segm").value += sg + "\n";
-    }
+			if (seg) {
+				ctx.fillStyle = "#0000cc";
+				ni = i + 1;
+				if (ni >= srl.length) ni = 0;
+				ti = Math.floor((srl[i][4] + srl[ni][4]) / 2);
+				l = mround(srl[ni][3] - srl[i][3]);
+				sg += l;
+				ctx.fillText(l, (lines[ti][1] * dpm) + 10, (lines[ti][2] * dpm) + 10);
+				}
+		}
+        if (seg)$("segm").value += sg + "\n";
+    //}
     //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
 	clw="<";
 	if (isClockwise(lines))clw=">";
@@ -283,11 +337,12 @@ var lastz = 0;
 var lasee = 0;
 var lx;
 var ly;
-function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
+function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
     var len = Math.abs(data[0]);
     if (len < 50) cuttabz = z;
+    if (disable_tab.indexOf(num+"")>=0) cuttabz = z;
     var lenc = 0;
 
     var cuttablen = 8;
@@ -359,13 +414,13 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0) {
 
 
     if (pw2) div = div + "M106 S" + pw1 + "\n";
-    div = div + pup + '\n';
+    if (firstlayer)div = div + pup + '\n';
     if (cmd == 2) {
         gcode0(f1, X1, 0);
     }
     gcode0(f1, X1, Y1);
 
-    if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
+    //if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
 
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
@@ -529,8 +584,18 @@ function gcode_verify() {
     $("segm").value = "";
     ctx.clearRect(0, 0, c.width, c.height);
     for (var i = 0; i < sgcodes.length; i++) {
-        draw_line(i + 1, getRandomColor(), sgcodes[i][4]);
-        sfinal += Math.abs(sgcodes[i][0]);
+		col=getRandomColor();
+        if (disable_cut.indexOf(sgcodes[i][1]+"")>=0)
+		{
+			dash=[5, 5];
+			col="#FF0000";
+			sfinal += Math.abs(sgcodes[i][0][0]);
+		} else {
+			dash=[];
+		}			
+			
+		draw_line(sgcodes[i][1], col, sgcodes[i][0][4],sgcodes[i][0][5],dash);
+		
     }
     //sfinal+=jmltravel*10;
     ctx.font = "12px Arial";
@@ -562,7 +627,6 @@ function sortedgcode() {
     xmin = 100000;
     ymin = 100000;
     var sm = -1;
-    var divs = '';
     var lx = 0;
     var ly = 0;
     e1 = 0;
@@ -584,18 +648,16 @@ function sortedgcode() {
 		} else cs=j;
         // smalles in cs
         if (cs >= 0) {
-            sgcodes.push(gcodes[cs]);
+            sgcodes.push([gcodes[cs],cs+1]);
             gcodes[cs][0] = -gcodes[cs][0];
             lx = gcodes[cs][2];
             ly = gcodes[cs][3];
-            divs = divs + gcodes[cs][1];
         }
     }
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
     s = ""; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     cncdeep = -getvalue("zdown");
-    cncz = cncdeep / re;
     var cuttab = 0;
     lastz = 0;
 
@@ -606,11 +668,16 @@ function sortedgcode() {
         s += "g0 f1000 z" + mround(lastz);
     }
     cuttab = cncdeep + getvalue("tabc") * 1;
-    for (var i = 0; i < re; i++) {
-        for (var j = 0; j < sgcodes.length; j++) {
-            s += lines2gcode(j + 1, sgcodes[j], cncz, cuttab,i==re-1);
-        }
-        cncz += cncdeep / re;
+	for (var j = 0; j < sgcodes.length; j++) {
+		cncz = cncdeep / re;
+		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
+			s+="\nG0 Z3 F1000\n;PAUSE\nG0 Y-100 F5000\n";
+		}
+		if (disable_cut.indexOf(sgcodes[j][1]+"")<0)
+			for (var i = 0; i < re; i++) {
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz, cuttab,i==re-1,i==0);
+				cncz += cncdeep / re;
+			}
     }
     s = s + getvalue("pup");
     s = s + '\nG00 F3000 Y0 \n G00 X0\n';
@@ -637,6 +704,11 @@ var lines = [];
 function myFunction(scale1) {
     //text1=Potrace.getSVG(1);
     //alert(text1);
+	pause_at=getvalue('pauseat').split(",");
+	disable_cut=getvalue('disablecut').split(",");
+	disable_ovc=getvalue('disableovc').split(",");
+	disable_tab=getvalue('disabletab').split(",");
+	shapectr=0;
     var contor = 0;
     var xincep = 0;
     var yincep = 0;
@@ -711,14 +783,15 @@ function myFunction(scale1) {
             cnts = cnts + 1;
             // close shape loop
             if (cnts > 1) {
-                gcode1(f2, X1, Y1);
+                ///
+gcode1(f2, X1, Y1);
                 line.push([f2, X1, Y1, lenmm]);
                 if (cmd == 2) {
                     // if foam mode must move up
                     div = div + 'G00 Y0 \n';
                 }
-                gcodes.push([lenmm, div, X1, Y1, line]);
-                lines.push(line);
+                gcodes.push([lenmm, div, X1, Y1, prepare_line(lenmm,line),srl]);
+                //lines.push(line);
 
             }
             line = [];
@@ -732,7 +805,8 @@ function myFunction(scale1) {
 
             X1 = xincep;
             Y1 = yincep;
-            gcode0(f1, X1, Y1);
+            ///
+gcode0(f1, X1, Y1);
             // activate tools and prepare the speed
             if (pw2) div = div + "M106 S" + pw2 + "\n";
             div = div + pdn + '\n';
@@ -748,14 +822,16 @@ function myFunction(scale1) {
             var xy = text1.slice(n + 1, n2).split(',');
             p1x = xy[0] * scale;
             p1y = xy[1] * scale;
-            gcode1(f2, p1x, p1y);
+            ///
+gcode1(f2, p1x, p1y);
             line.push([f2, p1x, p1y, lenmm]);
         } else if (cr == 'H') {
             var n2 = text1.indexOf(' ', n + 3);
             var xy = text1.slice(n + 3, n2);
             p1x = xy * scale;
 
-            gcode1(f2, p1x, y1);
+            ///
+gcode1(f2, p1x, y1);
             line.push([f2, p1x, y1, lenmm]);
             n = n + 3;
         } else if (cr == 'V') {
@@ -763,7 +839,8 @@ function myFunction(scale1) {
             var xy = text1.slice(n + 3, n2);
             p1y = xy * scale;
 
-            gcode1(f2, y1, p1y);
+            ///
+gcode1(f2, y1, p1y);
             line.push([f2, y1, p1y, lenmm]);
 
             n = n + 3;
@@ -827,7 +904,8 @@ function myFunction(scale1) {
 
                 var x = bezierx(i, xincep, p1x, p2x, xsfar);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
-                gcode1(lastf, x, y);
+                ///
+gcode1(lastf, x, y);
                 line.push([lastf, x, y, lenmm]);
             }
 
@@ -848,7 +926,8 @@ function myFunction(scale1) {
             //res=res*scale;
             //console.log(res);
             p1y = res;
-            gcode1(lastf, p1x, p1y);
+            ///
+gcode1(lastf, p1x, p1y);
             line.push([lastf, p1x, p1y, lenmm]);
 
             var n = text1.indexOf(' ', n + 3);
@@ -863,7 +942,8 @@ function myFunction(scale1) {
             //console.log(res);
 
             p2y = res;
-            gcode1(lastf, p2x, p2y);
+            ///
+gcode1(lastf, p2x, p2y);
             line.push([lastf, p2x, p2y, lenmm]);
 
             xincep = p2x;
@@ -892,17 +972,18 @@ function myFunction(scale1) {
 
     // close loop
     if (cnts > 0) {
-        gcode1(f2, X1, Y1);
+        ///
+gcode1(f2, X1, Y1);
         line.push([lastf, X1, Y1, lenmm]);
         if (cmd == 2) {
             // for foam, must move up first
             div = div + 'G00 Y0 \n';
         }
-        gcodes.push([lenmm, div, X1, Y1, line]);
+        gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl]);
         div = "";
     }
-
     sortedgcode();
+	gcode_verify();
 
 } //sfarsit myFunction
 //*****************************************************
@@ -918,6 +999,44 @@ function beziery(t, p0, p1, p2, p3) {
     var y = s * s * s * p0 + 3 * (s * s * t) * p1 + 3 * (t * t * s) * p2 + t * t * t * p3;
     return y;
 }
+
+var gc="g0 x100 y0\ng1 x200\ng1 y100\ng1 x100\ng1 y0\n";
+function gcodetoText1(gx){
+	gs=gx.split("\n");
+	var scale = getvalue('scale')/25.4;
+	sn=0;
+	var c=0;
+	var t1='<svg id="svg" version="1.1" width="142" height="142" xmlns="http://www.w3.org/2000/svg"><path d="';
+	var tm="";			
+	var wd={'g':-1,'x':0,'y':0};
+	for (i in gs){
+		if (gs[i]){
+			ws=gs[i].split(" ");
+			for (j in ws){
+				wd[ws[j][0].toLowerCase()]=ws[j].substr(1);
+				//console.log(ws[j][0]+":"+ws[j].substr(1));
+			}
+			xy=mround(wd['x']*scale)+" "+mround(wd['y']*scale);
+			if (wd['g']==0) {
+				// new shape
+				c=0;
+				tm="M"+xy;
+			}
+			if (wd['g']==1) {
+				if (c==0){
+					sn++;
+					t1+=tm;
+				}
+				c++;
+				if (c & 1)t1+=" L";
+				t1+=" "+xy;
+			}
+		}
+	}
+	t1+='" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
+	return t1;
+}
+
 //***********************************************
 
 var openFile = function(event) {
@@ -1022,7 +1141,6 @@ window.addEventListener('Xdrop', function(e) {
                 if (reader.tipe.indexOf("svg") !== -1) {
                     text1 = event.target.result; //.toUpperCase();
                     myFunction(1);
-                    gcode_verify();
                 } else {}
             };
             if (file.type.indexOf("svg") !== -1) {
@@ -1089,7 +1207,6 @@ function createSVG(source, blob) {
 
 function refreshgcode() {
     myFunction(0);
-    gcode_verify();
     savesetting();
 }
 

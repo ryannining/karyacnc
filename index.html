@@ -64,7 +64,13 @@
 
      <tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
 	  <td>Rotate <input id=rotate type=checkbox class=saveit>
-      <tr><td>Segment <input id=sharp value=0.9 size=2 class=saveit><input id=segment type=checkbox class=saveit><td colspan=2><button id=btrecode >Re-gcode</button>
+	  <tr><td colspan=3>Pause at <input id=pauseat class=saveit>
+	  <tr><td colspan=3>Disable Cut <input id=disablecut class=saveit>
+	  <tr><td colspan=3>Disable Tab <input id=disabletab class=saveit>
+	  <tr><td colspan=3>Disable Ovc <input id=disableovc class=saveit>
+	  <tr><td>Overcut <input id=overcut value=1 size=2 class=saveit>
+	  <td colspan=2>Segment <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
+	  <tr><td><button id=btrecode >Re-gcode</button>
    </table>
 
     <br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
@@ -81,9 +87,9 @@
     </textarea>
 	Segments:<br><textarea style="font-size: 10;width:100%;height:50px" id=segm ></textarea>
    <td width=400px><button id=tracingbt>GCODE SENDER</button>
-      <B>GCODE</b><button  id=btcopy1>Copy</button><br><input id=gcurl size=50><button id="loadurl"> Gcode URL</button><br>
+      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr><a href="localhost:9999/engrave" target=app1>Engrave</a>
       <textarea style="font-size: 10;width:100%;height:500" id="gcode" class=saveit>
-      </textarea>
+      </textarea><button id=btgcode2vec>ReVector Gcode</button>
 	<td wdith=480px>
     <canvas id="myCanvas1" width="480" height="500" style="border:1px solid #FF0000;"></canvas><br>
 	For real gcode simulator, visit <a href="https://ncviewer.com/" target="_blank" >ncviewer</a> and paste gcode there.
@@ -148,6 +154,8 @@
 <div align="center"><a href="http://www.simplehitcounter.com" target="_blank"><img src="http://simplehitcounter.com/hit.php?uid=2360698&f=16777215&b=0" border="0" height="18" width="83" alt="web counter"></a><br><a href="http://www.simplehitcounter.com" target="_blank" style="text-decoration:none;"></a></div>
 <!-- End of SimpleHitCounter Code -->
 </center>
+	<script src="sha1.js"></script>
+	<script src="http.js"></script>
 	<script src="Potrace.js"></script>
 	<script src="costy-x.js"></script>
 	<script src="serial.js"></script>
