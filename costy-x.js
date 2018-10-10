@@ -290,6 +290,7 @@ function draw_line(num, lcol, lines,srl,dash) {
         }
         //ctx.endPath();
     }
+	ctx.lineTo(X1, Y1);
 	ctx.stroke();
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
     ctx.beginPath();
@@ -589,9 +590,9 @@ function gcode_verify() {
 		{
 			dash=[5, 5];
 			col="#FF0000";
-			sfinal += Math.abs(sgcodes[i][0][0]);
 		} else {
 			dash=[];
+			sfinal += Math.abs(sgcodes[i][0][0]);
 		}			
 			
 		draw_line(sgcodes[i][1], col, sgcodes[i][0][4],sgcodes[i][0][5],dash);
@@ -762,6 +763,7 @@ function myFunction(scale1) {
     lenmm = 0;
     var cnts = 0;
     var line = [];
+	//scale=1;
     //alert(div.innerHTML);
     while (1) {
         if (handleM) {
@@ -1002,37 +1004,55 @@ function beziery(t, p0, p1, p2, p3) {
 
 var gc="g0 x100 y0\ng1 x200\ng1 y100\ng1 x100\ng1 y0\n";
 function gcodetoText1(gx){
+	// try to support G2 and G3
 	gs=gx.split("\n");
 	var scale = getvalue('scale')/25.4;
 	sn=0;
 	var c=0;
+	var sc=0;
 	var t1='<svg id="svg" version="1.1" width="142" height="142" xmlns="http://www.w3.org/2000/svg"><path d="';
 	var tm="";			
 	var wd={'g':-1,'x':0,'y':0};
+	var xy1='';
 	for (i in gs){
-		if (gs[i]){
+		if ((gs[i]) && (gs[i][0]!=';')){
 			ws=gs[i].split(" ");
+			wd['g']=-1;
+			hasxy=0;
 			for (j in ws){
-				wd[ws[j][0].toLowerCase()]=ws[j].substr(1);
+				if (ws[j]) {
+					cr=ws[j][0].toLowerCase();
+					if (cr=='x' || cr=='y')hasxy=1;
+					wd[cr]=ws[j].substr(1);
+				}
 				//console.log(ws[j][0]+":"+ws[j].substr(1));
 			}
-			xy=mround(wd['x']*scale)+" "+mround(wd['y']*scale);
-			if (wd['g']==0) {
-				// new shape
-				c=0;
-				tm="M"+xy;
-			}
-			if (wd['g']==1) {
-				if (c==0){
-					sn++;
-					t1+=tm;
+			if (hasxy){
+				xy=mround(wd['x']*scale)+" "+mround(wd['y']*scale);
+				if (wd['g']==0) {
+					// new shape
+					sc++;
+					if (sc>1){
+						if ((c & 1))t1+=" "+xy1;
+						t1+=" ";
+					}
+					c=0;
+					tm="M"+xy;
+					xy1=xy;
 				}
-				c++;
-				if (c & 1)t1+=" L";
-				t1+=" "+xy;
+				if (wd['g']==1) {
+					if (c==0){
+						sn++;
+						t1+=tm;
+					}
+					c++;
+					if (c & 1)t1+=" L";
+					t1+=" "+xy;
+				}
 			}
 		}
 	}
+	if ((c & 1))t1+=" "+xy1;
 	t1+='" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
 	return t1;
 }

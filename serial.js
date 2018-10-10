@@ -52,11 +52,11 @@ function gcodedown() {
 }
 
 function gcodezup() {
-    gcodemove(0, 0, 1);
+    gcodemove(0, 0, 0.5);
 }
 
 function gcodezdown() {
-    gcodemove(0, 0, -1);
+    gcodemove(0, 0, -0.5);
 }
 
 function homing() {
@@ -85,6 +85,7 @@ function setashome3() {
 
 function setashome() {
     sendgcode("G0 Z0");
+	pz=0;
     setashome2();
 }
 
@@ -92,6 +93,9 @@ function hardstop() {
     sendgcode("M2");
     sendgcode("G0 Z2 F5000");
     sendgcode("G0 X0 Y0");
+    px=0;
+	py=0;
+	pz=2;
     stopit();
 }
 
@@ -120,24 +124,30 @@ function nextgcode() {
         var g = egcodes[eline];
         eline++;
 		if (g==";PAUSE")pause();
-        if ((g) && (g[0] != ';')) {
+        if ((g) && (g[0] != ';') && (g[0] != '(')) {
 			okwait=1;
             sendgcode(g.split(";")[0]);
             return;
         }
     }
+    sendgcode("G4");
+	sendgcode("M114");
     stopit();
 }
 
 function stopit() {
     var bt = document.getElementById('btexecute');
     bt.innerHTML = "Execute";
+    var bt = document.getElementById('btpause');
+	bt.innerHTML = "PAUSE";
     running = 0;
     okwait = 0;
     egcodes = [];
 }
 
 function execute(gcodes) {
+    var bt = document.getElementById('btpause');
+	bt.innerHTML = "PAUSE";
     egcodes = gcodes.split("\n");
     eline = 0;
     running = egcodes.length;
@@ -188,7 +198,13 @@ var onReadCallback = function(s) {
 	resp1+=s;
     for (var i = 0; i < s.length; i++) {
         if (s[i] == "\n") {
-
+			
+			if (ss.indexOf("Z:")>0){
+				px=parseFloat(ss.substr(ss.indexOf("X:")+2));
+				py=parseFloat(ss.substr(ss.indexOf("Y:")+2));
+				pz=parseFloat(ss.substr(ss.indexOf("Z:")+2));
+				pe=parseFloat(ss.substr(ss.indexOf("E:")+2));
+			}
             if (debugs & 2) console.log(ss);
             ss = "";
         } else ss += s[i];
@@ -345,6 +361,7 @@ function initserial() {
         comtype = -1;
     }
 }
+setclick("btcekpos", function(){sendgcode("m114");});
 setclick("btinitser", initserial);
 setclick("btconnect", comconnect);
 setclick("btsethome", setashome);
