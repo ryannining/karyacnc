@@ -312,13 +312,15 @@ function changematerial() {
     val = val.split(",");
     setvalue("feed", val[0]);
     setvalue("repeat", val[1]);
+    setvalue("matprice", val[2]);
+    setvalue("cutprice", val[3]);
     harga = val[2];
-    if (val.length == 4) {
+    if (val.length == 5) {
         document.getElementById("cmode").value = 3;
-        setvalue("zdown", val[3]);
-        setvalue("tabc", 2);
+        setvalue("zdown", val[4]);
+        setvalue("tabc", 1.5);
     }
-    if (val.length == 3) {
+    if (val.length == 4) {
         document.getElementById("cmode").value = 1;
         setvalue("zdown", 0);
         setvalue("tabc", 0);

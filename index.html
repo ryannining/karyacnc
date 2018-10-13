@@ -1,7 +1,7 @@
 <html>
 	<head>
 		<title>CostyKarya CNC gcode tracer</title>
-<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<script src="https://www.w3counter.com/tracker.js?id=122053"></script>
 <script>
      (adsbygoogle = window.adsbygoogle || []).push({
           google_ad_client: "ca-pub-9111193570003924",
@@ -28,23 +28,27 @@
          <select id=cmode  class=saveit><option value=1>Laser</option><option value=3>CNC</option><option value=2>Foam</option><option value=4>3D Wall</option></select> <br>
       <tr><td colspan=3>
     Material <select id=material class=saveit>
-			<option value="10,1,25">Laser Akrilik 1.5mm</option>
-			<option value="8,1,27">Laser Akrilik 2mm</option>
-			<option value="8,1,32">Laser Akrilik 2mm Warna</option>
-			<option value="6,1,37">Laser Akrilik 3mm</option>
-			<option value="6,1,42">Laser Akrilik 3mm Warna</option>
-			<option value="4,1,47">Laser Akrilik 4mm</option>
-			<option value="4,1,52">Laser Akrilik 4mm Warna</option>
-			<option value="3,1,57">Laser Akrilik 5mm</option>
-			<option value="3,1,62">Laser Akrilik 5mm Warna</option>
-			<option value="2,1,67">Laser Akrilik 6mm</option>
-			<option value="2,1,72">Laser Akrilik 6mm Warna</option>
-			<option value="6,1,7">Laser Triplek 5mm</option>
-			<option value="6,2,9">Laser Triplek 9mm</option>
-			<option value="6,1,7">MDF 5mm</option>
-			<option value="15,2,9,9.5">CNC MDF 9mm</option>
-			<option value="10,4,27,4.5">CNC ACP 4mm</option>
+			<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
+			<option value="8,1,27,1500">Laser Akrilik 2mm</option>
+			<option value="8,1,32,1500">Laser Akrilik 2mm Warna</option>
+			<option value="6,1,37,1500">Laser Akrilik 3mm</option>
+			<option value="6,1,42,1500">Laser Akrilik 3mm Warna</option>
+			<option value="4,1,47,1500">Laser Akrilik 4mm</option>
+			<option value="4,1,52,1500">Laser Akrilik 4mm Warna</option>
+			<option value="3,1,57,1500">Laser Akrilik 5mm</option>
+			<option value="3,1,62,1500">Laser Akrilik 5mm Warna</option>
+			<option value="2,1,67,1500">Laser Akrilik 6mm</option>
+			<option value="2,1,72,1500">Laser Akrilik 6mm Warna</option>
+			<option value="6,1,6,1500">Laser Triplek 5mm</option>
+			<option value="6,2,9,1500">Laser Triplek 9mm</option>
+			<option value="6,1,5,1500">MDF 3mm</option>
+			<option value="15,8,9,1000,9.5">CNC MDF 9mm</option>
+			<option value="15,4,27,1000,4.5">CNC ACP 4mm</option>
+			<option value="15,3,15,1000,5.5">CNC PVC 5mm</option>
+			<option value="15,5,22,1000,9.5">CNC PVC 9mm</option>
 		</select>
+		<tr><td>Mat Price/cm2<td colspan=2><input id=matprice class=saveit size=4>
+		<tr><td>Cut Price/min<td colspan=2><input id=cutprice class=saveit size=4>
 		<tr style="background:lime"><td>Tools Off<td colspan=2 >Tools On
 
       <tr><td><input id=pup size=8 value="m3 s0" class=saveit>
@@ -70,7 +74,7 @@
 	  <tr><td colspan=3>Disable Ovc <input id=disableovc class=saveit>
 	  <tr><td>Overcut <input id=overcut value=1 size=2 class=saveit>
 	  <td colspan=2>Segment <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
-	  <tr><td><button id=btrecode >Re-gcode</button>
+	  <tr><td colspan=3>Cut CCW <input id=cutccw type=checkbox class=saveit><button id=btrecode >Re-gcode</button>
    </table>
 
     <br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
@@ -144,14 +148,20 @@
 	</select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
 	<hr><b>OTHER</b><br>
 	<button id=btresume>Resume</button>
-	<!-- CNC-1 -->
+<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
+<!-- CNC-1 -->
 <ins class="adsbygoogle"
      style="display:block"
      data-ad-client="ca-pub-9111193570003924"
      data-ad-slot="7668489344"
-     data-ad-format="auto"></ins>
-	</table>
-<!-- Start of SimpleHitCounter Code -->
+     data-ad-format="auto"
+     data-full-width-responsive="true"></ins>
+<script>
+(adsbygoogle = window.adsbygoogle || []).push({});
+</script>
+<script src="https://www.w3counter.com/tracker.js?id=122053"></script>
+	<!-- Start of SimpleHitCounter Code - - >
+
 <div align="center"><a href="http://www.simplehitcounter.com" target="_blank"><img src="http://simplehitcounter.com/hit.php?uid=2360698&f=16777215&b=0" border="0" height="18" width="83" alt="web counter"></a><br><a href="http://www.simplehitcounter.com" target="_blank" style="text-decoration:none;"></a></div>
 <!-- End of SimpleHitCounter Code -->
 </center>
@@ -160,11 +170,7 @@
 	<script src="Potrace.js"></script>
 	<script src="costy-x.js"></script>
 	<script src="serial.js"></script>
-<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
 
-<script>
-(adsbygoogle = window.adsbygoogle || []).push({});
-</script>
 
 </body>
 

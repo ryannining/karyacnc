@@ -1,3 +1,7 @@
+var CMD_3D=4;
+var CMD_CNC=3;
+var CMD_LASER=1;
+
 function $(id) {
     return document.getElementById(id);
 }
@@ -43,6 +47,7 @@ function mround(x) {
 var X1 = 0;
 var Y1 = 0;
 var lenmm = 0;
+var lenn=0;
 var lastf = 0;
 var x1 = 0;
 var y1 = 0;
@@ -101,7 +106,6 @@ function gcode0(f, x2, y2, z2 = 10000, e2 = 1000000) {
     }
     gcoden(0, f, x2, y2);
 }
-
 function gcode1(f, x2, y2, z2 = 10000, e2 = 1000000) {
     x1 -= x2;
     y1 -= y2;
@@ -194,14 +198,15 @@ function prepare_line(lenmm,lines) {
     for (var i = 0; i < lines.length; i++) {
         
 		tl = lines[i][3];
+		tl2 = lines[i][4];
         x = lines[i][1];
         y = lines[i][2];
 		if (ov!=0){
 			sr = sharp(lines, 1, 2, i);
 			if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
 				//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
-				newlines.push(lines[i]);
-				newlines.push([lines[i][0],x-overcut[0]*ov,y-overcut[1]*ov,tl]);
+				newlines.push([lines[i][0],x,y,tl,0]);
+				newlines.push([lines[i][0],x-overcut[0]*ov,y-overcut[1]*ov,tl,0]);
 				srl.push([x, y, sr, tl, i,overcut]);
 				lx=x;
 				ly=y;
@@ -345,6 +350,8 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
     if (len < 50) cuttabz = z;
     if (disable_tab.indexOf(num+"")>=0) cuttabz = z;
     var lenc = 0;
+	var ccw=0;
+    if ($("cutccw").checked) ccw = 1;
 
     var cuttablen = 8;
     var cut = [];
@@ -425,15 +432,26 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
 
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
-    if (cmd != 4) div = div + pdn.replace("=cncz", mround(z)) + '\n';
+    if (cmd != CMD_3D) div = div + pdn.replace("=cncz", mround(z)) + '\n';
     var incut = 0;
     var lenctr = 0;
     var fm = 1;
-    for (var i = 0; i < lines.length; i++) {
-        //vary speed on first few mm
+	if (cmd==CMD_CNC){
+		// entry diagonally
+		// ??
+	
+	}		
+		
+    for (var ci = 0; ci < lines.length; ci++) {
+		if (ccw){
+			i=(lines.length-1)-ci;}
+		else {
+			i=ci;
+		}
         nlenctr = lenctr;
-        lenctr += lines[i][3];
-        if (cmd == 4) {
+		lenctr += lines[i][4];
+        //vary speed on first few mm
+        if (cmd == CMD_3D) {
 			nlenctr=(nlenctr+lenctr)/2;
             extrude = oextrude;
             fm = 1;
@@ -460,12 +478,12 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
         if ((cuttabz > z) && (cutat < 4)) {
             // if cut1 is in lenc and lencnext then cut the line
             // and dont increase the i counter
-            if ((cut[cutat] >= lenc) && (cut[cutat] <= lines[i][3])) {
+            if ((cut[cutat] >= lenc) && (cut[cutat] <= lenctr)) {
                 // split lines
                 iscut = 1;
                 dx = x - lx;
                 dy = y - ly;
-                llen = lines[i][3] - lenc;
+                llen = lenctr - lenc;
                 lcut = cut[cutat] - lenc;
                 x = lx + dx * (lcut / llen);
                 y = ly + dy * (lcut / llen);
@@ -497,11 +515,11 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
             }
             i--;
         } else {
-            lenc = lines[i][3];
+            lenc = lenctr;
         }
     }
     //close loop
-    if (!lastlayer && (cmd == 4)) {
+    if (!lastlayer && (cmd == CMD_3D)) {
         // if 3d then move along some mm
         lenctr = 0;
         lenc = 0;
@@ -525,12 +543,12 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
             // if cut1 is in lenc and lencnext then cut the line
             // and dont increase the i counter
             var iscut = 0;
-            if ((cutat >= lenc) && (cutat <= lines[i][3])) {
+            if ((cutat >= lenc) && (cutat <= lenctr)) {
                 // split lines
                 iscut = 1;
                 dx = x - lx;
                 dy = y - ly;
-                llen = lines[i][3] - lenc;
+                llen = lenctr - lenc;
                 lcut = cutat - lenc;
                 x = lx + dx * (lcut / llen);
                 y = ly + dy * (lcut / llen);
@@ -546,7 +564,7 @@ function lines2gcode(num, data, z, cuttabz, lastlayer = 0,firstlayer=1) {
             lx = x;
             ly = y;
             if (iscut) break;
-            lenc = lines[i][3];
+            lenc = lenctr;
             if (lenc > cutat) break;
         }
         e1 = oe1;
@@ -576,7 +594,9 @@ function getRandomColor() {
 function gcode_verify() {
     var c = $("myCanvas1");
     cmd = getvalue('cmode');
-    //alert(c);
+    harga=getvalue('matprice');
+	var hargacut=getvalue('cutprice');
+	//alert(c);
     lx = 0;
     ly = 0;
     jmltravel = 0;
@@ -608,12 +628,12 @@ function gcode_verify() {
     menit = menit * re;
     text = $("material");
     mat = text.options[text.selectedIndex].innerText;
-	if (cmd==4){
+	if (cmd==CMD_3D){
 		gram=e1/333;
 		
-		area_dimension.innerHTML = 'Total filament =' + mround(gram) + "gram Time:" + mround(menit) + " menit <br>Biaya Total:" + Math.round(gram * 1500);
+		area_dimension.innerHTML = 'Total filament =' + mround(gram) + "gram Time:" + mround(menit) + " menit <br>Biaya Total:" + Math.round(gram * hargacut);
 	} else {
-		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Biaya Cut:" + Math.round(menit * 1500) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * 1500 + w * h * harga);
+		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Biaya Cut:" + Math.round(menit * hargacut) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * hargacut + w * h * harga);
 	}
 }
 
@@ -761,6 +781,8 @@ function myFunction(scale1) {
     y2 = 0;
     div = "";
     lenmm = 0;
+	lenn=0;
+	
     var cnts = 0;
     var line = [];
 	//scale=1;
@@ -787,7 +809,7 @@ function myFunction(scale1) {
             if (cnts > 1) {
                 ///
 gcode1(f2, X1, Y1);
-                line.push([f2, X1, Y1, lenmm]);
+                line.push([f2, X1, Y1, lenmm,lenn]);
                 if (cmd == 2) {
                     // if foam mode must move up
                     div = div + 'G00 Y0 \n';
@@ -799,6 +821,7 @@ gcode1(f2, X1, Y1);
             line = [];
             div = "";
             lenmm = 0;
+			lenn=0;
 
             // deactivate tools and move to cut position
             div = div + "\n;SHAPE\n";
@@ -826,7 +849,7 @@ gcode0(f1, X1, Y1);
             p1y = xy[1] * scale;
             ///
 gcode1(f2, p1x, p1y);
-            line.push([f2, p1x, p1y, lenmm]);
+            line.push([f2, p1x, p1y, lenmm,lenn]);
         } else if (cr == 'H') {
             var n2 = text1.indexOf(' ', n + 3);
             var xy = text1.slice(n + 3, n2);
@@ -834,7 +857,7 @@ gcode1(f2, p1x, p1y);
 
             ///
 gcode1(f2, p1x, y1);
-            line.push([f2, p1x, y1, lenmm]);
+            line.push([f2, p1x, y1, lenmm,lenn]);
             n = n + 3;
         } else if (cr == 'V') {
             var n2 = text1.indexOf(' ', n + 3);
@@ -843,7 +866,7 @@ gcode1(f2, p1x, y1);
 
             ///
 gcode1(f2, y1, p1y);
-            line.push([f2, y1, p1y, lenmm]);
+            line.push([f2, y1, p1y, lenmm,lenn]);
 
             n = n + 3;
         } else if (cr == 'C') {
@@ -908,7 +931,7 @@ gcode1(f2, y1, p1y);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
                 ///
 gcode1(lastf, x, y);
-                line.push([lastf, x, y, lenmm]);
+                line.push([lastf, x, y, lenmm,lenn]);
             }
 
             //******************************************************************
@@ -930,7 +953,7 @@ gcode1(lastf, x, y);
             p1y = res;
             ///
 gcode1(lastf, p1x, p1y);
-            line.push([lastf, p1x, p1y, lenmm]);
+            line.push([lastf, p1x, p1y, lenmm,lenn]);
 
             var n = text1.indexOf(' ', n + 3);
             var res = scale * parseFloat(text1.slice(n + 1, n + 10));
@@ -946,7 +969,7 @@ gcode1(lastf, p1x, p1y);
             p2y = res;
             ///
 gcode1(lastf, p2x, p2y);
-            line.push([lastf, p2x, p2y, lenmm]);
+            line.push([lastf, p2x, p2y, lenmm,lenn]);
 
             xincep = p2x;
             yincep = p2y;
@@ -976,7 +999,7 @@ gcode1(lastf, p2x, p2y);
     if (cnts > 0) {
         ///
 gcode1(f2, X1, Y1);
-        line.push([lastf, X1, Y1, lenmm]);
+        line.push([lastf, X1, Y1, lenmm,lenn]);
         if (cmd == 2) {
             // for foam, must move up first
             div = div + 'G00 Y0 \n';
