@@ -10,7 +10,7 @@ var px = 0;
 var py = 0;
 var pz = 0;
 var pe = 0;
-
+var etime=new Date();
 function comconnect() {
     var bt = document.getElementById('btconnect');
     if (bt.innerHTML == "Connect") {
@@ -127,6 +127,8 @@ function nextgcode() {
         if ((g) && (g[0] != ';') && (g[0] != '(')) {
 			okwait=1;
             sendgcode(g.split(";")[0]);
+			var bt = document.getElementById('btresume2');
+			bt.innerHTML = "Resume from "+eline;
             return;
         }
     }
@@ -136,6 +138,13 @@ function nextgcode() {
 }
 
 function stopit() {
+	var ms=etime.getTime();
+	etime=new Date();
+	console.log("Stop "+etime);
+	ms=etime.getTime()-ms;
+	mss="Real time:"+mround(ms/60000.0);
+	console.log(mss);
+	$("infolain").innerHTML=mss;
     var bt = document.getElementById('btexecute');
     bt.innerHTML = "Execute";
     var bt = document.getElementById('btpause');
@@ -146,6 +155,8 @@ function stopit() {
 }
 
 function execute(gcodes) {
+	etime=new Date();
+	console.log("Start "+etime);
     var bt = document.getElementById('btpause');
 	bt.innerHTML = "PAUSE";
     egcodes = gcodes.split("\n");
@@ -395,6 +406,17 @@ setevent("change", "cmode", modechange);
 setevent("change", "material", changematerial);
 setclick("btresume", function() {
     okwait=0;
+    sendgcode("m3 S255");	
+	nextgcode();
+});
+
+
+setclick("btresume2", function() {
+    okwait=0;
+    var bt = document.getElementById('btresume2');
+	ln=bt.innerHTML.split(" ")[2];
+	eline=ln*1;
+	
     sendgcode("m3 S255");	
 	nextgcode();
 });
