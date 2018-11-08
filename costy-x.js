@@ -1,7 +1,7 @@
 var CMD_3D=4;
 var CMD_CNC=3;
 var CMD_LASER=1;
-
+var OVC_MODE = 0; // 1 drill 0 path
 function $(id) {
     return document.getElementById(id);
 }
@@ -58,6 +58,12 @@ var xmin = 100000;
 var ymin = 100000;
 var xmax = 0;
 var ymax = 0;
+
+var xmin2 = 100000;
+var ymin2 = 100000;
+var xmax2 = 0;
+var ymax2 = 0;
+
 var sxmin = 100000;
 var symin = 100000;
 var sxmax = 0;
@@ -99,6 +105,10 @@ function gcoden(g, f, x2, y2, z2 = 10000, e2 = 1000000) {
     ymin = Math.min(ymin, y2);
     xmax = Math.max(xmax, x2);
     ymax = Math.max(ymax, y2);
+    xmin2 = Math.min(xmin2, x2);
+    ymin2 = Math.min(ymin2, y2);
+    xmax2 = Math.max(xmax2, x2);
+    ymax2 = Math.max(ymax2, y2);
 }
 
 var inretract = 0;
@@ -192,6 +202,8 @@ var disable_tab=[];
 var disable_cut=[];
 var pause_at=[];
 var shapectr=0;
+var collapsepoint=7;
+var noprocess=2*collapsepoint;
 function prepare_line(lenmm,lines) {
 	shapectr++;
 	newlines=[];
@@ -199,32 +211,50 @@ function prepare_line(lenmm,lines) {
 	lx=0;
 	ly=0;
 	if (disable_ovc.indexOf(shapectr+"")>=0)return lines;
-    if (lenmm<10)return lines;
-	sharpv = $("sharp").value;
-    ov = $("overcut").value/10.0+0.01;
-    for (var i = 0; i < lines.length; i++) {
-        
-		tl = lines[i][3];
-		tl2 = lines[i][4];
-        x = lines[i][1];
-        y = lines[i][2];
-		//if (ov!=0){
-			sr = sharp(lines, 1, 2, i);
-			if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
-				//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
-				//newlines.push([lines[i][0],x,y,tl,0]);
-				//newlines.push([lines[i][0],x-overcut[0]*ov,y-overcut[1]*ov,tl,0]);
-				srl.push([x, y, sr, tl, i,[x-overcut[0]*ov,y-overcut[1]*ov],cross]);
-				lx=x;
-				ly=y;
-				//}
-			}
-		//}
-		newlines.push(lines[i]);
-    }
-	return newlines;
+    if (lenmm<collapsepoint){
+		var sx=0;
+		var sy=0;
+		for (var i = 0; i < lines.length; i++) {			
+			sx += lines[i][1];
+			sy += lines[i][2];
+		}
+		sx/=lines.length;
+		sy/=lines.length;
+		newlines.push([lines[0][0],sx,sy,0,0]);
+		return newlines;
+	} else {
+		if (lenmm<noprocess)return lines;
+		sharpv = $("sharp").value;
+		ov = $("overcut").value/10.0+0.01;
+		for (var i = 0; i < lines.length; i++) {
+			
+			tl = lines[i][3];
+			tl2 = lines[i][4];
+			x = lines[i][1];
+			y = lines[i][2];
+			//if (ov!=0){
+				sr = sharp(lines, 1, 2, i);
+				if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
+					//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
+					newlines.push(lines[i]);
+					ox=overcut[0]*ov;
+					oy=overcut[1]*ov;
+					if ((OVC_MODE==0) && ((ox!=0) || (oy!=0))) {
+						//newlines.push(lines[i]);
+						newlines.push([lines[i][0],x-ox,y-oy,tl,0]);
+						newlines.push([lines[i][0],x,y,tl,0]);
+					}
+					srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross]);
+					lx=x;
+					ly=y;
+					//}
+				} else newlines.push(lines[i]);
+		}
+		return newlines;
+
+	}
 }
-var cutevery=100;
+var cutevery=300;
 
 function draw_line(num, lcol, lines,srl,dash,len) {
     //if (sxmax < sxmin);
@@ -261,6 +291,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     var g = 0;
     var X1 = 0;
     var Y1 = 0;
+    cmd = getvalue('cmode');
     
     tl = 0;
 
@@ -278,6 +309,9 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 	ctx.beginPath();
 	ctx.setLineDash([1,4]);
 	ctx.moveTo(lx, ly);
+	lx2=lx;
+	ly2=ly;
+	nc=2;
     for (var ci = 0; ci < lines.length; ci++) {
 		if (ccw){
 			i=(lines.length-1)-ci;}
@@ -297,36 +331,38 @@ function draw_line(num, lcol, lines,srl,dash,len) {
             x = y;
             y = sxmax-xx;
         }
-		if (lines[i][4]){
-			iscut=0;
-			if (cuttabz) {
-				// if cut1 is in lenc and lencnext then cut the line
-				// and dont increase the i counter
-				if ((slc >= lenc) && (slc <= lenctr)) {
-					// split lines
-					iscut = 1;
-					dx = x - lx2;
-					dy = y - ly2;
-					llen = lenctr-lenc;
+		if (cmd == CMD_CNC) {
+			if (lines[i][4]){
+				iscut=0;
+				if (cuttabz) {
+					// if cut1 is in lenc and lencnext then cut the line
+					// and dont increase the i counter
+					if ((slc >= lenc) && (slc <= lenctr)) {
+						// split lines
+						iscut = 1;
+						dx = x - lx2;
+						dy = y - ly2;
+						llen = lenctr-lenc;
 
-					lcut = slc - lenctr;
-					x = x + dx * (lcut / llen);
-					y = y + dy * (lcut / llen);
-					lenc = slc;
+						lcut = slc - lenctr;
+						x = x + dx * (lcut / llen);
+						y = y + dy * (lcut / llen);
+						lenc = slc;
 
 
-					if ((incut == 1)) {
-						incut = 0;
-						slc+=lc;
-					} else {
-						incut = 1;
-						slc += cuttablen;
+						if ((incut == 1)) {
+							incut = 0;
+							slc+=lc;
+						} else {
+							incut = 1;
+							slc += cuttablen;
+						}
 					}
+				
 				}
-			
 			}
 		}
-
+		
         g = ci;
         if (g >= 0) {
             if (g == 0) {
@@ -339,16 +375,15 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 			if (iscut) {
 				if (incut == 1) {
 					// move up
-					ctx.strokeStyle = "#88888888";
 				} else {
 					// move back down
-					ctx.strokeStyle = "#88888888";
 				}
 				ci--;
 				lenctr -= lines[i][4];
 			} else {
 				lenc = lenctr;
 			}
+			
             cxmin = Math.min(cxmin, x);
             cymin = Math.min(cymin, y);
             cxmax = Math.max(cxmax, x);
@@ -368,7 +403,8 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 				ctx.moveTo(lx, ly);
 			}
 			if (iscut) {
-				//ctx.arc(lx,ly,2,0,2*Math.PI);
+				ctx.arc(lx,ly,2,0,2*Math.PI);
+				nc+=2;
 				ctx.moveTo(lx, ly);
 			}
         }
@@ -399,8 +435,8 @@ function draw_line(num, lcol, lines,srl,dash,len) {
             if (srl[i][6]<0)
 			{
 				ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
-				ctx.moveTo(sx, sy);
-				ctx.lineTo(oc[0]*dpm, oc[1]*dpm);
+//				ctx.moveTo(sx, sy);
+//				ctx.lineTo(oc[0]*dpm, oc[1]*dpm);
 			}
             ctx.stroke();
 			if (seg) 
@@ -425,8 +461,9 @@ var lastz = 0;
 var lasee = 0;
 var lx;
 var ly;
-var cuttablen = 5;
-
+var cuttablen = 10;
+var lastspeed = 0.6;
+var tabcutspeed = 0.75;
 function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
@@ -443,9 +480,9 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 
 
 	fm=0;
-    var X1 = data[2];
-    var Y1 = data[3];
     var lines = data[4];
+    var X1 = lines[0][1];
+    var Y1 = lines[0][2];
     var sc = 1;
     if ($("flipx").checked) {
         sc = -1;
@@ -473,13 +510,16 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     var pdn = getvalue('pdn');
     var f1 = getvalue('trav') * 60;
     var f2 = getvalue('feed') * 60;
-	if (lastlayer) {
-		f1*=0.35;
-		f2*=0.35;
-	} else {
-		if (cuttabz > z) {
-			f1*=0.5;
-			f2*=0.5;
+	var rep=getvalue('repeat')*1;
+	if (rep>1){
+		if (lastlayer) {
+			f1*=lastspeed;
+			f2*=lastspeed;
+		} else {
+			if (cuttabz > z) {
+				f1*=tabcutspeed;
+				f2*=tabcutspeed;
+			}
 		}
 	}
     if (cmd == 2) {
@@ -559,7 +599,8 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
             y = sxmax-xx;
         }
         var iscut = 0;
-        if ((cuttabz > z)) {
+		if (cmd == CMD_CNC) {
+           if ((cuttabz > z)) {
             // if cut1 is in lenc and lencnext then cut the line
             // and dont increase the i counter
             if ((slc >= lenc) && (slc <= lenctr)) {
@@ -586,8 +627,9 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 					slc += cuttablen;
 				}
 			}
-		
-        }
+			}
+		}
+
 		if (ci==0){
 			if ( firstlayer)div+=";if you want to slow down first layer do it here\n";
 			if ( lastlayer)div+=";if you want to fast up last layer do it here\n";
@@ -751,8 +793,8 @@ function sortedgcode() {
 
 				var dx = gcodes[i][2] - lx;
 				var dy = gcodes[i][3] - ly;
-				var dis = sqrt(dx * dx + dy * dy) + gcodes[i][0];
-				if ((gcodes[i][0] > 0) && (dis < bg)) {
+				var dis = sqrt(dx * dx + dy * dy) + gcodes[i][6];
+				if ((gcodes[i][6] > 0) && (dis < bg)) {
 					cs = i;
 					bg = dis;
 				}
@@ -761,13 +803,14 @@ function sortedgcode() {
         // smalles in cs
         if (cs >= 0) {
             sgcodes.push([gcodes[cs],cs+1]);
-            gcodes[cs][0] = -gcodes[cs][0];
+            gcodes[cs][6] = -gcodes[cs][6];
             lx = gcodes[cs][2];
             ly = gcodes[cs][3];
         }
     }
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
+    var ov = getvalue("overcut")*1.0;
     s = ""; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     pup1=getvalue("pup");
 	cncdeep0 = -getvalue("zdown");
@@ -777,7 +820,7 @@ function sortedgcode() {
     lastz = 0;
 
     cmd = getvalue('cmode');
-    if (cmd == 4) {
+    if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
         s += "g0 f1000 z" + mround(lastz);
@@ -788,31 +831,35 @@ function sortedgcode() {
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
 			s+="\nG0 Z3 F1000\n;PAUSE\nG0 Y-100 F5000\n";
 		}
-		if (disable_cut.indexOf(sgcodes[j][1]+"")<0)
+		if (disable_cut.indexOf(sgcodes[j][1]+"")<0) {
 			srl=sgcodes[j][0][5];
-			// drill overcut
-			for (i = 0; i < srl.length - 1; i++) {
-				// drill at overcut position
-				if (srl[i][6]<0)
-				{
-					oc=srl[i][5];
-					ocxy="X"+mround(oc[0])+" Y"+mround(oc[1]);
-					s+="\n"+pup1+"\nG0 "+ocxy+" F5000\n";
-					s+=pdn1+pup1+"\n";
+			if ((ov>0) && (cmd == CMD_CNC)) {
+				if (OVC_MODE==1){
+				// drill overcut
+				for (i = 0; i < srl.length - 1; i++) {
+					// drill at overcut position
+					if (srl[i][6]<0)
+					{
+						oc=srl[i][5];
+						ocxy="X"+mround(oc[0])+" Y"+mround(oc[1]);
+						s+="\n"+pup1+"\nG0 "+ocxy+" F5000\n";
+						s+=pdn1+pup1+"\n";
+					}
 				}
-			}
-			
+				}
+			}		
 			
 			for (var i = 0; i < re; i++) {
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz, cuttab,sgcodes[i][0][5],i==re-1,i==0);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz, cuttab,sgcodes[j][0][5],i==re-1,i==0);
 				cncz += cncdeep / re;
 			}
+		}
     }
     s = s + getvalue("pup");
     s = s + '\nG00 F3000 Y0 \n G00 X0\n';
     sc = 1;
     if ($("flipx").checked) sc = -1;
-    if (cmd == 4) {
+    if (cmd == CMD_3D) {
         // make it center
         s = "g28\ng0 z10 f1000\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
@@ -830,6 +877,17 @@ function destroyClickedElement(event) {
 
 var lines = [];
 
+function xarea(){
+	dx=xmax2-xmin2;
+	dy=ymax2-ymin2;
+	v=dx*dy;
+	
+	xmin2 = 100000;
+    ymin2 = 100000;
+    xmax2 = 0;
+    ymax2 = 0;
+	return v;
+}
 function myFunction(scale1) {
     //text1=Potrace.getSVG(1);
     //alert(text1);
@@ -878,10 +936,9 @@ function myFunction(scale1) {
     var X1 = 0;
     var Y1 = 0;
 
-    xmin = 100000;
-    ymin = 100000;
-    xmax = 0;
-    ymax = 0;
+    xarea();
+	
+
     gcodes = [];
     x1 = 0;
     y1 = 0;
@@ -922,7 +979,8 @@ gcode1(f2, X1, Y1);
                     // if foam mode must move up
                     div = div + 'G00 Y0 \n';
                 }
-                gcodes.push([lenmm, div, X1, Y1, prepare_line(lenmm,line),srl]);
+                gcodes.push([lenmm, div, X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
+				
                 //lines.push(line);
 
             }
@@ -1112,7 +1170,7 @@ gcode1(f2, X1, Y1);
             // for foam, must move up first
             div = div + 'G00 Y0 \n';
         }
-        gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl]);
+        gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
         div = "";
     }
     sortedgcode();

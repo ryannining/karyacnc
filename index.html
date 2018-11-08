@@ -14,7 +14,7 @@
     <table><tr><td bgcolor=#cccccc>
 	<center style="font-size:12pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
    <center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a>
-	<td bgcolor=yellow><p id="area_dimension"></p></table><table width=100%>
+	<td bgcolor=yellow></table><table width=100%>
     <tr valign=top width=1000px>
 	<td id=tracing>
       <table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
@@ -40,11 +40,12 @@
 			<option value="2,1,72,1500">Laser Akrilik 6mm Warna</option>
 			<option value="6,1,6,1500">Laser Triplek 5mm</option>
 			<option value="6,2,9,1500">Laser Triplek 9mm</option>
-			<option value="6,1,5,1500">MDF 3mm</option>
-			<option value="15,8,9,1000,9.5">CNC MDF 9mm</option>
-			<option value="15,4,27,1000,4.5">CNC ACP 4mm</option>
-			<option value="15,3,15,1000,5.5">CNC PVC 5mm</option>
-			<option value="15,5,22,1000,9.5">CNC PVC 9mm</option>
+			<option value="6,1,3,1500">MDF 3mm</option>
+			<option value="30,12,6,1000,6.5">CND MDF 6mm</option>
+			<option value="30,20,9,1000,9.5">CNC MDF 9mm</option>
+			<option value="30,8,27,1000,4.5">CNC ACP 4mm</option>
+			<option value="30,4,15,1000,5.5">CNC PVC 5mm</option>
+			<option value="30,10,22,1000,9.5">CNC PVC 9mm</option>
 		</select>
 		<tr><td>Mat Price/cm2<td colspan=2><input id=matprice class=saveit size=4>
 		<tr><td>Cut Price/min<td colspan=2><input id=cutprice class=saveit size=4>
@@ -93,9 +94,9 @@
       <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr><a href="localhost:9999/engrave" target=app1>Engrave</a>
       <textarea style="font-size: 10;width:100%;height:500" id="gcode" class=saveit>
       </textarea><button id=btgcode2vec>ReVector Gcode</button>
-	<td wdith=480px>
+	<td wdith=480px><p style="background:yellow" id="area_dimension"></p>
     <canvas id="myCanvas1" width="480" height="500" style="border:1px solid #FF0000;"></canvas><br>
-	For real gcode simulator, visit <a href="https://ncviewer.com/" target="_blank" >ncviewer</a> and paste gcode there.
+	For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
     <br><button id=btsaveset>Save Config</button>
 	
 

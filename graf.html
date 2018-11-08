@@ -53,6 +53,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 </table>
 
 <script>
+var overshot=2;
 function $(id) {
   return document.getElementById(id);
 }
@@ -297,7 +298,7 @@ ditherit = function() {
 					//gcode+="G4\nG92 E0\n";
 					//gcode+="G0 +"\n";
 					gcode+="G7 P"+bp+" ["+gc+"aaa]\n";
-					ccc=10; // move back to allow acceleration
+					ccc=overshot; // move back to allow acceleration
 					gcode+="G0 F"+speed+" E"+pxstart+" X"+mround(px1-ccc)+" Y"+mround((j)*ystep)+"\n";
 					gcode+="G0 X"+mround(px1)+"\n";
 					gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\nG0 X"+mround(px2+ccc)+"\n";
