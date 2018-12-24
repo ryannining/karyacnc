@@ -74,12 +74,12 @@ var gcodes = [];
 var harga = 1000;
 var cncz = 0;
 
-var layerheight = 0.5;
+var layerheight = 0.35;
 var filamentD = 1.75;
 var filamentTemp=180;
 var retract = 0;
 var overlap = 15;
-var extrudeMul=1.5;
+var extrudeMul=1;
 var extrude = (layerheight * layerheight) / (filamentD * filamentD);
 
 var fm=0;
@@ -226,12 +226,19 @@ function prepare_line(lenmm,lines) {
 		if (lenmm<noprocess)return lines;
 		sharpv = $("sharp").value;
 		ov = $("overcut").value/10.0+0.01;
+		cxt=0;
+		cyt=0;
+		cnt=0;
 		for (var i = 0; i < lines.length; i++) {
 			
 			tl = lines[i][3];
 			tl2 = lines[i][4];
 			x = lines[i][1];
 			y = lines[i][2];
+			cxt+=x;
+			cyt+=y;
+			cnt+=1.0;
+			
 			//if (ov!=0){
 				sr = sharp(lines, 1, 2, i);
 				if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
@@ -244,7 +251,10 @@ function prepare_line(lenmm,lines) {
 						newlines.push([lines[i][0],x-ox,y-oy,tl,0]);
 						newlines.push([lines[i][0],x,y,tl,0]);
 					}
-					srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross]);
+					srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross,cxt/cnt,cyt/cnt]);
+					cxt=0;
+					cyt=0;
+					cnt=0;
 					lx=x;
 					ly=y;
 					//}
@@ -441,19 +451,21 @@ function draw_line(num, lcol, lines,srl,dash,len) {
             ctx.stroke();
 			if (seg) 
 			{
-				ctx.fillStyle = "#0000cc";
+				ctx.fillStyle = ctx.strokeStyle;
 				ni = i + 1;
 				if (ni >= srl.length) ni = 0;
-				ti = Math.floor((srl[i][4] + srl[ni][4]) / 2);
+				xt=srl[ni][7]*dpm;
+				yt=srl[ni][8]*dpm;
 				l = mround(srl[ni][3] - srl[i][3]);
 				sg += l;
-				ctx.fillText(l, (lines[ti][1] * dpm) + 10, (lines[ti][2] * dpm) + 10);
+				if (l>0)ctx.fillText(l, xt+5, yt+10 );
 			}
 		}
         if (seg)$("segm").value += sg + "\n";
     //}
     //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
 	clw="<";
+	ctx.fillStyle = "#000000";
 	if (isClockwise(lines))clw=">";
     if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
@@ -861,7 +873,7 @@ function sortedgcode() {
     if ($("flipx").checked) sc = -1;
     if (cmd == CMD_3D) {
         // make it center
-        s = "g28\ng0 z10 f1000\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
+        s = "g28\ng0 z0 f1000\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
     setvalue("gcode", s);

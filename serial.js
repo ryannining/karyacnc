@@ -137,6 +137,13 @@ function nextgcode() {
     stopit();
 }
 
+function idleloop(){
+	if (wsconnected) {
+        if (!running)sendgcode("M105");
+    }
+	setTimeout(idleloop,3000);
+}
+
 function stopit() {
 	var ms=etime.getTime();
 	etime=new Date();
@@ -237,7 +244,7 @@ var onReadCallback = function(s) {
             }
 			
 			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
-            if (isok || (lastw.toUpperCase().indexOf('OK')>=0)) {
+            if (isok || (lastw.toUpperCase().indexOf('OK')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
                 okwait=0;
                 nextgcode();
             }
@@ -571,6 +578,7 @@ function connectwebsock() {
             a.innerHTML = "Web socket:disconnected<button onclick='connectwebsock()'>Reconnect</button>";
             wsconnected = 0;
         };
+		idleloop();
     }
 }
 window.onload = function() {
