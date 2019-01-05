@@ -11,16 +11,36 @@
 
 
 <body style="font-family:arial;font-size:12pt">
-    <table><tr><td bgcolor=#cccccc>
+    <table width=100%><tr><td bgcolor=lightgray style="font-weight:600">
 	<center style="font-size:12pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
    <center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a>
-	<td bgcolor=yellow></table><table width=100%>
+	</table><table width=100%>
     <tr valign=top width=1000px>
-	<td id=tracing>
+	<td id=tracing width=300px>
       <table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
         <tr><td colspan=3><input type='file' accept='.bmp,.jpg,.gif,.png' id=btfile>
-        <tr><td colspan=2>Retrace Smoothness <td><input id=smooth size=2 value="0.7" class=saveit>
-        <tr style="background:lime"><td>DPI<td colspan=2>Machine
+	 <tr><td colspan=3 align=left><button id=bthidden>Show Tracing Option</button>
+     
+	 <table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+      <tr><td colspan=2>Smoothness <td colspan=2><input id=smooth size=2 value="0.7" class=saveit>
+	  <tr><td colspan=2>Pause at <td colspan=2><input id=pauseat class=saveit size=15>
+	  <tr><td colspan=2>Disable Cut <td colspan=2><input id=disablecut class=saveit size=15>
+	  <tr><td colspan=2>Disable Tab <td colspan=2><input id=disabletab class=saveit size=15>
+	  <tr><td colspan=2>Disable Ovc <td colspan=2><input id=disableovc class=saveit size=15>
+	  <tr><td colspan=2>Curve seg. <td colspan=2><input id=curveseg class=saveit value='1' size=5>
+	  <tr><td colspan=2>Tab every <td colspan=2><input id=tabevery class=saveit value='200' size=5>
+	  <tr><td colspan=2>Tab len <td colspan=2><input id=tablen class=saveit value='5' size=5>
+	  <tr><td colspan=2>Tab ofs <td colspan=2><input id=tabofs class=saveit value='0' size=5>
+	  <tr><td colspan=2>To drill <td colspan=2><input id=drill class=saveit value='7' size=5>
+	  <tr><td colspan=2>To Overcut <td colspan=2><input id=overcutmin class=saveit value='14' size=5>
+	  
+	  
+	  
+	  <tr><td>Overcut <td><input id=overcut value=1 size=2 class=saveit>
+	      <td>Segment <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
+	  </table>
+
+	  <tr style="background:lime"><td>DPI<td colspan=2>Machine
 
         <tr><td><input id="scale" size=5 value="72" class=saveit>
 		  <td colspan=2>
@@ -65,15 +85,8 @@
 
       <tr><td><input id=zdown0 size=1 value=0 class=saveit> - <input id=zdown size=1 value=1 class=saveit>
       <td colspan=2><input id=tabc value=0 size=3  class=saveit>
-
-     <tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
+	 <tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
 	  <td>Rotate <input id=rotate type=checkbox class=saveit>
-	  <tr><td colspan=3>Pause at <input id=pauseat class=saveit>
-	  <tr><td colspan=3>Disable Cut <input id=disablecut class=saveit>
-	  <tr><td colspan=3>Disable Tab <input id=disabletab class=saveit>
-	  <tr><td colspan=3>Disable Ovc <input id=disableovc class=saveit>
-	  <tr><td>Overcut <input id=overcut value=1 size=2 class=saveit>
-	  <td colspan=2>Segment <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
 	  <tr><td colspan=3>Cut CCW <input id=cutccw type=checkbox class=saveit><button id=btrecode >Re-gcode</button>
    </table>
 
@@ -90,19 +103,20 @@
 ;===============
     </textarea>
 	Segments:<br><textarea style="font-size: 10;width:100%;height:50px" id=segm ></textarea>
-   <td width=400px><button id=tracingbt>GCODE SENDER</button>
-      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr><a href="localhost:9999/engrave" target=app1>Engrave</a>
+   <td width=250px><button id=tracingbt>GCODE SENDER</button>
+      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr><a href="localhost:8888/engrave" target=app1>Engrave</a>
       <textarea style="font-size: 10;width:100%;height:500" id="gcode" class=saveit>
       </textarea><button id=btgcode2vec>ReVector Gcode</button>
-	<td wdith=480px><p style="background:yellow" id="area_dimension"></p>
-    <canvas id="myCanvas1" width="480" height="500" style="margin:3px"></canvas><br>
+	<td width=600px><p style="background:yellow" id="area_dimension"></p>
+    <canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
 	For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
     <br><button id=btsaveset>Save Config</button>
 	
 
-    <td width=300px><b>Machine Control</b><br>
+    <td width=300px bgcolor=lightblue style="padding:5px"><b>Machine Control</b><br>
 	Serial Port <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
-	<div id=status>Status:not connected</div>
+	<br>WebSocket <input id=wsip size=10 class=saveit value="192.168.0.123">
+	<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
 	<hr>
 
 	<table><tr align=center valign=center>

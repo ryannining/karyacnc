@@ -1,0 +1,1 @@
+c:/Program Files/Inkscape/share/extensions/laser.py

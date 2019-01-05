@@ -11,6 +11,8 @@ var py = 0;
 var pz = 0;
 var pe = 0;
 var etime=new Date();
+var checktemp=1;
+
 function comconnect() {
     var bt = document.getElementById('btconnect');
     if (bt.innerHTML == "Connect") {
@@ -136,10 +138,11 @@ function nextgcode() {
 	sendgcode("M114");
     stopit();
 }
-
 function idleloop(){
-	if (wsconnected) {
+	
+	if (wsconnected && checktemp) {
         if (!running)sendgcode("M105");
+		checktemp=0;
     }
 	setTimeout(idleloop,3000);
 }
@@ -241,6 +244,7 @@ var onReadCallback = function(s) {
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;
+				checktemp=1;
             }
 			
 			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
@@ -358,8 +362,8 @@ function modechange() {
         setvalue("pdn", "M3 S255");
     }
     if (val == 3) {
-        setvalue("pup", "G0 Z2 F1000");
-        setvalue("pdn", "G0 Z=cncz F60");
+        setvalue("pup", "G0 Z2 F350");
+        setvalue("pdn", "G0 Z=cncz F240");
         setvalue("feed", "3");
         setvalue("zdown", "10");
     }
@@ -468,6 +472,13 @@ setevent("change", "eepromid", function() {
     eppos = v[1];
 });
 
+var hidd=true;
+setclick("bthidden",function(){
+	var d='none';
+	if (hidd)d='block';
+	hidd=!hidd;
+	$("vars").style.display=d;
+});
 // gcode editor
 
 setclick("btcopy1", function() {
@@ -489,6 +500,7 @@ setclick("tracingbt", function() {
     }
 
 });
+setclick("wsconnect",function(){connectwebsock();});
 
 var stotype = 0;
 try {
@@ -522,36 +534,45 @@ setclick("btgcode2vec",function(){
 });
 
 try {
-if (stotype == 0) {
-        storage.get("text1", function(r) {
-            text1 = r.text1;
-        })
-        storage.get("settings", function(r) {
-            sett = r.settings;
-            for (var k in sett) {
-                setvalue(k, sett[k]);
-            }
-            refreshgcode();
-        });
-} else {
-    text1 = storage.text1;
-    if (text1 == undefined) text1 = "";
-    if (storage.settings != undefined) {
-        sett = JSON.parse(storage.settings);
-        for (var k in sett) {
-            setvalue(k, sett[k]);
-        }
-    }
-    if (text1) refreshgcode();
-}
-    } catch (e) {}
+	if (stotype == 0) {
+			storage.get("text1", function(r) {
+				text1 = r.text1;
+			})
+			storage.get("settings", function(r) {
+				sett = r.settings;
+				for (var k in sett) {
+					setvalue(k, sett[k]);
+				}
+				refreshgcode();
+			});
+	} else {
+		text1 = storage.text1;
+		if (text1 == undefined) text1 = "";
+		if (storage.settings != undefined) {
+			sett = JSON.parse(storage.settings);
+			for (var k in sett) {
+				setvalue(k, sett[k]);
+			}
+		}
+		if (text1) refreshgcode();
+	}
+    //connectwebsock();
+
+} catch (e) {}
 	
 
 // websocket
 function connectwebsock() {
-    if (window.location.host) {
+	if (wsconnected){
+		ws.close();
+		return;
+	}
+	h=getvalue("wsip");
+    if (h) {
         var lastcomtype = comtype;
         comtype = 1;
+        var a = document.getElementById("status");
+        a.innerHTML = "Web socket:Connecting...";
 
         function handlemessage(m) {
             msg = m.data;
@@ -559,15 +580,20 @@ function connectwebsock() {
             //if (debugs & 2) console.log(msg);
         }
 
-        ws = new WebSocket('ws://' + window.location.host + ':81/', ['arduino']);
+        ws = new WebSocket('ws://' + h + ':81/', ['arduino']);
         ws.onerror = function(e) {
             comtype = lastcomtype;
+            a.innerHTML = "Web socket:Failed connect ! ";
+			$("wsconnect").innerHTML='Connect';
+			ws.close();
+			wsconnected=0;
+
         } // back to serial if error.
         ws.onmessage = handlemessage;
         ws.onopen = function(e) {
             console.log('Ws Connected!');
-            a = document.getElementById("status");
             a.innerHTML = "Web socket:Connected";
+			$("wsconnect").innerHTML='Close';
             wsconnected = 1;
             nextgcode();
         };
@@ -575,17 +601,20 @@ function connectwebsock() {
         ws.onclose = function(e) {
             console.log('ws Disconnected!');
             a = document.getElementById("status");
-            a.innerHTML = "Web socket:disconnected<button onclick='connectwebsock()'>Reconnect</button>";
+            a.innerHTML = "Web socket:disconnected";
+			$("wsconnect").innerHTML='Connect';
             wsconnected = 0;
         };
 		idleloop();
     }
 }
 window.onload = function() {
+	var h=window.location.host;
     a = document.activeElement;
     if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
-    connectwebsock();
+	if (h)setvalue("wsip",h);
 };
+
 
 function createCORSRequest(method, url) {
   var xhr = new XMLHttpRequest();
@@ -615,7 +644,7 @@ function createCORSRequest(method, url) {
 
 
 // web socket server, to receive gcode from other
-var port = 9999;
+var port = 8888;
 var isServer = false;
 if (http.Server && http.WebSocketServer) {
   // Listen for HTTP connections.
@@ -647,6 +676,10 @@ if (http.Server && http.WebSocketServer) {
     socket.addEventListener('message', function(e) {
 			if (e.data==">FINISH"){
 				setvalue("gcode",buff);
+				buff="";
+			}if (e.data==">REVECTOR"){
+				text1=gcodetoText1(buff);
+				refreshgcode();
 				buff="";
 			} else {
 				buff+=e.data;

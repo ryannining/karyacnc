@@ -5,6 +5,13 @@ var OVC_MODE = 0; // 1 drill 0 path
 function $(id) {
     return document.getElementById(id);
 }
+function hideId(id){
+	$(id).style.display='none';
+}
+function showId(id){
+	$(id).style.display='block';
+}
+
 sqrt = Math.sqrt;
 sqr = function(x) {
     return x * x;
@@ -203,8 +210,10 @@ var disable_cut=[];
 var pause_at=[];
 var shapectr=0;
 var collapsepoint=7;
-var noprocess=2*collapsepoint;
+var noprocess=14;
 function prepare_line(lenmm,lines) {
+	collapsepoint=getvalue("drill")*1;
+	noprocess=getvalue("overcutmin")*1;
 	shapectr++;
 	newlines=[];
 	srl=[];
@@ -239,7 +248,8 @@ function prepare_line(lenmm,lines) {
 			cyt+=y;
 			cnt+=1.0;
 			
-			//if (ov!=0){
+			//if (ov!=0)
+			{
 				sr = sharp(lines, 1, 2, i);
 				if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
 					//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
@@ -259,13 +269,14 @@ function prepare_line(lenmm,lines) {
 					ly=y;
 					//}
 				} else newlines.push(lines[i]);
+			}
 		}
 		return newlines;
 
 	}
 }
-var cutevery=300;
-
+var cutevery=200;
+var cutofs=0;
 function draw_line(num, lcol, lines,srl,dash,len) {
     //if (sxmax < sxmin);
 	cuttabz=1;
@@ -277,11 +288,12 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     if ($("cutccw").checked) ccw = 1;
 
     dv=Math.round(len/cutevery)*2;
+	if (dv>4) dv=4;
 	lc = len / dv;
-    slc = lc / 2;
+    slc = lc / 2+cutofs;
 
-	
-    var dpm = 440.0 / (sxmax);
+	var cw=$("myCanvas1").width-30;
+    var dpm = cw / (sxmax);
     dpm = Math.min(dpm, 440.0 / (symax));
     var x = lx / dpm;
     var y = ly / dpm;
@@ -424,7 +436,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 	ctx.stroke();
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
     ctx.beginPath();
-	ctx.setLineDash([2]);
+	//ctx.setLineDash([2]);
     ctx.moveTo(lx, ly);
     //ctx.lineTo(X1, Y1);
     ctx.stroke();
@@ -437,14 +449,23 @@ function draw_line(num, lcol, lines,srl,dash,len) {
             if (i) sg += ",";
 
             ctx.beginPath();
-            ctx.strokeStyle = getRandomColor();
+            ctx.strokeStyle = "red";
 			oc=srl[i][5];
-			sx=srl[i][0]*dpm;
-			sy=srl[i][1]*dpm;
-			
+			sx=srl[i][0];
+			sy=srl[i][1];
+			if (sc == -1) {
+				sx = sxmax - sx;
+			}
+			if (ro == -1) {
+				xx = sx;
+				sx = sy;
+				sy = sxmax-xx;
+			}
+			sx*=dpm;
+			sy*=dpm;
             if (srl[i][6]<0)
 			{
-				ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
+//				ctx.arc(sx, sy, 3, 0, 2 * Math.PI);
 //				ctx.moveTo(sx, sy);
 //				ctx.lineTo(oc[0]*dpm, oc[1]*dpm);
 			}
@@ -473,7 +494,7 @@ var lastz = 0;
 var lasee = 0;
 var lx;
 var ly;
-var cuttablen = 10;
+var cuttablen = 5.5;
 var lastspeed = 0.6;
 var tabcutspeed = 0.75;
 function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
@@ -487,8 +508,9 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     if ($("cutccw").checked) ccw = 1;
 
     dv=Math.round(len/cutevery)*2;
+	if (dv>4)dv=4;
 	lc = len / dv;
-    slc = lc / 2;
+    slc = lc / 2+cutofs;
 
 
 	fm=0;
@@ -643,18 +665,19 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 		}
 
 		if (ci==0){
-			if ( firstlayer)div+=";if you want to slow down first layer do it here\n";
-			if ( lastlayer)div+=";if you want to fast up last layer do it here\n";
+			//if ( firstlayer)div+=";if you want to slow down first layer do it here\n";
+			//if ( lastlayer)div+=";if you want to fast up last layer do it here\n";
         }
 		gcode1(f2 * fm, x, y);
         lx = x;
         ly = y;
         if (iscut) {
             if (incut == 1) {
-                // move up
-                div = div + pdn.replace("=cncz", mround(cuttabz)) + '\n';
+                // move up fast
+                div = div + pdn.replace("=cncz", mround(cuttabz)) + ' F350\n';
             } else {
                 // move back down
+                div = div + pdn.replace("=cncz", mround(lastz)) + ' F350 \n';
                 div = div + pdn.replace("=cncz", mround(z)) + '\n';
             }
             ci--;
@@ -835,13 +858,13 @@ function sortedgcode() {
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
-        s += "g0 f1000 z" + mround(lastz);
+        s += "g0 f350 z" + mround(lastz);
     }
     cuttab = cncdeep + getvalue("tabc") * 1;
 	for (var j = 0; j < sgcodes.length; j++) {
 		cncz = cncdeep / re;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
-			s+="\nG0 Z3 F1000\n;PAUSE\nG0 Y-100 F5000\n";
+			s+="\nG0 Z3 F350\n;PAUSE\nG0 Y-100 F500\n";
 		}
 		if (disable_cut.indexOf(sgcodes[j][1]+"")<0) {
 			srl=sgcodes[j][0][5];
@@ -854,7 +877,7 @@ function sortedgcode() {
 					{
 						oc=srl[i][5];
 						ocxy="X"+mround(oc[0])+" Y"+mround(oc[1]);
-						s+="\n"+pup1+"\nG0 "+ocxy+" F5000\n";
+						s+="\n"+pup1+"\nG0 "+ocxy+" F200\n";
 						s+=pdn1+pup1+"\n";
 					}
 				}
@@ -868,12 +891,13 @@ function sortedgcode() {
 		}
     }
     s = s + getvalue("pup");
-    s = s + '\nG00 F3000 Y0 \n G00 X0\n';
+    s = s + '\nG0 F3000 Y0 \n G0 X0\n';
+	if (cmd==CMD_CNC)s+="G0 Z0 F350\n";
     sc = 1;
     if ($("flipx").checked) sc = -1;
     if (cmd == CMD_3D) {
         // make it center
-        s = "g28\ng0 z0 f1000\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
+        s = "g28\ng0 z0 f350\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
     setvalue("gcode", s);
@@ -900,7 +924,18 @@ function xarea(){
     ymax2 = 0;
 	return v;
 }
+var detail=1.0;
+var opx=-1000;
+var opy=-1000;
+var line=[];
+function linepush(f,x,y,l1,l2){
+	if ((x!=opx) || (y!=opy))line.push([f, x, y, l1,l2]);
+	opx=x;
+	opy=y;
+}
 function myFunction(scale1) {
+	opx=-1000;
+	opy=-1000;
     //text1=Potrace.getSVG(1);
     //alert(text1);
 	pause_at=getvalue('pauseat').split(",");
@@ -927,13 +962,17 @@ function myFunction(scale1) {
     //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
     //$("gsvg").value=text1;
     cmd = getvalue('cmode');
+	cuttablen=getvalue("tablen")*1;
+	cutevery=getvalue("tabevery")*1;
+	cutofs=getvalue("tabofs")*1;
+	detail=getvalue("curveseg")*1;
     var pw1 = 1;
     var pw2 = 0; //getvalue('pwm');
     var pup = getvalue('pup');
     var pdn = getvalue('pdn');
     var f1 = getvalue('trav') * 60;
     var f2 = getvalue('feed') * 60;
-    var det = getvalue('feed') / (60.0*getvalue("smooth"));
+    var det = 50*detail*getvalue('feed') / (60.0*getvalue("smooth"));
     var seg = $("segment").checked;
     if (seg) det *= 4;
     if (cmd == 2) {
@@ -961,7 +1000,7 @@ function myFunction(scale1) {
 	lenn=0;
 	
     var cnts = 0;
-    var line = [];
+    line = [];
 	//scale=1;
     //alert(div.innerHTML);
     while (1) {
@@ -986,7 +1025,7 @@ function myFunction(scale1) {
             if (cnts > 1) {
                 ///
 gcode1(f2, X1, Y1);
-                line.push([f2, X1, Y1, lenmm,lenn]);
+                linepush(f2, X1, Y1, lenmm,lenn);
                 if (cmd == 2) {
                     // if foam mode must move up
                     div = div + 'G00 Y0 \n';
@@ -1027,7 +1066,7 @@ gcode0(f1, X1, Y1);
             p1y = xy[1] * scale;
             ///
 gcode1(f2, p1x, p1y);
-            line.push([f2, p1x, p1y, lenmm,lenn]);
+            linepush(f2, p1x, p1y, lenmm,lenn);
         } else if (cr == 'H') {
             var n2 = text1.indexOf(' ', n + 3);
             var xy = text1.slice(n + 3, n2);
@@ -1035,7 +1074,7 @@ gcode1(f2, p1x, p1y);
 
             ///
 gcode1(f2, p1x, y1);
-            line.push([f2, p1x, y1, lenmm,lenn]);
+            linepush(f2, p1x, y1, lenmm,lenn);
             n = n + 3;
         } else if (cr == 'V') {
             var n2 = text1.indexOf(' ', n + 3);
@@ -1044,7 +1083,7 @@ gcode1(f2, p1x, y1);
 
             ///
 gcode1(f2, y1, p1y);
-            line.push([f2, y1, p1y, lenmm,lenn]);
+            linepush(f2, y1, p1y, lenmm,lenn);
 
             n = n + 3;
         } else if (cr == 'C') {
@@ -1109,7 +1148,7 @@ gcode1(f2, y1, p1y);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
                 ///
 gcode1(lastf, x, y);
-                line.push([lastf, x, y, lenmm,lenn]);
+                linepush(lastf, x, y, lenmm,lenn);
             }
 
             //******************************************************************
@@ -1131,7 +1170,7 @@ gcode1(lastf, x, y);
             p1y = res;
             ///
 gcode1(lastf, p1x, p1y);
-            line.push([lastf, p1x, p1y, lenmm,lenn]);
+            linepush(lastf, p1x, p1y, lenmm,lenn);
 
             var n = text1.indexOf(' ', n + 3);
             var res = scale * parseFloat(text1.slice(n + 1, n + 10));
@@ -1147,7 +1186,7 @@ gcode1(lastf, p1x, p1y);
             p2y = res;
             ///
 gcode1(lastf, p2x, p2y);
-            line.push([lastf, p2x, p2y, lenmm,lenn]);
+            linepush(lastf, p2x, p2y, lenmm,lenn);
 
             xincep = p2x;
             yincep = p2y;
@@ -1176,8 +1215,8 @@ gcode1(lastf, p2x, p2y);
     // close loop
     if (cnts > 0) {
         ///
-gcode1(f2, X1, Y1);
-        line.push([lastf, X1, Y1, lenmm,lenn]);
+		gcode1(f2, X1, Y1);
+        linepush(lastf, X1, Y1, lenmm,lenn);
         if (cmd == 2) {
             // for foam, must move up first
             div = div + 'G00 Y0 \n';
@@ -1215,6 +1254,11 @@ function gcodetoText1(gx){
 	var tm="";			
 	var wd={'g':-1,'x':0,'y':0};
 	var xy1='';
+	// scan to get xmax xmin ymax ymin
+	var xmax=-100000;
+	var xmin=100000;
+	var ymax=-100000;
+	var ymin=100000;
 	for (i in gs){
 		if ((gs[i]) && (gs[i][0]!=';')){
 			ws=gs[i].split(" ");
@@ -1229,7 +1273,32 @@ function gcodetoText1(gx){
 				//console.log(ws[j][0]+":"+ws[j].substr(1));
 			}
 			if (hasxy){
-				xy=mround(wd['x']*scale)+" "+mround(wd['y']*scale);
+				if (wd['g']==1) {
+					xmax=Math.max(xmax,wd['x']*scale);
+					ymax=Math.max(ymax,-wd['y']*scale);
+					xmin=Math.min(xmin,wd['x']*scale);
+					ymin=Math.min(ymin,-wd['y']*scale);
+					
+				}
+			}
+		}
+	}
+	
+	for (i in gs){
+		if ((gs[i]) && (gs[i][0]!=';')){
+			ws=gs[i].split(" ");
+			wd['g']=-1;
+			hasxy=0;
+			for (j in ws){
+				if (ws[j]) {
+					cr=ws[j][0].toLowerCase();
+					if (cr=='x' || cr=='y')hasxy=1;
+					wd[cr]=ws[j].substr(1);
+				}
+				//console.log(ws[j][0]+":"+ws[j].substr(1));
+			}
+			if (hasxy){
+				xy=mround(wd['x']*scale-xmin)+" "+mround(-wd['y']*scale-ymin);
 				if (wd['g']==0) {
 					// new shape
 					sc++;
@@ -1237,23 +1306,27 @@ function gcodetoText1(gx){
 						if ((c & 1))t1+=" "+xy1;
 						t1+=" ";
 					}
-					c=0;
 					tm="M"+xy;
 					xy1=xy;
+					c=0;
 				}
 				if (wd['g']==1) {
 					if (c==0){
 						sn++;
 						t1+=tm;
 					}
-					c++;
-					if (c & 1)t1+=" L";
-					t1+=" "+xy;
+					//if (xy!=lxy){
+						c++;
+						if (c & 1)t1+=" L";
+						t1+=" "+xy;
+						lxy=xy;
+					//}
 				}
 			}
 		}
 	}
-	if ((c & 1))t1+=" "+xy1;
+	if ((c & 1))t1+=" "+xy;
+	//t1+=' L '+xy+' '+xy1;
 	t1+='" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
 	return t1;
 }
