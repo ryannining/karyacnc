@@ -614,6 +614,7 @@ window.onload = function() {
     a = document.activeElement;
     if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
 	if (h)setvalue("wsip",h);
+	window.onresize();
 };
 
 
@@ -699,4 +700,14 @@ if (http.Server && http.WebSocketServer) {
     });
     return true;
   });
+}
+
+
+window.onresize=function(){
+	var nw=Math.max(100,window.innerWidth-765);
+	var v=$('myCanvas1');
+	v.width=nw;
+	v.height=Math.max(300,500*nw/600);
+	gcode_verify();
+
 }

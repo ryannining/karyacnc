@@ -293,8 +293,9 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     slc = lc / 2+cutofs;
 
 	var cw=$("myCanvas1").width-30;
+	var ch=$("myCanvas1").height-30;
     var dpm = cw / (sxmax);
-    dpm = Math.min(dpm, 440.0 / (symax));
+    dpm = Math.min(dpm, ch / (symax));
     var x = lx / dpm;
     var y = ly / dpm;
     var cxmin = 100000;
@@ -934,6 +935,7 @@ function linepush(f,x,y,l1,l2){
 	opy=y;
 }
 function myFunction(scale1) {
+	if (text1==undefined) return;
 	opx=-1000;
 	opy=-1000;
     //text1=Potrace.getSVG(1);
