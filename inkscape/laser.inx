@@ -22,6 +22,8 @@
     <item value="G21 (All units in mm)">mm</item>
     <item value="G20 (All units in inches)">in</item>
   </param>
+	<param name="karyaws" type="string" _gui-text="Karyacnc Server">localhost</param>
+	<param name="karyacnc" type="boolean" gui-text="Send to karyacnc">true</param>
 
 	<effect>
 		<effects-menu>

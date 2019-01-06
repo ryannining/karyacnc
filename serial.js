@@ -129,6 +129,7 @@ function nextgcode() {
         if ((g) && (g[0] != ';') && (g[0] != '(')) {
 			okwait=1;
             sendgcode(g.split(";")[0]);
+			$("progress1").value=eline*100/egcodes.length;
 			var bt = document.getElementById('btresume2');
 			bt.innerHTML = "Resume from "+eline;
             return;

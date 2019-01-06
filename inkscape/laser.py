@@ -2415,29 +2415,31 @@ class laser_gcode(inkex.Effect):
         f = open(self.options.directory+self.options.file, "w")
         f.write(self.options.laser_off_command + " S0" + "\n" + self.header + "G1 F" + self.options.travel_speed + "\n" + gcode + self.footer)
         f.close()
-
-        ws = create_connection("ws://localhost:8888/")
-        for g in gcode.split("\n"):
-            ws.send(g)
-            ws.send("\n")
-        ws.send(">REVECTOR");
-        ws.close()        
+        if self.options.karyacnc:
+            ws = create_connection("ws://"+self.options.karyaws+":8888/")
+            for g in gcode.split("\n"):
+                ws.send(g)
+                ws.send("\n")
+            ws.send(">REVECTOR");
+            ws.close()        
         
 
     def __init__(self):
         inkex.Effect.__init__(self)
         self.OptionParser.add_option("-d", "--directory",                       action="store", type="string",          dest="directory",                           default="",                             help="Output directory")
         self.OptionParser.add_option("-f", "--filename",                        action="store", type="string",          dest="file",                                default="output.gcode",                 help="File name")
+        self.OptionParser.add_option("", "--karyaws",                         action="store", type="string",          dest="karyaws",                             default="localhost",                 help="File name")
         self.OptionParser.add_option("",   "--add-numeric-suffix-to-filename",  action="store", type="inkbool",         dest="add_numeric_suffix_to_filename",      default=False,                          help="Add numeric suffix to file name")
-        self.OptionParser.add_option("",   "--laser-command",                   action="store", type="string",          dest="laser_command",                       default="M03",                      help="Laser gcode command")
-        self.OptionParser.add_option("",   "--laser-off-command",               action="store", type="string",          dest="laser_off_command",                   default="M05",                         help="Laser gcode end command")
+        self.OptionParser.add_option("",   "--laser-command",                   action="store", type="string",          dest="laser_command",                       default="M03",                          help="Laser gcode command")
+        self.OptionParser.add_option("",   "--laser-off-command",               action="store", type="string",          dest="laser_off_command",                   default="M05",                          help="Laser gcode end command")
         self.OptionParser.add_option("",   "--laser-speed",                     action="store", type="int",             dest="laser_speed",                         default="750",                          help="Laser speed (mm/min)")
-        self.OptionParser.add_option("",   "--flatten",                    action="store", type="float",          dest="flatten",                        default=0.3,                         help="Flatten resolution")
+        self.OptionParser.add_option("",   "--karyacnc",                        action="store", type="inkbool",         dest="karyacnc",                            default=True,                           help="Send to karyacnc")        
+        self.OptionParser.add_option("",   "--flatten",                         action="store", type="float",           dest="flatten",                             default=0.1,                            help="Flatten resolution")
         self.OptionParser.add_option("",   "--travel-speed",                    action="store", type="string",          dest="travel_speed",                        default="3000",                         help="Travel speed (mm/min)")
         self.OptionParser.add_option("",   "--laser-power",                     action="store", type="int",             dest="laser_power",                         default="255",                          help="S# is 256 or 10000 for full power")
         self.OptionParser.add_option("",   "--passes",                          action="store", type="int",             dest="passes",                              default="1",                            help="Quantity of passes")
         self.OptionParser.add_option("",   "--pass-depth",                      action="store", type="string",          dest="pass_depth",                          default="1",                            help="Depth of laser cut")
-        self.OptionParser.add_option("",   "--power-delay",                     action="store", type="string",          dest="power_delay",                         default="0",                          help="Laser power-on delay (ms)")
+        self.OptionParser.add_option("",   "--power-delay",                     action="store", type="string",          dest="power_delay",                         default="0",                             help="Laser power-on delay (ms)")
         self.OptionParser.add_option("",   "--suppress-all-messages",           action="store", type="inkbool",         dest="suppress_all_messages",               default=True,                           help="Hide messages during g-code generation")
         self.OptionParser.add_option("",   "--create-log",                      action="store", type="inkbool",         dest="log_create_log",                      default=False,                          help="Create log files")
         self.OptionParser.add_option("",   "--log-filename",                    action="store", type="string",          dest="log_filename",                        default='',                             help="Create log files")
