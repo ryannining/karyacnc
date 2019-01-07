@@ -115,6 +115,8 @@ function sendgcode(g) {
 	catch (e) {        }
 }
 
+var shapefinish='';
+var currentshape=0;
 function nextgcode() {
     if (comtype == 1 && !wsconnected) {
         //setTimeout(nextgcode,1000);
@@ -124,6 +126,15 @@ function nextgcode() {
     if (!running) return;
     while (eline < egcodes.length) {
         var g = egcodes[eline];
+		if (g.indexOf(";SHAPE")==0){
+			var sp=g.split("#")[1]*1;
+			if (currentshape && (sp!=currentshape)){
+				if (shapefinish)shapefinish+=',';
+				shapefinish+=currentshape;
+				$("shapes").value=shapefinish;
+			}
+			currentshape=sp;
+		}
         eline++;
 		if (g==";PAUSE")pause();
         if ((g) && (g[0] != ';') && (g[0] != '(')) {
@@ -166,6 +177,8 @@ function stopit() {
 }
 
 function execute(gcodes) {
+	shapefinish="";
+	currentshape=0;
 	etime=new Date();
 	console.log("Start "+etime);
     var bt = document.getElementById('btpause');
@@ -273,7 +286,7 @@ var onGotDevices = function(ports) {
 
 var connect = function(path) {
     var options = {
-        bitrate: 115200
+        bitrate: 115200*2
     };
     chrome.serial.connect(path, options, onConnect)
 };

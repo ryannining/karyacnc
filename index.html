@@ -8,7 +8,11 @@
      });
 </script>
 	</head>
-
+<style>
+html, body {
+    overflow-y: visible;
+}
+</style>
 
 <body style="font-family:arial;font-size:12pt">
     <table width=100%><tr><td bgcolor=lightgray style="font-weight:600">
@@ -140,6 +144,7 @@
 	<input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
 	<Hr><b>My GCODE</b><br>
 	<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
+	<input id=shapes size=10><br>
    <button id=btinit style="display:none">Run Init</button>
 	<button id=btpreview>Preview</button>
 	<button id=btexecute>Execute</button>
@@ -164,7 +169,7 @@
 	<button id=btresume>Resume</button>
 	<button id=btresume2>Resume from</button>
 	<div id=infolain></div>
-	
+</table><center>	
 <!-- Noads
 <script src="https://www.w3counter.com/tracker.js?id=122053"></script>
 	<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
