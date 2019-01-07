@@ -28,7 +28,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import inkex, simplestyle, simplepath, cspsubdiv
 import cubicsuperpath, simpletransform, bezmisc
 import httplib
-from websocket import create_connection
 
 import os
 import math
@@ -2416,6 +2415,7 @@ class laser_gcode(inkex.Effect):
         f.write(self.options.laser_off_command + " S0" + "\n" + self.header + "G1 F" + self.options.travel_speed + "\n" + gcode + self.footer)
         f.close()
         if self.options.karyacnc:
+            from websocket import create_connection
             ws = create_connection("ws://"+self.options.karyaws+":8888/")
             for g in gcode.split("\n"):
                 ws.send(g)

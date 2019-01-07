@@ -281,7 +281,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     //if (sxmax < sxmin);
 	cuttabz=1;
     var len = Math.abs(len);
-    if (len < 50) cuttabz = 0;
+    if (len < Math.min(50,cutevery*2)) cuttabz = 0;
     if (disable_tab.indexOf(num+"")>=0) cuttabz = 0;
     var lenc = 0;
 	var ccw=0;
@@ -498,11 +498,17 @@ var ly;
 var cuttablen = 5.5;
 var lastspeed = 0.6;
 var tabcutspeed = 0.75;
-function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
+var spiraldown=1;
+
+function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
+	var dz=z2-z;
+	
+	
     var len = Math.abs(data[0]);
-    if (len < 50) cuttabz = z;
+    if (len < Math.min(50,cutevery*2)) cuttabz = 0;
+//    if (len < 50) cuttabz = z;
     if (disable_tab.indexOf(num+"")>=0) cuttabz = z;
     var lenc = 0;
 	var ccw=0;
@@ -536,6 +542,7 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 	
     lx = X1;
     ly = Y1;
+	lz = z;
 
     // turn off tool and move up if needed
     cmd = getvalue('cmode');
@@ -595,6 +602,7 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     var incut = 0;
     var lenctr = 0;
     var fm = 1;
+	var zlast=0;
 	if (cmd==CMD_CNC){
 		// entry diagonally
 		// ??
@@ -625,6 +633,7 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
         }
         x = lines[i][1];
         y = lines[i][2];
+		zz = z+nlenctr/len*dz;
         if (sc == -1) {
             x = sxmax - x;
         }
@@ -669,23 +678,28 @@ function lines2gcode(num, data, z, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 			//if ( firstlayer)div+=";if you want to slow down first layer do it here\n";
 			//if ( lastlayer)div+=";if you want to fast up last layer do it here\n";
         }
-		gcode1(f2 * fm, x, y);
-        lx = x;
-        ly = y;
+
+		if (incut)gcode1(f2 * fm, x, y);else gcode1(f2 * fm, x, y,zz);
         if (iscut) {
             if (incut == 1) {
                 // move up fast
+				zz=cuttabz;
+				
                 div = div + pdn.replace("=cncz", mround(cuttabz)) + ' F350\n';
             } else {
                 // move back down
-                div = div + pdn.replace("=cncz", mround(lastz)) + ' F350 \n';
-                div = div + pdn.replace("=cncz", mround(z)) + '\n';
+                //div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \n';
+                div = div + pdn.replace("=cncz", mround(zz)) + '\n';
+				//gcode1(f2 * fm, x, y,zz);
             }
             ci--;
 			lenctr -= lines[i][4];
         } else {
             lenc = lenctr;
         }
+        lx = x;
+        ly = y;
+		lz = zz;
     }
     //close loop
     if (!lastlayer && (cmd == CMD_3D)) {
@@ -862,6 +876,7 @@ function sortedgcode() {
         s += "g0 f350 z" + mround(lastz);
     }
     cuttab = cncdeep + getvalue("tabc") * 1;
+	spiraldown=getvalue("spiraldown")=='y';
 	for (var j = 0; j < sgcodes.length; j++) {
 		cncz = cncdeep / re;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
@@ -884,10 +899,19 @@ function sortedgcode() {
 				}
 				}
 			}		
-			
+			// first layer is divided by 2 to prevent deep cut
+			zdown=cncdeep / re;
+			var cncz2=0;
 			for (var i = 0; i < re; i++) {
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz, cuttab,sgcodes[j][0][5],i==re-1,i==0);
-				cncz += cncdeep / re;
+				//if (i<=1)cncz2 += zdown*0.5;else 
+				if (spiraldown)z2=cncz2;else z2=cncz; 
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==re-1,i==0);
+				cncz+=zdown;
+				cncz2+=zdown;
+			}
+			// do last cutting
+			if (spiraldown){
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],i==re-1,i==0);
 			}
 		}
     }

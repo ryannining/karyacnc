@@ -526,10 +526,12 @@ try {
 }
 
 function savesetting() {
-    a = document.getElementsByClassName("saveit");
+    var a = document.getElementsByClassName("saveit");
     sett = {};
     for (var i = 0; i < a.length; i++) {
-        sett[a[i].id] = a[i].value;
+		if (a[i].type=='text')sett[a[i].id] = a[i].value;
+		if (a[i].type=='select-one')sett[a[i].id] = a[i].value;
+		if (a[i].type=='checkbox')sett[a[i].id] = a[i].checked;
     }
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
@@ -555,7 +557,8 @@ try {
 			storage.get("settings", function(r) {
 				sett = r.settings;
 				for (var k in sett) {
-					setvalue(k, sett[k]);
+					var a=$(k);
+					if (a.type=='checkbox')a.checked=sett[k];else setvalue(k, sett[k]);
 				}
 				refreshgcode();
 			});
