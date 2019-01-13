@@ -1,0 +1,228 @@
+<body>
+<canvas id=canvas1 width=470 height=470>
+</canvas> 
+<script>
+/*
+Copyright (C) 2008 Aaron Spike, aaron@ekips.org
+Copyright (C) 2013 Sebastian Wüst, sebi@timewaster.de
+Copyright (C) 2016 Alexander Pruss
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+'''
+*/
+// standard libraries
+//import math
+math=Math;
+function $(id) {
+    return document.getElementById(id);
+}
+
+var can=$('canvas1');
+var ctx = can.getContext("2d");
+
+function OffsetProcessor(toolOffset=2., overcut=0.3, tolerance=.2){
+	me={}
+	me.toolOffset = toolOffset;
+	me.overcut = overcut;
+	me.tolerance = tolerance;
+	me.PI = math.PI;
+	me.TWO_PI = 2 * math.PI;
+	if (me.toolOffset > 0.0)	me.toolOffsetFlat = me.tolerance / me.toolOffset * 4.5; // scale flatness to offset
+	else me.toolOffsetFlat = 0.0;
+	return me;
+}
+function changeLength(me,x1, y1, x2, y2, offset){
+        // change length of line
+        d = getLength(me,x1, y1, x2, y2);
+        if (offset < 0)offset = Math.max( -d, offset);
+        x = x2 + (x2 - x1) / d * offset;
+        y = y2 + (y2 - y1) / d * offset;
+        return [x, y];
+	}
+function getLength(me,ax,ay,bx,by){
+        return Math.sqrt((ax-bx)*(ax-bx)+(ay-by)*(ay-by));
+		}
+
+function processOffset(me, cmd, posX, posY){
+        // calculate offset correction (or dont)
+        if (me.toolOffset == 0.0)
+            storePoint(me,cmd, posX, posY);
+        else {
+            // insert data into cache
+			var pointThree=0;
+			var pointFour=0;
+			var angle=0;
+            me.vData.shift();
+            me.vData.push([cmd, posX, posY]);
+            // decide if enough data is availabe
+            if (me.vData[2][1] != -1.0){
+                if (me.vData[1][1] == -1.0) {
+                    //storePoint(me,me.vData[2][0], me.vData[2][1], me.vData[2][2]);
+                } else {
+                    // perform tool offset correction (It's a *tad* complicated, if you want to understand it draw the data as lines on paper)
+                    if (me.vData[2][0] == 'PD') {// If the 3rd entry in the cache is a pen down command make the line longer by the tool offset
+                        pointThree = changeLength(me,me.vData[1][1], me.vData[1][2], me.vData[2][1], me.vData[2][2], me.toolOffset);
+                        //storePoint(me,'PD', pointThree[0], pointThree[1]);
+                    }
+					else if (me.vData[0][1] != -1.0){
+                        // Elif the 1st entry in the cache is filled with data and the 3rd entry is a pen up command shift
+                        // the 3rd entry by the current tool offset position according to the 2nd command
+                        pointThree = changeLength(me,me.vData[0][1], me.vData[0][2], me.vData[1][1], me.vData[1][2], me.toolOffset);
+                        pointThree[0] = me.vData[2][1] - (me.vData[1][1] - pointThree[0]);
+                        pointThree[1] = me.vData[2][2] - (me.vData[1][2] - pointThree[1]);
+                        storePoint(me,'PU', pointThree[0], pointThree[1]);
+                    }
+					else {
+                        // Else just write the 3rd entry
+                        pointThree = [me.vData[2][1], me.vData[2][2]];
+                        //storePoint(me,'PU', pointThree[0], pointThree[1]);
+                    }
+					if (me.vData[3][0] == 'PD'){
+                        // If the 4th entry in the cache is a pen down command guide tool to next line with a circle between the prolonged 3rd and 4th entry
+                        if (getLength(me,me.vData[2][1], me.vData[2][2], me.vData[3][1], me.vData[3][2]) >= me.toolOffset) {
+                            pointFour = changeLength(me,me.vData[3][1], me.vData[3][2], me.vData[2][1], me.vData[2][2], - me.toolOffset);
+                        } else {
+                            pointFour = changeLength(me,me.vData[2][1], me.vData[2][2], me.vData[3][1], me.vData[3][2],(me.toolOffset - getLength(me,me.vData[2][1], me.vData[2][2], me.vData[3][1], me.vData[3][2])));
+                        }
+						// get angle start and angle vector
+                        angleStart = Math.atan2(pointThree[1] - me.vData[2][2], pointThree[0] - me.vData[2][1]);
+                        angleVector = Math.atan2(pointFour[1] - me.vData[2][2], pointFour[0] - me.vData[2][1]) - angleStart;
+                        // switch direction when arc is bigger than 180°
+                        if (angleVector > me.PI)
+                            angleVector -= me.TWO_PI;
+                        else if (angleVector < - me.PI)
+                            angleVector += me.TWO_PI;
+                        // draw arc
+						var d=-Math.PI/2;
+                        if (angleVector >= 0){
+                            angle = angleStart + me.toolOffsetFlat;
+                            while (angle < angleStart + angleVector){
+                                storePoint(me,'PD', me.vData[2][1] + math.cos(angle+d) * me.toolOffset, me.vData[2][2] + math.sin(angle+d) * me.toolOffset);
+                                angle += me.toolOffsetFlat;
+							}
+						} else {
+                            angle = angleStart - me.toolOffsetFlat;
+                            while (angle > angleStart + angleVector){
+                                storePoint(me,'PD', me.vData[2][1] + math.cos(angle+d) * me.toolOffset, me.vData[2][2] + math.sin(angle+d) * me.toolOffset);
+                                angle -= me.toolOffsetFlat;
+							}
+						}
+						//storePoint(me,'PD', pointFour[0], pointFour[1]);
+					}
+				}
+			}
+		}
+}		
+function storePoint(me, command, x, y){
+        // skip when no change in movement
+        if ((me.lastPoint[0] == command) && (me.lastPoint[1] == x) && (me.lastPoint[2] == y))return;
+        if (command == 'PD')me.curPath.push([x,y]);
+        else if (command == 'PU') {
+            if (me.curPath.length > 1)me.paths.push(me.curPath);
+            me.curPath = [];
+            me.curPath.push([x,y]);
+		}
+        me.lastPoint = [command, x, y];
+}
+function drawpath(path){
+	for (var si in path){
+		singlePath=path[si];
+		ctx.beginPath();
+		for (var pi in singlePath){
+			singlePathPoint=singlePath[pi];
+			var posX =singlePathPoint[0]*10;
+			var posY = singlePathPoint[1]*10;
+			if (pi==0)ctx.moveTo(posX+50, posY+50);else ctx.lineTo(posX+50, posY+50);
+			
+			// check if point is repeating, if so, ignore
+		}
+		ctx.stroke();
+	}
+}
+function processPath(me, path){
+        me.vData = [['', -1.0, -1.0], ['', -1.0, -1.0], ['', -1.0, -1.0], ['', -1.0, -1.0]];
+        me.paths = [];
+        me.curPath = [];
+        me.lastPoint = [-10, -10, -10];
+        var cmd='';
+        processOffset(me,'PU', -10, -10);
+
+        var oldPosX = 0;
+        var oldPosY = 0;
+		ctx.strokeStyle = "#cccccc";
+		ctx.lineWidth=3;
+		drawpath(path);
+        for (var si in path){
+			singlePath=path[si];
+            cmd = 'PU';
+            for (var i=-1;i<singlePath.length;i++){
+				var pi=i;
+				if (pi<0)pi=singlePath.length-1;
+				singlePathPoint=singlePath[pi];
+                var posX =singlePathPoint[0];
+				var posY = singlePathPoint[1];
+				
+                // check if point is repeating, if so, ignore
+				var l=getLength(me,oldPosX,oldPosY,posX,posY) ;
+                if (l>= me.tolerance){
+                    processOffset(me,cmd, posX, posY);
+                    cmd = 'PD';
+                    oldPosX = posX;
+                    oldPosY = posY;
+				}	
+
+			}
+			// perform overcut
+            if (me.overcut > 0.0){
+                // check if last and first points are the same, otherwise the path is not closed and no overcut can be performed
+                if (getLength(me,oldPosX,oldPosY,singlePath[0][0],singlePath[0][1]) <= me.tolerance){
+                    overcutLength = 0;
+                    for (pi in singlePath){
+						singlePathPoint=singlePath[pi];
+                        posX = singlePathPoint[0];
+						posY = singlePathPoint[1];
+						
+                        // check if point is repeating, if so, ignore
+                        distance = getLength(me,oldPosX,oldPosY, posX,posY);
+                        if (distance >= me.tolerance){
+                            overcutLength += distance;
+                            if (overcutLength >= me.overcut){
+                                newLength = changeLength(me,oldPosX, oldPosY, posX, posY, - (overcutLength - me.overcut));
+                                processOffset(me,cmd, newLength[0], newLength[1]);
+                                break
+                            } else 
+                                processOffset(me,cmd, posX, posY);
+                            oldPosX = posX;
+                            oldPosY = posY;
+						}
+					}
+				}
+			}
+        }
+		
+		processOffset(me,'PU', 0, 0);
+        if (me.curPath.length>1)me.paths.push(me.curPath);
+		ctx.strokeStyle = "#0000FF";
+		ctx.lineWidth=1;
+		drawpath(me.paths);
+        return me.paths;
+}
+
+paths = [[[0,0],[10,10],[20,0],[30,20],[0,20],[0,0]]];// [[40,0],[40,20],[60,20],[60,0],[40,0]]];
+op = OffsetProcessor();
+console.log(processPath(op,paths));
+
+</script>
+</body>

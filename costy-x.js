@@ -633,7 +633,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
         }
         x = lines[i][1];
         y = lines[i][2];
-		zz = z+nlenctr/len*dz;
+		zz = z+lenctr/len*dz;
         if (sc == -1) {
             x = sxmax - x;
         }
@@ -679,7 +679,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 			//if ( lastlayer)div+=";if you want to fast up last layer do it here\n";
         }
 
-		if (incut)gcode1(f2 * fm, x, y);else gcode1(f2 * fm, x, y,zz);
+		if (incut || iscut)gcode1(f2 * fm, x, y);else gcode1(f2 * fm, x, y,zz);
         if (iscut) {
             if (incut == 1) {
                 // move up fast
@@ -876,7 +876,7 @@ function sortedgcode() {
         s += "g0 f350 z" + mround(lastz);
     }
     cuttab = cncdeep + getvalue("tabc") * 1;
-	spiraldown=getvalue("spiraldown")=='y';
+	spiraldown=$("spiraldown").checked;
 	for (var j = 0; j < sgcodes.length; j++) {
 		cncz = cncdeep / re;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
@@ -1287,7 +1287,7 @@ function gcodetoText1(gx){
 	var ymin=100000;
 	for (i in gs){
 		if ((gs[i]) && (gs[i][0]!=';')){
-			ws=gs[i].split(" ");
+			var ws=gs[i].split(" ");
 			wd['g']=-1;
 			hasxy=0;
 			for (j in ws){
