@@ -262,7 +262,7 @@ var onReadCallback = function(s) {
             }
 			
 			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
-            if (isok || (lastw.toUpperCase().indexOf('OK')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
+            if (isok || (lastw.toUpperCase().indexOf('OK')>=0)||(lastw.toUpperCase().indexOf('ERROR:')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
                 okwait=0;
                 nextgcode();
             }
@@ -283,10 +283,10 @@ var onGotDevices = function(ports) {
     }
     document.getElementById("comport").innerHTML = s;
 };
-
+var baud=115200;
 var connect = function(path) {
     var options = {
-        bitrate: 115200*2
+        bitrate: baud 
     };
     chrome.serial.connect(path, options, onConnect)
 };
@@ -451,6 +451,9 @@ setclick("btresume2", function() {
 setclick("bt3home", function() {
     sendgcode("g28");
     pe = 0
+});
+setclick("btzero", function() {
+    sendgcode("g10 p0 l20 x0 y0 z0");
 });
 setclick("bt3pla", function() {
     sendgcode("m104 s180");

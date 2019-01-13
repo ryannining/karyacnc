@@ -644,7 +644,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
         }
         var iscut = 0;
 		if (cmd == CMD_CNC) {
-           if ((cuttabz > z)) {
+           if ((cuttabz > zz)) {
             // if cut1 is in lenc and lencnext then cut the line
             // and dont increase the i counter
             if ((slc >= lenc) && (slc <= lenctr)) {
@@ -685,11 +685,11 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
                 // move up fast
 				zz=cuttabz;
 				
-                div = div + pdn.replace("=cncz", mround(cuttabz)) + ' F350\n';
+                div = div + pdn.replace("=cncz", mround(cuttabz)) + ' F350\nG1 F'+f2+"\n";
             } else {
                 // move back down
-                //div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \n';
-                div = div + pdn.replace("=cncz", mround(zz)) + '\n';
+                //div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \nG1 F'+f2+"\n";
+                div = div + pdn.replace("=cncz", mround(zz)) + '\nG1 F'+f2+"\n";
 				//gcode1(f2 * fm, x, y,zz);
             }
             ci--;
@@ -911,7 +911,7 @@ function sortedgcode() {
 			}
 			// do last cutting
 			if (spiraldown){
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],i==re-1,i==0);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0);
 			}
 		}
     }
