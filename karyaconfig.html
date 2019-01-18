@@ -1,0 +1,96 @@
+<html>
+
+<body id=body style='font-family:arial'>
+<div style='width:600px;background:#eeffaa;border-radius:10px;padding:10px;border:1px solid green;margin:auto;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);'>
+<center><h2>Karya controller WIFI configuration</h2></center><hr>
+<table width=100%><tr><td>WIFI A.P <button onclick="scanwifi()">Scan wifi</button><td>Password<td>Machine Name<td>
+<tr><td><select id=wifi></select> 
+<td><input id=pwd size=10>
+<td><input id=mid size=10>
+<td><button onclick="setconfig()">Save config</button>
+</table>
+<font size=2><br>
+- Machine name must be unique and registered on <a href="http://www.karyahub3d.xyz" target=hub>www.karyahub3d.xyz</a> to get benefit of IOT printing.<br>
+- Machine must be reset to apply the WIFI configuration<br>
+- Open <a href="3d.html">3D control panel here</a><br>
+</font>
+</div>
+<script>
+
+
+function mround(x) {
+    return parseFloat(x).toFixed(2);
+}
+function mround4(x) {
+    return parseFloat(x).toFixed(4);
+}
+
+function $(id) {
+    return document.getElementById(id);
+}
+function getvalue(el) {
+    return $(el).value;
+}
+
+function setvalue(el, val) {
+    $(el).value = val;
+}
+function log(text) {
+    $('log').value += text + '\n';
+}
+
+
+function setevent(ev, bt, act) {
+    $(bt).addEventListener(ev, act, false);
+}
+
+function setclick(bt, act) {
+    setevent("click", bt, act);
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(find, 'g'), replace);
+}
+function urlopen(s,callback=0){
+  if(!callback)callback=alert;	
+  var xhr = new XMLHttpRequest();
+  xhr.open( "GET","/"+s,true);
+  xhr.onload = function(e) {callback(xhr.response);};
+  xhr.send();
+}
+function dbmtohuman(dbm){
+	dbm=parseFloat(dbm);
+	if (dbm<=-80)return "Not good";
+	if (dbm<=-70)return "Okay";
+	if (dbm<=-67)return "Very good";
+	return "Amazing";	
+}
+function scanwifi(){
+	urlopen("scanwifi",function(data){
+		var wifi=eval(data);
+		var op="";
+		for (var i=0;i<wifi.length;i++){
+			op+="<option value='"+wifi[i][0]+"'>"+wifi[i][0]+" ("+dbmtohuman(wifi[i][1])+") "+wifi[i][2]+"</option>";
+		}
+		$("wifi").innerHTML=op;
+		getconfig();
+	});
+}
+function getconfig(){
+	urlopen("getconfig",function(data){
+		var wifi=eval(data);
+		if ($('wifi').innerHTML==''){
+			$('wifi').innerHTML="<option selected value='"+wifi[0]+"'>"+wifi[0]+"</option>";	
+		} else $("wifi").value=wifi[0];
+		$("pwd").value=wifi[1];
+		$("mid").value=wifi[2];
+	});
+}
+function setconfig(){
+	urlopen("setconfig?name="+(mid.value)+"&ap="+$('wifi').value+"&pw="+$('pwd').value);
+}
+
+</script>
+
+</body>
+</html>

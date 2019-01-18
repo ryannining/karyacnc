@@ -28,6 +28,7 @@ html, body {
 	 <table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
       <tr><td colspan=2>Smoothness <td colspan=2><input id=smooth size=2 value="0.7" class=saveit>
 	  <tr><td colspan=2>Pause at <td colspan=2><input id=pauseat class=saveit size=15>
+	  <tr><td colspan=2>Marking Cut <td colspan=2><input id=markingcut class=saveit size=15>
 	  <tr><td colspan=2>Disable Cut <td colspan=2><input id=disablecut class=saveit size=15>
 	  <tr><td colspan=2>Disable Tab <td colspan=2><input id=disabletab class=saveit size=15>
 	  <tr><td colspan=2>Disable Ovc <td colspan=2><input id=disableovc class=saveit size=15>
@@ -120,13 +121,26 @@ html, body {
 	
 
     <td width=300px bgcolor=lightblue style="padding:5px"><b>Machine Control</b><br>
-	Serial Port <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
-	<br>WebSocket <input id=wsip size=10 class=saveit value="192.168.0.123">
+<button id=bthidden2>Connection Settings</button>
+     
+	 <table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+      <tr><td colspan=2>Serial Baud <td colspan=2><input id=baudrate size=10 value="115200" class=saveit>
+	  <tr><td colspan=2>Websocket IP <td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123">
+	  </table><hr>
+	
+	<b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
+	<br><b>WebSocket</b> 
 	<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
 	<hr>
 
 	<table><tr align=center valign=center>
-	<td>Move:<input id=move value=50 size=1 class=saveit>mm
+	<td>Move:<select id=move value=50 class=saveit>
+		<option value=0.5>0.5</option>
+		<option value=1>1</option>
+		<option value=5>5</option>
+		<option value=10>10</option>
+		<option value=50>50</option>
+	</select>
 	<td><button id=btleft>&lt;</button>
 	<td><button  id=btup>/\</button><br>
 	<button  id=btdn>\/</button><td>
@@ -136,22 +150,22 @@ html, body {
 	</table>
 	<br>
 	<button  id=bthit>HIT</button>
-    <button  id=btsethome2>G92</button>
 	<button  id=btsethome>Z0</button>
 	<button  id=btsethome3>Z2</button>
-	<button id=bthoming >G28</button>
-    <button id=bthardstop >M2</button>
-    <button id=btcekpos >M114</button>
+    <button  id=btsethome2>ZERO</button>
+	<button id=bthoming >HOME</button>
+    <button id=bthardstop >HALT</button>
+    <button id=btcekpos >POS</button>
 	<br>
 	<input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
 	<Hr><b>My GCODE</b><br>
-	<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
-	<input id=shapes size=10><br>
-   <button id=btinit style="display:none">Run Init</button>
+    <button id=btinit style="display:none">Run Init</button>
 	<button id=btpreview>Preview</button>
 	<button id=btexecute>Execute</button>
 	<button id=btpause>Pause</button>
-	<button id=btmotoroff style="display:none">MOTOROFF</button>
+	<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
+	<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
+	<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
 	<hr><b>3D printer</b><br>
 	<div id=info3d></div>
 	<button  id=bt3home>Home</button>

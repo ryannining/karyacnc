@@ -205,6 +205,7 @@ var jmltravel = 0;
 // to check if some hole belongs to which outer path, need to check bounding box each hole
 var srl = [];
 var disable_ovc=[];
+var marking_cut=[];
 var disable_tab=[];
 var disable_cut=[];
 var pause_at=[];
@@ -305,6 +306,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     var n = 0;
     var sc = 1;
     if ($("flipx").checked) sc = -1;
+	//if (sc==-1)ccw=!ccw;
     var ro = 1;
     if ($("rotate").checked) ro = -1;
     var c = $("myCanvas1");
@@ -486,9 +488,14 @@ function draw_line(num, lcol, lines,srl,dash,len) {
         if (seg)$("segm").value += sg + "\n";
     //}
     //+" W:"+mround(cxmax-cxmin)+" H:"+mround(cymax-cymin)+" "
-	clw="<";
 	ctx.fillStyle = "#000000";
-	if (isClockwise(lines))clw=">";
+	if (ccw){
+		clw=">";
+		if (isClockwise(lines))clw="<";
+	} else {
+		clw="<";
+		if (isClockwise(lines))clw=">";
+	}
     if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
 var lastz = 0;
@@ -496,8 +503,8 @@ var lasee = 0;
 var lx;
 var ly;
 var cuttablen = 5.5;
-var lastspeed = 0.6;
-var tabcutspeed = 0.75;
+var lastspeed = 1;
+var tabcutspeed = 1;
 var spiraldown=1;
 
 function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
@@ -528,6 +535,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     if ($("flipx").checked) {
         sc = -1;
         X1 = sxmax - X1;
+		//ccw=!ccw;
     }
     var ro = 1;
     if ($("rotate").checked) {
@@ -900,17 +908,24 @@ function sortedgcode() {
 				}
 			}		
 			// first layer is divided by 2 to prevent deep cut
-			zdown=cncdeep / re;
+			var _re=re;
+			var zdown=cncdeep / re;
+			var ismark=marking_cut.indexOf(sgcodes[j][1]+"")>=0;
+			if (ismark) {
+				zdown=-1;
+				_re=2;
+			}
+				
 			var cncz2=0;
-			for (var i = 0; i < re; i++) {
+			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==re-1,i==0);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==_re-1,i==0);
 				cncz+=zdown;
 				cncz2+=zdown;
 			}
 			// do last cutting
-			if (spiraldown){
+			if (spiraldown && !ismark){
 				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0);
 			}
 		}
@@ -965,6 +980,7 @@ function myFunction(scale1) {
     //text1=Potrace.getSVG(1);
     //alert(text1);
 	pause_at=getvalue('pauseat').split(",");
+	marking_cut=getvalue('markingcut').split(",");
 	disable_cut=getvalue('disablecut').split(",");
 	disable_ovc=getvalue('disableovc').split(",");
 	disable_tab=getvalue('disabletab').split(",");

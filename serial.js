@@ -12,6 +12,7 @@ var pz = 0;
 var pe = 0;
 var etime=new Date();
 var checktemp=1;
+var isgrbl=0;
 
 function comconnect() {
     var bt = document.getElementById('btconnect');
@@ -70,7 +71,7 @@ function homing() {
 }
 
 function setashome2() {
-    sendgcode("G92 X0 Y0 Z0 E0");
+    if (isgrbl)sendgcode("g10 p0 l20 x0 y0 z0");else sendgcode("G92 X0 Y0 Z0 E0");
     px = 0;
     py = 0;
     pz = 0;
@@ -78,17 +79,13 @@ function setashome2() {
 }
 
 function setashome3() {
-    sendgcode("G92 X0 Y0 Z2 E0");
-    px = 0;
-    py = 0;
+    sendgcode("G0 Z2");
     pz = 2;
-    pe = 0;
 }
 
 function setashome() {
     sendgcode("G0 Z0");
 	pz=0;
-    setashome2();
 }
 
 function hardstop() {
@@ -178,6 +175,7 @@ function stopit() {
 
 function execute(gcodes) {
 	shapefinish="";
+	setvalue("shapes","");
 	currentshape=0;
 	etime=new Date();
 	console.log("Start "+etime);
@@ -260,7 +258,7 @@ var onReadCallback = function(s) {
                 document.getElementById("info3d").innerHTML = lastw;
 				checktemp=1;
             }
-			
+			if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL')>=0))isgrbl=1;
 			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
             if (isok || (lastw.toUpperCase().indexOf('OK')>=0)||(lastw.toUpperCase().indexOf('ERROR:')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
                 okwait=0;
@@ -285,6 +283,9 @@ var onGotDevices = function(ports) {
 };
 var baud=115200;
 var connect = function(path) {
+	try{baud=eval(getvalue("baudrate"));}
+	catch(e){baud=115200;}
+	
     var options = {
         bitrate: baud 
     };
@@ -376,8 +377,8 @@ function modechange() {
         setvalue("pdn", "M3 S255");
     }
     if (val == 3) {
-        setvalue("pup", "G0 Z2 F350");
-        setvalue("pdn", "G0 Z=cncz F240");
+        setvalue("pup", "G0 F350 Z2");
+        setvalue("pdn", "G0 F240 Z=cncz");
         setvalue("feed", "3");
         setvalue("zdown", "10");
     }
@@ -434,7 +435,9 @@ setclick("btresume", function() {
     sendgcode("m3 S255");	
 	nextgcode();
 });
-
+setclick("btsetcut",function(){
+	setvalue("disablecut",getvalue("shapes"));
+});
 
 setclick("btresume2", function() {
     okwait=0;
@@ -495,6 +498,13 @@ setclick("bthidden",function(){
 	if (hidd)d='block';
 	hidd=!hidd;
 	$("vars").style.display=d;
+});
+var hidd2=true;
+setclick("bthidden2",function(){
+	var d='none';
+	if (hidd2)d='block';
+	hidd2=!hidd2;
+	$("vars2").style.display=d;
 });
 // gcode editor
 
