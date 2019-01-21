@@ -882,9 +882,13 @@ function sortedgcode() {
         lastz = layerheight * 0.7;
         cncz -= lastz;
         s += "g0 f350 z" + mround(lastz);
-    }
-    cuttab = cncdeep + getvalue("tabc") * 1;
-	spiraldown=$("spiraldown").checked;
+		cuttab = cncdeep + getvalue("tabc") * 1;
+		spiraldown=$("spiraldown").checked;
+    } else {
+		spiraldown=0;
+		cuttab=cncdeep;
+	}
+	
 	for (var j = 0; j < sgcodes.length; j++) {
 		cncz = cncdeep / re;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
@@ -931,7 +935,8 @@ function sortedgcode() {
 		}
     }
     s = s + getvalue("pup");
-    s = s + '\nG0 F3000 Y0 \n G0 X0\n';
+	var f1 = getvalue('trav') * 60;
+    s = s + '\nG0 F'+f1+' Y0 \n G0 X0\n';
 	if (cmd==CMD_CNC)s+="G0 Z0 F350\n";
     sc = 1;
     if ($("flipx").checked) sc = -1;

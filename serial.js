@@ -283,8 +283,8 @@ var onGotDevices = function(ports) {
 };
 var baud=115200;
 var connect = function(path) {
-	try{baud=eval(getvalue("baudrate"));}
-	catch(e){baud=115200;}
+	try{baud=parseFloat(getvalue("baudrate"));}
+	catch(e){baud=115200*2;}
 	
     var options = {
         bitrate: baud 
@@ -507,6 +507,15 @@ setclick("bthidden2",function(){
 	$("vars2").style.display=d;
 });
 // gcode editor
+var hidd3=true;
+setclick("bthidden3",function(){
+	var d='none';
+	if (hidd3)d='block';
+	hidd3=!hidd3;
+	$("gcodepreview").style.display=d;
+});
+// gcode editor
+
 
 setclick("btcopy1", function() {
     copy_to_clipboard('gcode');
@@ -643,6 +652,8 @@ window.onload = function() {
     a = document.activeElement;
     if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
 	if (h)setvalue("wsip",h);
+	hideId("gcodepreview");
+	hideId("gcodeinit");
 	window.onresize();
 };
 

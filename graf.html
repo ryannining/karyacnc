@@ -201,10 +201,11 @@ ditherit = function() {
 		var rndt=getvalue("rnd");
 		var shf=1.0*getvalue("shf");;
 		var rndt2=rndt/2.0;
+		var np=Math.floor(16000/(img.width+5));
 		for (j = 0; j < c.height-dy; j += 1) {
 			gc="";
 			var skip=1;
-			var bp=(j&3)*(img.width+5);
+			var bp=(j%np)*(img.width+5);
 			var pxstart=c.width;
 			var pxstop=0;
 			for (i = dx; i < c.width-dx; i += 1) {
@@ -294,7 +295,7 @@ ditherit = function() {
 					w=pxstop;
 					pxstart+=bp;
 					pxstop+=bp;
-					if (bp==0)gcode+="G4\n";
+					//if (bp==0)gcode+="G4\n";
 					//gcode+="G4\nG92 E0\n";
 					//gcode+="G0 +"\n";
 					gcode+="G7 P"+bp+" ["+gc+"aaa]\n";
@@ -358,9 +359,14 @@ function copy_to_server(id) {
 //	var address = window.location.href.replace('http', 'ws');
 //	var ws= new WebSocket(address);
 //	ws.addEventListener('open', function() {
+	var address = window.location.href.replace('http', 'ws');
+	ws= new WebSocket(address);
+	ws.addEventListener('open', function() {
 		var lines=document.getElementById(id).value.split("\n");
 		for (x in lines){ws.send(lines[x]);ws.send("\n");}
 		ws.send(">FINISH");
+		ws.close();
+	});
 //	});
 }
 
