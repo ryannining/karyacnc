@@ -2416,7 +2416,7 @@ class laser_gcode(inkex.Effect):
         f.close()
         if self.options.karyacnc:
             from websocket import create_connection
-            ws = create_connection("ws://"+self.options.karyaws+":8888/")
+            ws = create_connection("ws://"+self.options.karyaws+":"+self.options.port+"/")
             for g in gcode.split("\n"):
                 ws.send(g)
                 ws.send("\n")
@@ -2445,6 +2445,7 @@ class laser_gcode(inkex.Effect):
         self.OptionParser.add_option("",   "--log-filename",                    action="store", type="string",          dest="log_filename",                        default='',                             help="Create log files")
         self.OptionParser.add_option("",   "--engraving-draw-calculation-paths",action="store", type="inkbool",         dest="engraving_draw_calculation_paths",    default=False,                          help="Draw additional graphics to debug engraving path")
         self.OptionParser.add_option("",   "--unit",                            action="store", type="string",          dest="unit",                                default="G21 (All units in mm)",        help="Units either mm or inches")
+        self.OptionParser.add_option("",   "--port",                            action="store", type="string",          dest="port",                                default="8888",        help="Websocket port")
         self.OptionParser.add_option("",   "--active-tab",                      action="store", type="string",          dest="active_tab",                          default="",                             help="Defines which tab is active")
         self.OptionParser.add_option("",   "--biarc-max-split-depth",           action="store", type="int",             dest="biarc_max_split_depth",               default="4",                            help="Defines maximum depth of splitting while approximating using biarcs.")
 

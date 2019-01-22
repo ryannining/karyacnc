@@ -213,6 +213,8 @@ var shapectr=0;
 var collapsepoint=7;
 var noprocess=14;
 function prepare_line(lenmm,lines) {
+    var f2 = "F"+(getvalue('feed') * 60)+" ";
+    var ofs = getvalue('offset')*0.5;
 	collapsepoint=getvalue("drill")*1;
 	noprocess=getvalue("overcutmin")*1;
 	shapectr++;
@@ -221,7 +223,9 @@ function prepare_line(lenmm,lines) {
 	lx=0;
 	ly=0;
 	if (disable_ovc.indexOf(shapectr+"")>=0)return lines;
-    if (lenmm<collapsepoint){
+	// overcut, collapse only for CNC
+	
+    if ((cmd == CMD_CNC) && (lenmm<collapsepoint)){
 		var sx=0;
 		var sy=0;
 		for (var i = 0; i < lines.length; i++) {			
@@ -233,9 +237,65 @@ function prepare_line(lenmm,lines) {
 		newlines.push([lines[0][0],sx,sy,0,0]);
 		return newlines;
 	} else {
+		if (ofs>0){
+		// generate offset
+		///*
+		var path=[];
+		var paths=[];
+		var newlines=[];
+		var scale = 1000;
+		for (var i = 0; i < lines.length; i++) {
+			var l=lines[i];
+			x = l[1]*scale;
+			y = l[2]*scale;
+			path.push({X:x,Y:y});
+		}
+		paths.push(path);
+		var clk=isClockwise(lines);
+		//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
+		
+		var co = new ClipperLib.ClipperOffset(); // constructor
+		var offsetted_paths = new ClipperLib.Paths(); // empty solution		
+		co.Clear();
+		
+		co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+		co.MiterLimit = 2;
+		co.ArcTolerance = 0.02*scale;
+		var delta=ofs*scale;
+		if (!clk)delta=-delta;
+		co.Execute(offsetted_paths, delta);
+		var s=0;
+		var ds=0;
+		var ox=0;
+		var oy=0;
+		var newline=[];
+		for (var i = 0; i < offsetted_paths.length; i++) {
+			var path=		ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
+			for (var j = 0; j < path.length; j++) {			
+				var jj=j;
+				if (clk)jj=path.length-1-j;
+				var l= path[jj];
+				x = l.X*1.0/scale;
+				y = l.Y*1.0/scale;
+				if (j>0){
+					ds=sqrt(sqr(x-ox)+sqr(y-oy));
+				}
+				s+=ds;
+				ox=x;
+				oy=y;
+				newline.push([f2,x,y,s,ds]);
+			}
+		}
+		//if (newline.length>0)
+		lines=newline;
+		//
+		//*/
+		}
+		
 		if (lenmm<noprocess)return lines;
 		sharpv = $("sharp").value;
-		ov = $("overcut").value/10.0+0.01;
+		ov=0.01;
+		if (cmd == CMD_CNC) ov+=$("overcut").value/10.0;
 		cxt=0;
 		cyt=0;
 		cnt=0;
@@ -293,8 +353,9 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 	lc = len / dv;
     slc = lc / 2+cutofs;
 
-	var cw=$("myCanvas1").width-30;
-	var ch=$("myCanvas1").height-30;
+    var ofs = getvalue('offset')*1;
+	var cw=$("myCanvas1").width-60;
+	var ch=$("myCanvas1").height-60;
     var dpm = cw / (sxmax);
     dpm = Math.min(dpm, ch / (symax));
     var x = lx / dpm;
@@ -391,8 +452,8 @@ function draw_line(num, lcol, lines,srl,dash,len) {
         g = ci;
         if (g >= 0) {
             if (g == 0) {
-                X1 = x * dpm;
-                Y1 = y * dpm;
+                X1 = (x+ofs) * dpm;
+                Y1 = (y+ofs) * dpm;
                 jmltravel++;
                 ctx.strokeStyle = "#88888888";
             }
@@ -413,11 +474,12 @@ function draw_line(num, lcol, lines,srl,dash,len) {
             cymin = Math.min(cymin, y);
             cxmax = Math.max(cxmax, x);
             cymax = Math.max(cymax, y);
-			lx = x * dpm;
-            ly = y * dpm;
+			lx = (x+ofs) * dpm;
+            ly = (y+ofs) * dpm;
 
 			
 			ctx.lineTo(lx, ly);
+			//ctx.arc(lx,ly,1,0,2*Math.PI);
 		
 			lx2 = x;
 			ly2 = y;
@@ -510,6 +572,7 @@ var spiraldown=1;
 function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
+	
 	var dz=z2-z;
 	
 	
@@ -529,7 +592,8 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 
 	fm=0;
     var lines = data[4];
-    var X1 = lines[0][1];
+    if (lines.length==0)return;
+	var X1 = lines[0][1];
     var Y1 = lines[0][2];
     var sc = 1;
     if ($("flipx").checked) {
@@ -946,7 +1010,7 @@ function sortedgcode() {
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
     setvalue("gcode", s);
-    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F10000 X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
+    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////

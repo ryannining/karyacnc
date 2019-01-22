@@ -7,7 +7,7 @@
           enable_page_level_ads: true
      });
 </script>
-	</head>
+</head>
 <style>
 html, body {
     overflow-y: visible;
@@ -26,7 +26,8 @@ html, body {
 	 <tr><td colspan=3 align=left><button id=bthidden>Show Tracing Option</button>
      
 	 <table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-      <tr><td colspan=2>Smoothness <td colspan=2><input id=smooth size=2 value="0.7" class=saveit>
+      <tr><td colspan=3>Retrace Smoothness <td colspan=1><input id=smooth size=2 value="0.7" class=saveit>
+	  <tr><td colspan=3>Tool &#248 (laser is 0.2) <td colspan=1><input id=offset class=saveit size=5 value=0>
 	  <tr><td colspan=2>Pause at <td colspan=2><input id=pauseat class=saveit size=15>
 	  <tr><td colspan=2>Marking Cut <td colspan=2><input id=markingcut class=saveit size=15>
 	  <tr><td colspan=2>Disable Cut <td colspan=2><input id=disablecut class=saveit size=15>
@@ -212,7 +213,7 @@ html, body {
 	<script src="Potrace.js"></script>
 	<script src="costy-x.js"></script>
 	<script src="serial.js"></script>
-
+	<script src="clipper.js"></script>
 
 </body>
 

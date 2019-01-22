@@ -379,14 +379,14 @@ function modechange() {
     if (val == 3) {
         setvalue("pup", "G0 F350 Z2");
         setvalue("pdn", "G0 F240 Z=cncz");
-        setvalue("feed", "3");
-        setvalue("zdown", "10");
+        //setvalue("feed", "3");
+        //setvalue("zdown", "10");
     }
     if (val == 4) {
         setvalue("pup", "");
         setvalue("pdn", "");
-        setvalue("feed", "30");
-        setvalue("zdown", "10");
+        //setvalue("feed", "30");
+        //setvalue("zdown", "10");
     }
 }
 //onclick="setashome();"
@@ -582,7 +582,6 @@ try {
 					var a=$(k);
 					if (a.type=='checkbox')a.checked=sett[k];else setvalue(k, sett[k]);
 				}
-				refreshgcode();
 			});
 	} else {
 		text1 = storage.text1;
@@ -593,7 +592,6 @@ try {
 				setvalue(k, sett[k]);
 			}
 		}
-		if (text1) refreshgcode();
 	}
     //connectwebsock();
 
@@ -655,6 +653,7 @@ window.onload = function() {
 	hideId("gcodepreview");
 	hideId("gcodeinit");
 	window.onresize();
+	if (text1) refreshgcode();
 };
 
 
