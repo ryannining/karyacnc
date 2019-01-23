@@ -645,16 +645,6 @@ function connectwebsock() {
 		idleloop();
     }
 }
-window.onload = function() {
-	var h=window.location.host;
-    a = document.activeElement;
-    if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
-	if (h)setvalue("wsip",h);
-	hideId("gcodepreview");
-	hideId("gcodeinit");
-	window.onresize();
-	if (text1) refreshgcode();
-};
 
 
 function createCORSRequest(method, url) {
@@ -687,58 +677,61 @@ function createCORSRequest(method, url) {
 // web socket server, to receive gcode from other
 var port = 8888;
 var isServer = false;
-if (http.Server && http.WebSocketServer) {
-  // Listen for HTTP connections.
-  var server = new http.Server();
-  var wsServer = new http.WebSocketServer(server);
-  server.listen(port);
-  isServer = true;
+function startserver(){
+	if (http.Server && http.WebSocketServer) {
+	  // Listen for HTTP connections.
+	  var server = new http.Server();
+	  var wsServer = new http.WebSocketServer(server);
+	  port=getvalue("wsport")*1;
+	  server.listen(port);
+	  isServer = true;
 
-  server.addEventListener('request', function(req) {
-    var url = req.headers.url;
-    if (url == '/') url = '/engrave';
-    if (url == '/engrave') url = '/graf.html';
-    // Serve the pages of this chrome application.
-    req.serveUrl(url);
-    return true;
-  });
-
-  // A list of connected websockets.
-  var connectedSockets = [];
-
-  wsServer.addEventListener('request', function(req) {
-    console.log('Client connected');
-    var socket = req.accept();
-    connectedSockets.push(socket);
-
-    // When a message is received on one socket, rebroadcast it on all
-    // connected sockets.
-	var buff="";
-    socket.addEventListener('message', function(e) {
-			if (e.data==">FINISH"){
-				setvalue("gcode",buff);
-				buff="";
-			}if (e.data==">REVECTOR"){
-				text1=gcodetoText1(buff);
-				refreshgcode();
-				buff="";
-			} else {
-				buff+=e.data;
-			}
+	  server.addEventListener('request', function(req) {
+		var url = req.headers.url;
+		if (url == '/') url = '/engrave';
+		if (url == '/engrave') url = '/graf.html';
+		// Serve the pages of this chrome application.
+		req.serveUrl(url);
+		return true;
 	  });
 
-    // When a socket is closed, remove it from the list of connected sockets.
-    socket.addEventListener('close', function() {
-      console.log('Client disconnected');
-      for (var i = 0; i < connectedSockets.length; i++) {
-        if (connectedSockets[i] == socket) {
-          connectedSockets.splice(i, 1);
-          break;
-        }
-      }
-    });
-    return true;
-  });
+	  // A list of connected websockets.
+	  var connectedSockets = [];
+
+	  wsServer.addEventListener('request', function(req) {
+		console.log('Client connected');
+		var socket = req.accept();
+		connectedSockets.push(socket);
+
+		// When a message is received on one socket, rebroadcast it on all
+		// connected sockets.
+		var buff="";
+		socket.addEventListener('message', function(e) {
+				if (e.data==">FINISH"){
+					setvalue("gcode",buff);
+					buff="";
+				}if (e.data==">REVECTOR"){
+					text1=gcodetoText1(buff);
+					refreshgcode();
+					buff="";
+				} else {
+					buff+=e.data;
+				}
+		  });
+
+		// When a socket is closed, remove it from the list of connected sockets.
+		socket.addEventListener('close', function() {
+		  console.log('Client disconnected');
+		  for (var i = 0; i < connectedSockets.length; i++) {
+			if (connectedSockets[i] == socket) {
+			  connectedSockets.splice(i, 1);
+			  break;
+			}
+		  }
+		});
+		return true;
+	  });
+	}
 }
 
 
@@ -748,5 +741,16 @@ window.onresize=function(){
 	v.width=nw;
 	v.height=Math.max(300,500*nw/600);
 	gcode_verify();
-
 }
+
+setTimeout(function (){
+	//var h=window.location.host;
+    //a = document.activeElement;
+    //if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
+	//if (h)setvalue("wsip",h);
+	startserver();
+	window.onresize();
+	if (text1) refreshgcode();
+	hideId("gcodepreview");
+	hideId("gcodeinit");
+},2000);

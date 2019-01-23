@@ -1,12 +1,6 @@
 <html>
 	<head>
 		<title>CostyKarya CNC gcode tracer</title>
-<script>
-     (adsbygoogle = window.adsbygoogle || []).push({
-          google_ad_client: "ca-pub-9111193570003924",
-          enable_page_level_ads: true
-     });
-</script>
 </head>
 <style>
 html, body {
@@ -128,8 +122,10 @@ html, body {
 <button id=bthidden2>Connection Settings</button>
      
 	 <table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-      <tr><td colspan=2>Serial Baud <td colspan=2><input id=baudrate size=10 value="115200" class=saveit>
-	  <tr><td colspan=2>Websocket IP <td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123">
+      <tr><td colspan=2>CNC COM BAUD <td colspan=2><input id=baudrate size=10 value="115200" class=saveit>
+	  <tr><td colspan=2>CNC IP <td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123">
+	  <tr><td colspan=4><hr>
+	  <tr><td colspan=2>App WS PORT <td colspan=2><input id=wsport size=10 class=saveit value="8888">
 	  </table><hr>
 	
 	<b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
@@ -212,8 +208,8 @@ html, body {
 	<script src="http.js"></script>
 	<script src="Potrace.js"></script>
 	<script src="costy-x.js"></script>
-	<script src="serial.js"></script>
 	<script src="clipper.js"></script>
+	<script src="serial.js"></script>
 
 </body>
 

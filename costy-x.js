@@ -212,6 +212,7 @@ var pause_at=[];
 var shapectr=0;
 var collapsepoint=7;
 var noprocess=14;
+var oldlines=[];
 function prepare_line(lenmm,lines) {
     var f2 = "F"+(getvalue('feed') * 60)+" ";
     var ofs = getvalue('offset')*0.5;
@@ -287,6 +288,8 @@ function prepare_line(lenmm,lines) {
 			}
 		}
 		//if (newline.length>0)
+		// keep old lines
+		oldlines.push(lines)
 		lines=newline;
 		//
 		//*/
@@ -496,10 +499,10 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 			}
         }
     }
-
 	ctx.lineTo(X1, Y1);
 	ctx.stroke();
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
+	if (num=="")return;
     ctx.beginPath();
 	//ctx.setLineDash([2]);
     ctx.moveTo(lx, ly);
@@ -873,7 +876,11 @@ function gcode_verify() {
 		draw_line(sgcodes[i][1], col, sgcodes[i][0][4],sgcodes[i][0][5],dash,sgcodes[i][0][0]);
 		
     }
-    //sfinal+=jmltravel*10;
+	for (var i=0;i<oldlines.length;i++){
+		
+		draw_line("", "#CCCCCC", oldlines[i],[],[1,2],0);
+    }
+	//sfinal+=jmltravel*10;
     ctx.font = "12px Arial";
     w = mround((xmax - xmin) / 10);
     h = mround((ymax - ymin) / 10);
@@ -1044,6 +1051,7 @@ function linepush(f,x,y,l1,l2){
 }
 function myFunction(scale1) {
 	if (text1==undefined) return;
+	oldlines=[];
 	opx=-1000;
 	opy=-1000;
     //text1=Potrace.getSVG(1);
