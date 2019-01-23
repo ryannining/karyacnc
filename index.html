@@ -17,7 +17,7 @@ html, body {
 	<td id=tracing width=300px>
       <table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
         <tr><td colspan=3><input type='file' accept='.bmp,.jpg,.gif,.png' id=btfile>
-	 <tr><td colspan=3 align=left><button id=bthidden>Show Tracing Option</button>
+	 <tr><td colspan=3 align=left><button id=bthidden>Show Tracing Option</button><button id=btengrave>Engrave</button>
      
 	 <table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
       <tr><td colspan=3>Retrace Smoothness <td colspan=1><input id=smooth size=2 value="0.7" class=saveit>
@@ -109,8 +109,10 @@ html, body {
 	</div>
 	Segments:<br><textarea style="font-size: 10;width:100%;height:50px" id=segm ></textarea>
    <td><div  id=gcodepreview style="width:250px"><button id=tracingbt>GCODE SENDER</button>
-      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr><a href="localhost:8888/engrave" target=app1>Engrave</a>
-      <textarea style="font-size: 10;width:100%;height:500" id="gcode" class=saveit>
+      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
+      <textarea style="font-size: 10;width:100%;height:300" id="gcode" class=saveit>
+      </textarea>
+      <textarea style="font-size: 10;width:100%;height:200" id="engcode" class=saveit>
       </textarea><button id=btgcode2vec>ReVector Gcode</button>
 	<td width=auto style="padding:5px;border:solid 1px"><p style="background:yellow" id="area_dimension">Object Preview</p>
     <canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
@@ -162,6 +164,7 @@ html, body {
     <button id=btinit style="display:none">Run Init</button>
 	<button id=btpreview>Preview</button>
 	<button id=btexecute>Execute</button>
+	<button id=btexecute2>Engrave</button>
 	<button id=btpause>Pause</button>
 	<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
 	<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>

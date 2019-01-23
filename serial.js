@@ -164,8 +164,8 @@ function stopit() {
 	mss="Real time:"+mround(ms/60000.0);
 	console.log(mss);
 	$("infolain").innerHTML=mss;
-    var bt = document.getElementById('btexecute');
-    bt.innerHTML = "Execute";
+    //var bt = document.getElementById('btexecute');
+    //bt.innerHTML = "Execute";
     var bt = document.getElementById('btpause');
 	bt.innerHTML = "PAUSE";
     running = 0;
@@ -195,6 +195,18 @@ function executegcodes() {
         execute(document.getElementById('gcode').value);
         bt.innerHTML = "Stop";
     } else {
+		bt.innerHTML = "Execute";
+        stopit();
+        sendgcode("M2");
+    }
+}
+function executegcodes2() {
+    var bt = document.getElementById('btexecute2');
+    if (bt.innerHTML == "Engrave") {
+        execute(document.getElementById('engcode').value);
+        bt.innerHTML = "Stop";
+    } else {
+		bt.innerHTML = "Engrave";
         stopit();
         sendgcode("M2");
     }
@@ -411,6 +423,7 @@ setclick("bthardstop", hardstop);
 setclick("btinit", executeicodes);
 setclick("btpreview", executepgcodes);
 setclick("btexecute", executegcodes);
+setclick("btexecute2", executegcodes2);
 setclick("btpause", pause);
 setclick("bthit", testlaser);
 setclick("btleft", gcodeleft);
@@ -439,6 +452,9 @@ setclick("btsetcut",function(){
 	setvalue("disablecut",getvalue("shapes"));
 });
 
+setclick("btengrave",function(){
+	window.open("http://localhost:"+port+"/engrave",'prn','width=700,height=500');
+});
 setclick("btresume2", function() {
     okwait=0;
     var bt = document.getElementById('btresume2');
@@ -680,9 +696,9 @@ var isServer = false;
 function startserver(){
 	if (http.Server && http.WebSocketServer) {
 	  // Listen for HTTP connections.
+	  port=getvalue("wsport")*1;
 	  var server = new http.Server();
 	  var wsServer = new http.WebSocketServer(server);
-	  port=getvalue("wsport")*1;
 	  server.listen(port);
 	  isServer = true;
 
@@ -708,7 +724,7 @@ function startserver(){
 		var buff="";
 		socket.addEventListener('message', function(e) {
 				if (e.data==">FINISH"){
-					setvalue("gcode",buff);
+					setvalue("engcode",buff);
 					buff="";
 				}if (e.data==">REVECTOR"){
 					text1=gcodetoText1(buff);

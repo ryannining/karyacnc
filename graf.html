@@ -366,6 +366,7 @@ function copy_to_server(id) {
 		for (x in lines){ws.send(lines[x]);ws.send("\n");}
 		ws.send(">FINISH");
 		ws.close();
+		confirm("Upload success");
 	});
 //	});
 }

@@ -2230,7 +2230,31 @@ class laser_gcode(inkex.Effect):
             for i in xrange(1,len(points)):
                 l+=math.sqrt((points[i][0]-points[i-1][0])**2 + (points[i][1]-points[i-1][1])**2)
             return l
-
+        def isClockwise(poly):
+            sum = 0;
+            for i in range(len(poly)-1):
+                cur = poly[i][1]
+                next = poly[i + 1][1]
+                sum += (next[0] - cur[0]) * (next[1] + cur[1])
+            
+            return sum > 0;
+        
+        color_props_fill=('fill:','stop-color:','flood-color:','lighting-color:')
+        color_props_stroke=('stroke:',)
+        color_props = color_props_fill + color_props_stroke            
+        def getColor(node):
+            col = {}
+            if 'style' in node.attrib:
+                style=node.get('style') # fixme: this will break for presentation attributes!
+                if style!='':
+                    #inkex.debug('old style:'+style)
+                    styles=style.split(';')
+                    for i in range(len(styles)):
+                        if styles[i].startswith("fill"):
+                            #print "col num %d" % c
+                            #print styles[i][len(color_props[c]):]
+                            return styles[i][len("fill")+1:]
+            return "#FFFFFF"
 
         
         if self.selected_paths == {} :
@@ -2254,20 +2278,31 @@ class laser_gcode(inkex.Effect):
                         self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
                         continue
                     d = path.get('d')
+                    gcode +=";"+getColor(path)+"\n"
                     csp1 = cubicsuperpath.parsePath(d)#new.get('d'))		
                     csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
                     cspsubdiv.cspsubdiv(csp1, self.options.flatten)
                     np = []
                     # need to check if its clockwise
+                    outer=True
                     for sp in csp1:
                         first = True
-                        for csp in sp:
+                        num=len(sp)
+                        flip=isClockwise(sp)
+                        if outer:flip=not flip
+                        for icsp in range(num):
+                            if (flip):
+                                csp=sp[num-1-icsp]
+                            else:
+                                csp=sp[icsp]
                             cmd = 'L'
                             if first:
                                 cmd = 'M'
                             first = False
                             np.append([cmd,[csp[1][0],csp[1][1]]])
+                            #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
+                        outer=False
                     #node.set('d',simplepath.formatPath(np))
                     #print(simplepath.formatPath(np))
                     #gcode+=";"+simplepath.formatPath(np)
