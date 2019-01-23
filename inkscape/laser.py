@@ -881,6 +881,7 @@ def csp_seg_bound_to_csp_seg_bound_max_min_distance(sp1,sp2,sp3,sp4) :
 
 
 def csp_reverse(csp) :
+    return csp
     for i in range(len(csp)) :
          n = []
          for j in csp[i] :
@@ -1787,28 +1788,31 @@ class laser_gcode(inkex.Effect):
         self.OptionParser.add_option("",   "--active-tab",                      action="store", type="string",          dest="active_tab",                          default="",                             help="Defines which tab is active")
         self.OptionParser.add_option("",   "--biarc-max-split-depth",           action="store", type="int",             dest="biarc_max_split_depth",               default="4",                            help="Defines maximum depth of splitting while approximating using biarcs.")
 
-    def parse_curve(self, p, layer, w = None, f = None):
+    def parse_curve(self, p, layer, flips,w = None, f = None):
+            def isClockwise(poly):
+                sum = 0;
+                for i in range(len(poly)):
+                    cur = poly[i][1]
+                    ii=i + 1
+                    if ii==len(poly):ii=0;
+                    next = poly[ii][1]
+                    sum += (next[1] * cur[0]) - (next[0] * cur[1])
+                return sum;
             c = []
             if len(p)==0 :
                 return []
             p = self.transform_csp(p, layer)
-
-
-            ### Sort to reduce Rapid distance
-            k = range(1,len(p))
-            keys = [0]
-            while len(k)>0:
-                end = p[keys[-1]][-1][1]
-                dist = None
-                for i in range(len(k)):
-                    start = p[k[i]][0][1]
-                    dist = max(   ( -( ( end[0]-start[0])**2+(end[1]-start[1])**2 ) ,i)    ,   dist )
-                keys += [k[dist[1]]]
-                del k[dist[1]]
-            for k in keys:
+            for k in range(len(p)):
                 subpath = p[k]
                 c += [ [    [subpath[0][1][0],subpath[0][1][1]]   , 'move', 0, 0] ]
-                for i in range(1,len(subpath)):
+                cw=isClockwise(subpath)
+                flip=cw>0
+                if flips[k]:flip=not flip
+                for ii in range(1,len(subpath)):
+                    if flip:
+                        i=len(subpath)-ii
+                    else:
+                        i=ii
                     sp1 = [  [subpath[i-1][j][0], subpath[i-1][j][1]] for j in range(3)]
                     sp2 = [  [subpath[i  ][j][0], subpath[i  ][j][1]] for j in range(3)]
                     c+=[ [sp1[1],'line', 0, 0, sp2[1], [0,0]] ];
@@ -1927,20 +1931,6 @@ class laser_gcode(inkex.Effect):
                 if lg=="G00": g += "G1 " + feed + "\n"
                 g += "G1 " + c(si[0]) + "\n"
                 lg = 'G01'
-            elif s[1] == 'arc':
-                r = [(s[2][0]-s[0][0]), (s[2][1]-s[0][1])]
-                if lg=="G00": g += "G1 " + feed + "\n"
-                if (r[0]**2 + r[1]**2)>.1:
-                    r1, r2 = (P(s[0])-P(s[2])), (P(si[0])-P(s[2]))
-                    if abs(r1.mag()-r2.mag()) < 0.001 :
-                        g += ("G2" if s[3]<0 else "G3") + c(si[0]+[ None, (s[2][0]-s[0][0]),(s[2][1]-s[0][1])  ]) + "\n"
-                    else:
-                        r = (r1.mag()+r2.mag())/2
-                        g += ("G2" if s[3]<0 else "G3") + c(si[0]) + " R%f" % (r) + "\n"
-                    lg = 'G02'
-                else:
-                    g += "G1 " + c(si[0]) + " " + feed + "\n"
-                    lg = 'G01'
         if si[1] == 'end':
             g += tool['gcode after path'] + "\n"
         return g
@@ -2230,20 +2220,12 @@ class laser_gcode(inkex.Effect):
             for i in xrange(1,len(points)):
                 l+=math.sqrt((points[i][0]-points[i-1][0])**2 + (points[i][1]-points[i-1][1])**2)
             return l
-        def isClockwise(poly):
-            sum = 0;
-            for i in range(len(poly)-1):
-                cur = poly[i][1]
-                next = poly[i + 1][1]
-                sum += (next[0] - cur[0]) * (next[1] + cur[1])
-            
-            return sum > 0;
+        gcode = ""
         
         color_props_fill=('fill:','stop-color:','flood-color:','lighting-color:')
         color_props_stroke=('stroke:',)
         color_props = color_props_fill + color_props_stroke            
         def getColor(node):
-            col = {}
             if 'style' in node.attrib:
                 style=node.get('style') # fixme: this will break for presentation attributes!
                 if style!='':
@@ -2264,7 +2246,6 @@ class laser_gcode(inkex.Effect):
             paths = self.selected_paths
 
         self.check_dir()
-        gcode = ""
 
         print_(("self.layers=",self.layers))
         print_(("paths=",paths))
@@ -2272,30 +2253,32 @@ class laser_gcode(inkex.Effect):
             if layer in paths :
                 print_(("layer",layer))
                 p = []
+                flips=[]
                 for path in paths[layer] :
                     print_(str(layer))
                     if "d" not in path.keys() :
                         self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
                         continue
                     d = path.get('d')
-                    gcode +=";"+getColor(path)+"\n"
+                    col=getColor(path)
+                    gcode +=";"+col+"\n"
                     csp1 = cubicsuperpath.parsePath(d)#new.get('d'))		
-                    csp1 = self.apply_transforms(path, csp1)
+                    #csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
                     cspsubdiv.cspsubdiv(csp1, self.options.flatten)
                     np = []
                     # need to check if its clockwise
-                    outer=True
+                    outer=col!="#ffff00"
                     for sp in csp1:
                         first = True
                         num=len(sp)
-                        flip=isClockwise(sp)
-                        if outer:flip=not flip
+                        #gcode+=";"+str(cw)+"\n"
+
+                        flip=False
+                        if outer:flip=True
+                        flips.append(flip)
                         for icsp in range(num):
-                            if (flip):
-                                csp=sp[num-1-icsp]
-                            else:
-                                csp=sp[icsp]
+                            csp=sp[icsp]
                             cmd = 'L'
                             if first:
                                 cmd = 'M'
@@ -2310,7 +2293,7 @@ class laser_gcode(inkex.Effect):
                     # ================
                     p += csp
                         
-                curve = self.parse_curve(p, layer)
+                curve = self.parse_curve(p, layer,flips)
                 gcode += self.generate_gcode(curve, layer, 0)
 
         self.export_gcode(gcode)

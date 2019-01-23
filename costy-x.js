@@ -156,12 +156,14 @@ len is total length until this point
 
 function isClockwise(poly, px = 1, py = 2) {
     var sum = 0;
-    for (var i = 0; i < poly.length - 1; i++) {
+    for (var i = 0; i < poly.length; i++) {
         var cur = poly[i];
-        var next = poly[i + 1];
-        sum += (next[px] - cur[px]) * (next[py] + cur[py]);
+		ii=i + 1;
+		if (ii==poly.length)ii=0;
+        var next = poly[ii];
+        sum += (next[py] * cur[px]) - (next[px] * cur[py]);
     }
-    return sum > 0;
+    return sum < 0;
 }
 var overcut=[0,0];
 var cross=0;
@@ -238,6 +240,7 @@ function prepare_line(lenmm,lines) {
 		newlines.push([lines[0][0],sx,sy,0,0]);
 		return newlines;
 	} else {
+		var clk=isClockwise(lines);
 		if (ofs>0){
 		// generate offset
 		///*
@@ -252,7 +255,6 @@ function prepare_line(lenmm,lines) {
 			path.push({X:x,Y:y});
 		}
 		paths.push(path);
-		var clk=isClockwise(lines);
 		//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
 		
 		var co = new ClipperLib.ClipperOffset(); // constructor
@@ -482,7 +484,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 
 			
 			ctx.lineTo(lx, ly);
-			//ctx.arc(lx,ly,1,0,2*Math.PI);
+			//ctx.arc(lx,ly,1+ci/2,0,2*Math.PI);
 		
 			lx2 = x;
 			ly2 = y;
