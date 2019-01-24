@@ -92,6 +92,7 @@ var extrude = (layerheight * layerheight) / (filamentD * filamentD);
 var fm=0;
 function gcoden(g, f, x2, y2, z2 = 10000, e2 = 1000000) {
     var xs = 1;
+	if (z1==z2)z2=10000;
 	g=g*1;
 	f=mround(f);
 	if (fm!=f){
@@ -577,6 +578,10 @@ var spiraldown=1;
 function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
+	if (cmd==CMD_LASER){
+		z=0;
+		z2=0;
+	}
 	
 	var dz=z2-z;
 	

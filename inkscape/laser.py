@@ -2263,7 +2263,7 @@ class laser_gcode(inkex.Effect):
                     col=getColor(path)
                     gcode +=";"+col+"\n"
                     csp1 = cubicsuperpath.parsePath(d)#new.get('d'))		
-                    #csp1 = self.apply_transforms(path, csp1)
+                    csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
                     cspsubdiv.cspsubdiv(csp1, self.options.flatten)
                     np = []

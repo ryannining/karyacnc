@@ -146,6 +146,10 @@ function nextgcode() {
     sendgcode("G4");
 	sendgcode("M114");
     stopit();
+    var bt = document.getElementById('btexecute');
+	bt.innerHTML = "Execute";
+    var bt = document.getElementById('btexecute2');
+	bt.innerHTML = "Engrave";
 }
 function idleloop(){
 	
@@ -433,6 +437,7 @@ setclick("btright", gcoderight);
 setclick("btzup", gcodezup);
 setclick("btzdn", gcodezdown);
 setclick("btrecode", refreshgcode);
+setclick("btrecode2", refreshgcode);
 setclick("btsend", function() {
     sendgcode(getvalue("edgcode"));
 })
@@ -726,6 +731,7 @@ function startserver(){
 				if (e.data==">FINISH"){
 					setvalue("engcode",buff);
 					buff="";
+					socket.send("OK");
 				}if (e.data==">REVECTOR"){
 					text1=gcodetoText1(buff);
 					refreshgcode();

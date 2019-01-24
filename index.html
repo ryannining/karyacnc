@@ -37,9 +37,9 @@ html, body {
 	  
 	  
 	  <tr><td>Overcut <td><input id=overcut value=1 size=2 class=saveit>
-	      <td>Segment <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
+	      <td>Cos(angle) <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
 		  <tr><td colspan=4><hr>
-		  <tr><td colspan=4><button id=bthidden3>Show Gcode</button>
+		  <tr><td colspan=2><button id=btrecode2 >Re-gcode</button><td colspan=2><button id=bthidden3>Show Gcode</button>
 	  </table>
 
 	  <tr style="background:lime"><td>DPI<td colspan=2>Machine
@@ -115,6 +115,8 @@ html, body {
       <textarea style="font-size: 10;width:100%;height:200" id="engcode" class=saveit>
       </textarea><button id=btgcode2vec>ReVector Gcode</button>
 	<td width=auto style="padding:5px;border:solid 1px"><p style="background:yellow" id="area_dimension">Object Preview</p>
+	
+	<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
     <canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
 	For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
     <br><button id=btsaveset style="display:none">Save Config</button>
