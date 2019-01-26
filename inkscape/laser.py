@@ -1773,7 +1773,7 @@ class laser_gcode(inkex.Effect):
         self.OptionParser.add_option("",   "--laser-off-command",               action="store", type="string",          dest="laser_off_command",                   default="M05",                          help="Laser gcode end command")
         self.OptionParser.add_option("",   "--laser-speed",                     action="store", type="int",             dest="laser_speed",                         default="750",                          help="Laser speed (mm/min)")
         self.OptionParser.add_option("",   "--karyacnc",                        action="store", type="inkbool",         dest="karyacnc",                            default=True,                           help="Send to karyacnc")        
-        self.OptionParser.add_option("",   "--flatten",                         action="store", type="float",           dest="flatten",                             default=0.1,                            help="Flatten resolution")
+        self.OptionParser.add_option("",   "--flatten",                         action="store", type="float",           dest="flatten",                             default="0.05",                            help="Flatten resolution")
         self.OptionParser.add_option("",   "--travel-speed",                    action="store", type="string",          dest="travel_speed",                        default="3000",                         help="Travel speed (mm/min)")
         self.OptionParser.add_option("",   "--laser-power",                     action="store", type="int",             dest="laser_power",                         default="255",                          help="S# is 256 or 10000 for full power")
         self.OptionParser.add_option("",   "--passes",                          action="store", type="int",             dest="passes",                              default="1",                            help="Quantity of passes")
@@ -2265,7 +2265,7 @@ class laser_gcode(inkex.Effect):
                     csp1 = cubicsuperpath.parsePath(d)#new.get('d'))		
                     csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
-                    cspsubdiv.cspsubdiv(csp1, self.options.flatten)
+                    cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
                     np = []
                     # need to check if its clockwise
                     outer=col!="#ffff00"

@@ -207,7 +207,9 @@ function executegcodes() {
 function executegcodes2() {
     var bt = document.getElementById('btexecute2');
     if (bt.innerHTML == "Engrave") {
-        execute(document.getElementById('engcode').value);
+		if ($("engravecut").checked) 
+		execute(document.getElementById('engcode').value+"\n"+document.getElementById('gcode').value);
+		else execute(document.getElementById('engcode').value);
         bt.innerHTML = "Stop";
     } else {
 		bt.innerHTML = "Engrave";
@@ -728,11 +730,16 @@ function startserver(){
 		// connected sockets.
 		var buff="";
 		socket.addEventListener('message', function(e) {
+				if (e.data==">PAUSE"){
+					socket.send("DATA");
+					//setvalue("engcode",buff);
+				}
 				if (e.data==">FINISH"){
+					socket.send("OK");
 					setvalue("engcode",buff);
 					buff="";
-					socket.send("OK");
-				}if (e.data==">REVECTOR"){
+				}
+				if (e.data==">REVECTOR"){
 					text1=gcodetoText1(buff);
 					refreshgcode();
 					buff="";
@@ -751,6 +758,7 @@ function startserver(){
 			}
 		  }
 		});
+		socket.send("DATA");
 		return true;
 	  });
 	}

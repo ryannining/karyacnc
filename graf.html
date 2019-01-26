@@ -66,6 +66,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 </table>
 
 <script>
+var ws =0;
 var overshot=3;
 function $(id) {
   return document.getElementById(id);
@@ -205,7 +206,8 @@ ditherit = function() {
         oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
 		if (inv)oldr=255-oldr;
 		oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
-		
+		alp=(bm.data[a+3])/255;
+		oldr=(oldr*(alp))+(255*(1-alp));		
 		bm.data[a]=oldr;
 		bm.data[a+1]=oldr;
 		bm.data[a+2]=oldr;
@@ -230,6 +232,7 @@ ditherit = function() {
 				var a=j*row+i*4;
 				gr=rndt*Math.random()-(rndt2);
 				oldr=bm.data[a];
+				//if (
 				if (metode==0){
 					rmax=255;
 					newr=oldr+gr;
@@ -259,6 +262,7 @@ ditherit = function() {
 				bm.data[a+0]=newr;
 				bm.data[a+1]=newr;
 				bm.data[a+2]=newr;
+				bm.data[a+3]=255;
 				if (metode==0){
 					// 7 3 5 1 floyd
 					err=err/16;
@@ -363,7 +367,7 @@ ditherit = function() {
 						gcode+="G1 S255 F"+speed+" X"+(px1)+" E"+(pxstart+shf)+"\n";
 						//gcode+="G0 X"+mround(px1-ccc)+"\n";
 					}
-					waktu+=2.0*mw/speed;
+					waktu+=1.66*mw/speed;
 				} 
 				// cnc mill, down
 				if (mtype==0){
@@ -419,27 +423,38 @@ function copy_to_server(id) {
 //	ws.addEventListener('open', function() {
 	var address = window.location.href.replace('http', 'ws');
 	ws= new WebSocket(address);
+	var lines=document.getElementById(id).value.split("\n");
+	var x=0;
 	ws.addEventListener('message', function(e) {
 		if (e.data=="OK") {
 			$("transfer").innerHTML="Transfer OK";
 			setTimeout(function(){
 					ws.close();
 					$("transfer").innerHTML="";
+					$("btcopy2b").style.display="inline-block";
 					//confirm("Upload success");
-			},4000);
+			},2000);
+		}
+		if (e.data=="DATA"){
+			for (var ix=0;ix<100;ix++){
+				ws.send(lines[x]+"\n");
+				x++;
+				if (x>lines.length){
+					ws.send(">FINISH");
+					return;
+				}
+			}
+			//ws.send(document.getElementById(id).value);
+			ws.send(">PAUSE");
 		}
 	});
 	ws.addEventListener('open', function() {
 		$("btcopy2b").style.display="none";
-		var lines=document.getElementById(id).value.split("\n");
-		for (x in lines){ws.send(lines[x]+"\n");}
-		ws.send(">FINISH");
-		setTimeout(function(){
-				ws.close();
-				$("btcopy2b").style.display="inline-block";
-				//confirm("Upload success");
-		},2000);
 	});
+	ws.addEventListener('close', function() {
+		$("btcopy2b").style.display="inline-block";
+	});
+	
 //	});
 }
 
@@ -502,11 +517,10 @@ if (stotype==0){
 }	
 
 // websocket
-var ws =0;
 document.addEventListener('DOMContentLoaded', function() {
 // FIXME: Wait for 1s so that HTTP Server socket is listening...
   var address = window.location.href.replace('http', 'ws');
-  ws= new WebSocket(address);
+  /*ws= new WebSocket(address);
   ws.addEventListener('open', function() {
     log('Connected');
   });
@@ -516,6 +530,7 @@ document.addEventListener('DOMContentLoaded', function() {
   ws.addEventListener('message', function(e) {
     log(e.data);
   });
+  */
 });
 </script>
 

@@ -146,6 +146,40 @@ function gcode1(f, x2, y2, z2 = 10000, e2 = 1000000) {
     gcoden(1, f, x2, y2, z2, e2);
 }
 var sgcodes = [];
+var detail=1.0;
+var opx=-1000;
+var opy=-1000;
+var line=[];
+
+function linepush(f,x2,y2){
+    if ((x2!=x1) || (y2!=y1)) {
+		x1 -= x2;
+		y1 -= y2;
+		// if 3d mode, then calculate the E
+		lenn = sqrt(x1 * x1 + y1 * y1);
+		if (cmd == 4) {
+			if (inretract) {
+				div += "G1 F60 E" + mround(e1) + "\n";
+				inretract = 0;
+			}
+			e2 = e1 + lenn * extrude*extrudeMul;
+		}
+		lenmm += lenn;
+		xmin = Math.min(xmin, x2);
+		ymin = Math.min(ymin, y2);
+		xmax = Math.max(xmax, x2);
+		ymax = Math.max(ymax, y2);
+
+		xmin2 = Math.min(xmin2, x2);
+		ymin2 = Math.min(ymin2, y2);
+		xmax2 = Math.max(xmax2, x2);
+		ymax2 = Math.max(ymax2, y2);
+		
+		line.push([f, x2, y2, lenmm,lenn]);
+		x1 = x2;
+		y1 = y2;
+	}
+}
 
 /*
 
@@ -241,13 +275,14 @@ function prepare_line(lenmm,lines) {
 		newlines.push([lines[0][0],sx,sy,0,0]);
 		return newlines;
 	} else {
+		var glines=[];
 		var clk=isClockwise(lines);
 		if (ofs>0){
 		// generate offset
 		///*
 		var path=[];
 		var paths=[];
-		var newlines=[];
+
 		var scale = 1000;
 		for (var i = 0; i < lines.length; i++) {
 			var l=lines[i];
@@ -292,11 +327,11 @@ function prepare_line(lenmm,lines) {
 		}
 		//if (newline.length>0)
 		// keep old lines
-		oldlines.push(lines)
+		oldlines.push(lines);
 		lines=newline;
 		//
 		//*/
-		}
+		} //else return lines;
 		
 		if (lenmm<noprocess)return lines;
 		sharpv = $("sharp").value;
@@ -305,28 +340,29 @@ function prepare_line(lenmm,lines) {
 		cxt=0;
 		cyt=0;
 		cnt=0;
-		for (var i = 0; i < lines.length; i++) {
+		gline=lines;
+		for (var i = 0; i < gline.length; i++) {
 			
-			tl = lines[i][3];
-			tl2 = lines[i][4];
-			x = lines[i][1];
-			y = lines[i][2];
+			tl = gline[i][3];
+			tl2 = gline[i][4];
+			x = gline[i][1];
+			y = gline[i][2];
 			cxt+=x;
 			cyt+=y;
 			cnt+=1.0;
 			
 			//if (ov!=0)
 			{
-				sr = sharp(lines, 1, 2, i);
-				if ((sr > sharpv) || (i == 0) || (i == lines.length - 1)) {
+				sr = sharp(gline, 1, 2, i);
+				if ((sr > sharpv) || (i == 0) || (i == gline.length - 1)) {
 					//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
-					newlines.push(lines[i]);
+					newlines.push(gline[i]);
 					ox=overcut[0]*ov;
 					oy=overcut[1]*ov;
 					if ((OVC_MODE==0) && ((ox!=0) || (oy!=0))) {
 						//newlines.push(lines[i]);
-						newlines.push([lines[i][0],x-ox,y-oy,tl,0]);
-						newlines.push([lines[i][0],x,y,tl,0]);
+						newlines.push([gline[i][0],x-ox,y-oy,tl,0]);
+						newlines.push([gline[i][0],x,y,tl,0]);
 					}
 					srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross,cxt/cnt,cyt/cnt]);
 					cxt=0;
@@ -335,13 +371,152 @@ function prepare_line(lenmm,lines) {
 					lx=x;
 					ly=y;
 					//}
-				} else newlines.push(lines[i]);
+				} else newlines.push(gline[i]);
 			}
 		}
 		return newlines;
-
 	}
 }
+function prepare_line2(lenmm,lines) {
+    var f2 = "F"+(getvalue('feed') * 60)+" ";
+    var ofs = getvalue('offset')*0.5;
+	collapsepoint=getvalue("drill")*1;
+	noprocess=getvalue("overcutmin")*1;
+	shapectr++;
+	var newlines=[];
+	srl=[];
+	lx=0;
+	ly=0;
+	// overcut, collapse only for CNC
+	
+    if ((cmd == CMD_CNC) && (lenmm<collapsepoint)){
+		var sx=0;
+		var sy=0;
+		for (var i = 0; i < lines.length; i++) {			
+			sx += lines[i][1];
+			sy += lines[i][2];
+		}
+		sx/=lines.length;
+		sy/=lines.length;
+		newlines.push([[lines[0][0],sx,sy,0,0]]);
+		return newlines;
+	} else {
+		var glines=[];
+		var clk=isClockwise(lines);
+		if (ofs!=0){
+			// generate offset
+			///*
+			var path=[];
+			var paths=[];
+			var scale = 1000;
+			for (var i = 0; i < lines.length; i++) {
+				var l=lines[i];
+				x = l[1]*scale;
+				y = l[2]*scale;
+				path.push({X:x,Y:y});
+			}
+			paths.push(path);
+			//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
+			
+			var co = new ClipperLib.ClipperOffset(); // constructor
+			var offsetted_paths = new ClipperLib.Paths(); // empty solution		
+			co.Clear();
+			
+			co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+			co.MiterLimit = 2;
+			co.ArcTolerance = 0.02*scale;
+			var delta=ofs*scale;
+			if (!clk)delta=-delta;
+			co.Execute(offsetted_paths, delta);
+			var s=0;
+			var ds=0;
+			var ox=0;
+			var oy=0;
+			for (var i = 0; i < offsetted_paths.length; i++) {
+				var newline=[];
+				var path=ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
+				for (var j = 0; j < path.length; j++) {			
+					var jj=j;
+					if (clk)jj=path.length-1-j;
+					var l= path[jj];
+					x = l.X*1.0/scale;
+					y = l.Y*1.0/scale;
+					if (j>0){
+						ds=sqrt(sqr(x-ox)+sqr(y-oy));
+					}
+					s+=ds;
+					ox=x;
+					oy=y;
+					newline.push([f2,x,y,s,ds]);
+				}
+				glines.push(newline);
+			}
+			//if (newline.length>0)
+			// keep old lines
+			oldlines.push(lines)
+			//
+			//*/
+		} else glines.push(lines);
+		
+		if ((disable_ovc.indexOf(shapectr+"")>=0)||(lenmm<noprocess))return glines;
+		sharpv = $("sharp").value;
+		ov=0.01;
+		if (cmd == CMD_CNC) ov+=$("overcut").value/10.0;
+		cxt=0;
+		cyt=0;
+		cnt=0;
+		console.log(">>"+glines.length);
+		for (var j = 0; j < glines.length; j++) {
+			var gline=glines[j];
+			var newline=[];
+			for (var i = 0; i < gline.length; i++) {
+				
+				tl = gline[i][3];
+				tl2 = gline[i][4];
+				x = gline[i][1];
+				y = gline[i][2];
+				cxt+=x;
+				cyt+=y;
+				cnt+=1.0;
+				
+				//if (ov!=0)
+				{
+					sr = sharp(gline, 1, 2, i);
+					if ((sr > sharpv) || (i == 0) || (i == gline.length - 1)) {
+						//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
+						newline.push(gline[i]);
+						ox=overcut[0]*ov;
+						oy=overcut[1]*ov;
+						if ((OVC_MODE==0) && ((ox!=0) || (oy!=0))) {
+							//newlines.push(lines[i]);
+							newline.push([gline[i][0],x-ox,y-oy,tl,0]);
+							newline.push([gline[i][0],x,y,tl,0]);
+						}
+						srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross,cxt/cnt,cyt/cnt]);
+						cxt=0;
+						cyt=0;
+						cnt=0;
+						lx=x;
+						ly=y;
+						//}
+					} else newline.push(gline[i]);
+				}
+			}
+			newlines.push(newline);
+		}
+		return newlines;
+	}
+}
+
+function gcodepush(lenmm,  X1, Y1, lenmm,line){
+	var area=xarea();
+	var lines=prepare_line2(lenmm,line);
+	for (var i=0;i<lines.length;i++){
+		gcodes.push([lenmm, "", X1, Y1,lines[i],srl,area]);
+	}
+}
+
+
 var cutevery=200;
 var cutofs=0;
 function draw_line(num, lcol, lines,srl,dash,len) {
@@ -360,10 +535,10 @@ function draw_line(num, lcol, lines,srl,dash,len) {
     slc = lc / 2+cutofs;
 
     var ofs = getvalue('offset')*1;
-	var cw=$("myCanvas1").width-60;
-	var ch=$("myCanvas1").height-60;
-    var dpm = cw / (sxmax);
-    dpm = Math.min(dpm, ch / (symax));
+	var cw=$("myCanvas1").width-70;
+	var ch=$("myCanvas1").height-70;
+    var dpm = cw / (sxmax+ofs*2);
+    dpm = Math.min(dpm, ch / (symax+ofs*2));
     var x = lx / dpm;
     var y = ly / dpm;
     var cxmin = 100000;
@@ -1047,15 +1222,6 @@ function xarea(){
     ymax2 = 0;
 	return v;
 }
-var detail=1.0;
-var opx=-1000;
-var opy=-1000;
-var line=[];
-function linepush(f,x,y,l1,l2){
-	if ((x!=opx) || (y!=opy))line.push([f, x, y, l1,l2]);
-	opx=x;
-	opy=y;
-}
 function myFunction(scale1) {
 	if (text1==undefined) return;
 	oldlines=[];
@@ -1150,13 +1316,10 @@ function myFunction(scale1) {
             // close shape loop
             if (cnts > 1) {
                 ///
-gcode1(f2, X1, Y1);
+				//gcode1(f2, X1, Y1);
                 linepush(f2, X1, Y1, lenmm,lenn);
-                if (cmd == 2) {
-                    // if foam mode must move up
-                    div = div + 'G00 Y0 \n';
-                }
-                gcodes.push([lenmm, div, X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
+				gcodepush(lenmm,  X1, Y1, lenmm,line);
+				//gcodes.push(lenmm, div, X1, Y1, prepare_line(lenmm,line),srl,xarea());
 				
                 //lines.push(line);
 
@@ -1167,18 +1330,11 @@ gcode1(f2, X1, Y1);
 			lenn=0;
 
             // deactivate tools and move to cut position
-            div = div + "\n;SHAPE\n";
-            if (pw2) div = div + "M106 S" + pw1 + "\n";
-            div = div + pup + '\n';
-
             X1 = xincep;
             Y1 = yincep;
             ///
-gcode0(f1, X1, Y1);
+			gcode0(f1, X1, Y1);
             // activate tools and prepare the speed
-            if (pw2) div = div + "M106 S" + pw2 + "\n";
-            div = div + pdn + '\n';
-            div = div + 'G01 F' + mround(f2) + '\n';
 
             lastf = f2;
             handleM = 0;
@@ -1191,7 +1347,7 @@ gcode0(f1, X1, Y1);
             p1x = xy[0] * scale;
             p1y = xy[1] * scale;
             ///
-gcode1(f2, p1x, p1y);
+			//gcode1(f2, p1x, p1y);
             linepush(f2, p1x, p1y, lenmm,lenn);
         } else if (cr == 'H') {
             var n2 = text1.indexOf(' ', n + 3);
@@ -1199,7 +1355,7 @@ gcode1(f2, p1x, p1y);
             p1x = xy * scale;
 
             ///
-gcode1(f2, p1x, y1);
+			//gcode1(f2, p1x, y1);
             linepush(f2, p1x, y1, lenmm,lenn);
             n = n + 3;
         } else if (cr == 'V') {
@@ -1208,7 +1364,7 @@ gcode1(f2, p1x, y1);
             p1y = xy * scale;
 
             ///
-gcode1(f2, y1, p1y);
+			//gcode1(f2, y1, p1y);
             linepush(f2, y1, p1y, lenmm,lenn);
 
             n = n + 3;
@@ -1273,7 +1429,7 @@ gcode1(f2, y1, p1y);
                 var x = bezierx(i, xincep, p1x, p2x, xsfar);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
                 ///
-gcode1(lastf, x, y);
+				//gcode1(lastf, x, y);
                 linepush(lastf, x, y, lenmm,lenn);
             }
 
@@ -1295,7 +1451,7 @@ gcode1(lastf, x, y);
             //console.log(res);
             p1y = res;
             ///
-gcode1(lastf, p1x, p1y);
+			//gcode1(lastf, p1x, p1y);
             linepush(lastf, p1x, p1y, lenmm,lenn);
 
             var n = text1.indexOf(' ', n + 3);
@@ -1311,7 +1467,7 @@ gcode1(lastf, p1x, p1y);
 
             p2y = res;
             ///
-gcode1(lastf, p2x, p2y);
+			//gcode1(lastf, p2x, p2y);
             linepush(lastf, p2x, p2y, lenmm,lenn);
 
             xincep = p2x;
@@ -1341,14 +1497,10 @@ gcode1(lastf, p2x, p2y);
     // close loop
     if (cnts > 0) {
         ///
-		gcode1(f2, X1, Y1);
+		//gcode1(f2, X1, Y1);
         linepush(lastf, X1, Y1, lenmm,lenn);
-        if (cmd == 2) {
-            // for foam, must move up first
-            div = div + 'G00 Y0 \n';
-        }
-        gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
-        div = "";
+		gcodepush(lenmm,  X1, Y1, lenmm,line);
+        //gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
     }
     sortedgcode();
 	gcode_verify();
