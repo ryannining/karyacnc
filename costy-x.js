@@ -793,6 +793,8 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
         X1 = Y1;
         Y1 = sxmax-XX;
     }
+    drillf=$("drillfirst").checked;
+	
 	if (!(lx===undefined)){
 		pdis=sqrt(sqr(lx-X1)+sqr(ly-Y1)); 
 	} else pdis=0;
@@ -855,7 +857,10 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
 
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
-    if (cmd != CMD_3D) div = div + pdn.replace("=cncz", mround(z)) + '\n';
+    if (cmd != CMD_3D){
+		if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
+		div = div + pdn.replace("=cncz", mround(z)) + '\n';
+	}
     var incut = 0;
     var lenctr = 0;
     var fm = 1;
@@ -1122,7 +1127,7 @@ function sortedgcode() {
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
     var ov = getvalue("overcut")*1.0;
-    s = ""; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+    s = "G92 Z0\nG0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     pup1=getvalue("pup");
 	cncdeep0 = -getvalue("zdown");
 	pdn1 = getvalue("pdn").replace("=cncz", mround(cncdeep0)) + '\n';

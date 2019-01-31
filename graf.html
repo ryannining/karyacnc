@@ -28,6 +28,7 @@
 <br>Gamma <input id=gamma value=1 size=1 class=saveit>
 <br>Random <input id=rnd value=0 size=1 class=saveit>
 <br>Invert color <input id=invert type=checkbox size=3 class=saveit>
+<br>Flip X <input id=flip type=checkbox size=3 class=saveit>
 <hr>Machine <select id=mtype class=saveit>
 <option value=0 selected>CNC</option>
 <option value=1>Laser</option>
@@ -145,7 +146,7 @@ var sierra2=[6,2 ,1,4,7,4,1 ,1,5,1];
 sierra2=[5, 3, 2, 4, 5, 4, 2, 2, 3, 2];
 
 var floyd1=[7, 4,4,1];
-
+var memlimit=8000;
 ditherit = function() {
     var c = document.getElementById("myCanvas");
     var img = document.getElementById("thepic");
@@ -157,6 +158,7 @@ ditherit = function() {
     c.width=img.width;
     c.height=getvalue("height");
     var ctx = c.getContext("2d");
+	var flip=$("flip").checked;
     ctx.drawImage(img, 0, 0,c.width,c.height);
     var bm = ctx.getImageData(0, 0, c.width, c.height);
     // invert colors
@@ -200,17 +202,29 @@ ditherit = function() {
 	
 	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
 	var gcode="G7 S0 []\nG92 E0\n"+tool1+"\n";
+	bmd=[];
 	for (j = 0; j < c.height; j += 1) {
     for (i = 0; i < c.width; i += 1) {
-    	var a=j*row+i*4;
+    	var a=j*row;
+		if (flip)a+=(row-i*4); else a+=i*4;
         oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
 		if (inv)oldr=255-oldr;
 		oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
 		alp=(bm.data[a+3])/255;
-		oldr=(oldr*(alp))+(255*(1-alp));		
+		oldr=(oldr*(alp))+(255*(1-alp));
+
+		var a=j*c.width+i;		
+		bmd[a]=oldr;
+	}}
+	for (j = 0; j < c.height; j += 1) {
+    for (i = 0; i < c.width; i += 1) {
+		var a=j*c.width+i;		
+        oldr=bmd[a];
+    	a=j*row+i*4;
 		bm.data[a]=oldr;
 		bm.data[a+1]=oldr;
 		bm.data[a+2]=oldr;
+		bm.data[a+3]=255;
 	}}
 	// dither it
 	if (metode<4){
@@ -218,10 +232,11 @@ ditherit = function() {
 		var dv=num/256.0;
 		var mul=(255.0/(num-1));
 		var rndt=getvalue("rnd");
-		var shf=1.0*getvalue("shf");;
+		var shf=1;//1.0*getvalue("shf");;
 		var rndt2=rndt/2.0;
-		var np=Math.floor(16000/(c.width+5));
+		var np=Math.floor(memlimit/(c.width+5));
 		var bp=10;
+		var jk=0;
 		for (j = 0; j < c.height-dy; j += 1) {
 			gc="";
 			var skip=1;
@@ -253,6 +268,7 @@ ditherit = function() {
 				err=oldr-newr;
 				
 				cc=String.fromCharCode((rmax-newr)/10+97);
+				if (cc===undefined)cc='a';
 				if (cc=='a') w0++; else {
 					skip=0;w1++;
 					pxstart=Math.min(pxstart,i);
@@ -303,7 +319,7 @@ ditherit = function() {
 					
 				}
 			}
-			gc+="";
+			gc+="aaaaaaaaaaa";
 			// save the laser raster
 			// recompress the data
 			gcc="";
@@ -330,7 +346,12 @@ ditherit = function() {
 			}
 			//gcc+="aa";
 			//
+			var farx=0;
 			if (!skip){
+				if (bp+ii+10>memlimit){
+					bp=10;
+					//gcode+="G0 F"+speed+" X"+mround(farx)+" E"+(bp)+"\n";
+				}
 				// move to start position
 				//pxstart=Math.max(0,pxstart-2);
 				//pxstop=Math.min(c.width-dx,pxstop+2);
@@ -339,33 +360,35 @@ ditherit = function() {
 				px1=mround(dotscale*pxstart);
 				px2=mround(dotscale*pxstop);
 				if (mtype==1){
-					w=pxstop;
 					//gcode+=";"+pxstart+","+pxstop+"\n";
-					pxstart+=bp;
-					pxstop+=bp;
+					pxstop=bp+(pxstop-pxstart);
+					pxstart=bp;
 					//if (bp==0)gcode+="G4\n";
 					//gcode+="G4\nG92 E0\n";
 					//gcode+="G0 +"\n";
 					var gp=0;
 					var s1="S1";
 					for (var g=0;g<gccb.length;g++){
-						gcode+="G7 "+s1+" P"+(pxstart+gp)+" ["+gccb[g]+"]\n";
+						gcode+="G7 "+s1+" P"+(pxstart+gp)+" ["+gccb[g]+"aa]\n";
 						gp+=gccb[g].length;
 						s1="S0";
 					}
 					ccc=overshot; // move back to allow acceleration
-					if (j%2==1){
-						//gcode+=";>>\n";
+					if (jk%2==1){
+						gcode+=";>>\n";
 						gcode+="G0 F"+speed+" E"+pxstart+" X"+mround(px1-ccc)+"\n";
-						gcode+="G0 X"+mround(px1)+" Y"+mround((j)*ystep)+"\n";
-						gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\nG0 X"+mround(px2+ccc)+"\n";
+						gcode+="G0 S0 X"+mround(px1)+" Y"+mround((j)*ystep)+"\n";
+						gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\n"
+						//gcode+="G0 S0 X"+mround(px2+ccc)+"\n";
+						farx=px2+overshot*3;
 					} else {
 						// next y
-						//gcode+=";<<\n";
+						gcode+=";<<\n";
 						gcode+="G0 F"+speed+" E"+(pxstop+shf)+" X"+mround(px2+ccc)+"\n";
-						gcode+="G0 X"+mround(px2)+" Y"+mround((j)*ystep)+"\n";
+						gcode+="G0 S0 X"+mround(px2)+" Y"+mround((j)*ystep)+"\n";
 						gcode+="G1 S255 F"+speed+" X"+(px1)+" E"+(pxstart+shf)+"\n";
-						//gcode+="G0 X"+mround(px1-ccc)+"\n";
+						//gcode+="G0 S0 X"+mround(px1-ccc)+"\n";
+						farx=px1-overshot*3;
 					}
 					waktu+=1.66*mw/speed;
 				} 
@@ -397,9 +420,9 @@ ditherit = function() {
 						idx+=dir;
 					}
 				}
-			} 
-			bp+=ii+5;
-			if (bp>10000)bp=10;
+				bp+=ii+10;
+				jk++;
+			}
 		}
 	} else {
 	// halftoner
@@ -437,12 +460,12 @@ function copy_to_server(id) {
 		}
 		if (e.data=="DATA"){
 			for (var ix=0;ix<100;ix++){
-				ws.send(lines[x]+"\n");
-				x++;
-				if (x>lines.length){
+				if (x>=lines.length){
 					ws.send(">FINISH");
 					return;
 				}
+				ws.send(lines[x]+"\n");
+				x++;
 			}
 			//ws.send(document.getElementById(id).value);
 			ws.send(">PAUSE");
@@ -480,7 +503,9 @@ function savesetting(){
    a=document.getElementsByClassName("saveit");
    sett={};
    for (var i=0;i<a.length;i++){
-         sett[a[i].id]=a[i].value;
+		if (a[i].type=='text')sett[a[i].id] = a[i].value;
+		if (a[i].type=='select-one')sett[a[i].id] = a[i].value;
+		if (a[i].type=='checkbox')sett[a[i].id] = a[i].checked;
    }
    text1=document.getElementById("gcode").innerHTML;
    if (stotype==1){
@@ -499,7 +524,8 @@ if (stotype==0){
 	   storage.get("settings",function(r){
 		  sett=r.settings;
 		  for (var k in sett){
-				setvalue(k,sett[k]);
+				var a=$(k);
+				if (a.type=='checkbox')a.checked=sett[k];else setvalue(k, sett[k]);
 		  }
 	   });
 	} catch (e) {
