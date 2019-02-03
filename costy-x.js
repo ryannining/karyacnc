@@ -151,8 +151,8 @@ var opx=-1000;
 var opy=-1000;
 var line=[];
 
-function linepush(f,x2,y2){
-    if ((x2!=x1) || (y2!=y1)) {
+function linepush(f,x2,y2,fr=0){
+    if (fr|| (x2!=x1) || (y2!=y1)) {
 		x1 -= x2;
 		y1 -= y2;
 		// if 3d mode, then calculate the E
@@ -250,133 +250,6 @@ var shapectr=0;
 var collapsepoint=7;
 var noprocess=14;
 var oldlines=[];
-function prepare_line(lenmm,lines) {
-    var f2 = "F"+(getvalue('feed') * 60)+" ";
-    var ofs = getvalue('offset')*0.5;
-	collapsepoint=getvalue("drill")*1;
-	noprocess=getvalue("overcutmin")*1;
-	shapectr++;
-	newlines=[];
-	srl=[];
-	lx=0;
-	ly=0;
-	if (disable_ovc.indexOf(shapectr+"")>=0)return lines;
-	// overcut, collapse only for CNC
-	
-    if ((cmd == CMD_CNC) && (lenmm<collapsepoint)){
-		var sx=0;
-		var sy=0;
-		for (var i = 0; i < lines.length; i++) {			
-			sx += lines[i][1];
-			sy += lines[i][2];
-		}
-		sx/=lines.length;
-		sy/=lines.length;
-		newlines.push([lines[0][0],sx,sy,0,0]);
-		return newlines;
-	} else {
-		var glines=[];
-		var clk=isClockwise(lines);
-		if (ofs>0){
-		// generate offset
-		///*
-		var path=[];
-		var paths=[];
-
-		var scale = 1000;
-		for (var i = 0; i < lines.length; i++) {
-			var l=lines[i];
-			x = l[1]*scale;
-			y = l[2]*scale;
-			path.push({X:x,Y:y});
-		}
-		paths.push(path);
-		//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
-		
-		var co = new ClipperLib.ClipperOffset(); // constructor
-		var offsetted_paths = new ClipperLib.Paths(); // empty solution		
-		co.Clear();
-		
-		co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
-		co.MiterLimit = 2;
-		co.ArcTolerance = 0.02*scale;
-		var delta=ofs*scale;
-		if (!clk)delta=-delta;
-		co.Execute(offsetted_paths, delta);
-		var s=0;
-		var ds=0;
-		var ox=0;
-		var oy=0;
-		var newline=[];
-		for (var i = 0; i < offsetted_paths.length; i++) {
-			var path=		ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
-			for (var j = 0; j < path.length; j++) {			
-				var jj=j;
-				if (clk)jj=path.length-1-j;
-				var l= path[jj];
-				x = l.X*1.0/scale;
-				y = l.Y*1.0/scale;
-				if (j>0){
-					ds=sqrt(sqr(x-ox)+sqr(y-oy));
-				}
-				s+=ds;
-				ox=x;
-				oy=y;
-				newline.push([f2,x,y,s,ds]);
-			}
-		}
-		//if (newline.length>0)
-		// keep old lines
-		oldlines.push(lines);
-		lines=newline;
-		//
-		//*/
-		} //else return lines;
-		
-		if (lenmm<noprocess)return lines;
-		sharpv = $("sharp").value;
-		ov=0.01;
-		if (cmd == CMD_CNC) ov+=$("overcut").value/10.0;
-		cxt=0;
-		cyt=0;
-		cnt=0;
-		gline=lines;
-		for (var i = 0; i < gline.length; i++) {
-			
-			tl = gline[i][3];
-			tl2 = gline[i][4];
-			x = gline[i][1];
-			y = gline[i][2];
-			cxt+=x;
-			cyt+=y;
-			cnt+=1.0;
-			
-			//if (ov!=0)
-			{
-				sr = sharp(gline, 1, 2, i);
-				if ((sr > sharpv) || (i == 0) || (i == gline.length - 1)) {
-					//if (sqrt(sqr(x-lx)+sqr(y-ly))>20){
-					newlines.push(gline[i]);
-					ox=overcut[0]*ov;
-					oy=overcut[1]*ov;
-					if ((OVC_MODE==0) && ((ox!=0) || (oy!=0))) {
-						//newlines.push(lines[i]);
-						newlines.push([gline[i][0],x-ox,y-oy,tl,0]);
-						newlines.push([gline[i][0],x,y,tl,0]);
-					}
-					srl.push([x, y, sr, tl, i,[x-ox,y-oy],cross,cxt/cnt,cyt/cnt]);
-					cxt=0;
-					cyt=0;
-					cnt=0;
-					lx=x;
-					ly=y;
-					//}
-				} else newlines.push(gline[i]);
-			}
-		}
-		return newlines;
-	}
-}
 function prepare_line2(lenmm,lines) {
     var f2 = "F"+(getvalue('feed') * 60)+" ";
     var ofs = getvalue('offset')*0.5;
@@ -434,7 +307,8 @@ function prepare_line2(lenmm,lines) {
 			var oy=0;
 			for (var i = 0; i < offsetted_paths.length; i++) {
 				var newline=[];
-				var path=ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
+				var path=offsetted_paths[i];
+				//var path=ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
 				for (var j = 0; j < path.length; j++) {			
 					var jj=j;
 					if (clk)jj=path.length-1-j;
@@ -449,6 +323,13 @@ function prepare_line2(lenmm,lines) {
 					oy=y;
 					newline.push([f2,x,y,s,ds]);
 				}
+				///*
+				var l= path[0];
+				if (clk)l= path[path.length-1];
+				x = l.X*1.0/scale;
+				y = l.Y*1.0/scale;
+				newline.push([f2,x,y,s,ds]);
+				//*/
 				glines.push(newline);
 			}
 			//if (newline.length>0)
@@ -508,12 +389,18 @@ function prepare_line2(lenmm,lines) {
 	}
 }
 
-function gcodepush(lenmm,  X1, Y1, lenmm,line){
-	var area=xarea();
-	var lines=prepare_line2(lenmm,line);
-	for (var i=0;i<lines.length;i++){
-		gcodes.push([lenmm, "", X1, Y1,lines[i],srl,area]);
-	}
+function gcodepush(lenmm,  X1, Y1, lenmm,line,closed){
+	var area;
+	if (closed)area=xarea();else area=1;
+	var lines;
+	if (closed) {
+		lines=prepare_line2(lenmm,line);
+		for (var i=0;i<lines.length;i++){
+			var line1=lines[i];
+			gcodes.push([lenmm, "", X1, Y1,lines[i],srl,area,closed]);
+		}
+	} else gcodes.push([lenmm, "", X1, Y1,line,srl,area,closed]);
+
 }
 
 
@@ -677,7 +564,7 @@ function draw_line(num, lcol, lines,srl,dash,len) {
 			}
         }
     }
-	ctx.lineTo(X1, Y1);
+	//ctx.lineTo(X1, Y1);
 	ctx.stroke();
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
 	if (num=="")return;
@@ -1014,7 +901,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1) {
         }
         e1 = oe1;
         // if not 3d	
-    } else gcode1(f2 * fm, X1, Y1);
+    }// else gcode1(f2 * fm, X1, Y1);
 
 
     if (cmd == 2) {
@@ -1109,7 +996,7 @@ function sortedgcode() {
 
 				var dx = gcodes[i][2] - lx;
 				var dy = gcodes[i][3] - ly;
-				var dis = sqrt(dx * dx + dy * dy) + gcodes[i][6];
+				var dis = sqrt(dx * dx + dy * dy) + (gcodes[i][6]-1);
 				if ((gcodes[i][6] > 0) && (dis < bg)) {
 					cs = i;
 					bg = dis;
@@ -1219,7 +1106,7 @@ var lines = [];
 function xarea(){
 	dx=xmax2-xmin2;
 	dy=ymax2-ymin2;
-	v=dx*dy;
+	v=dx*dy+1;
 	
 	xmin2 = 100000;
     ymin2 = 100000;
@@ -1227,8 +1114,45 @@ function xarea(){
     ymax2 = 0;
 	return v;
 }
+
+
+function svgPathToCommands(svg) {
+	var getd=/(?<= d=").+?(?=")/g;
+	 
+	var markerRegEx = /[MmLlSsQqLlHhVvCcSsQqTtAaZz]/g;
+	var digitRegEx = /-?[0-9]*\.?\d+/g;
+    var match = getd.exec(svg);
+	if (match==null)return [];
+	var str=match[0];
+
+    var results = []; 
+    var match; while ((match = markerRegEx.exec(str)) !== null) { results.push(match); };
+    return results
+        .map(function(match) {
+            return { marker: str[match.index], 
+                     index: match.index };
+        })
+        .reduceRight(function(all, cur) {
+            var chunk = str.substring(cur.index, all.length ? all[all.length - 1].index : str.length);
+            return all.concat([
+               { marker: cur.marker, 
+                 index: cur.index, 
+                 chunk: (chunk.length > 0) ? chunk.substr(1, chunk.length - 1) : chunk }
+            ]);
+        }, [])
+        .reverse()
+        .map(function(command) {
+            var values = command.chunk.match(digitRegEx);
+            return { marker: command.marker, values: values ? values.map(parseFloat) : []};
+        })
+}
+
+var svgdata=[];
+var gcstyle=[];
+
 function myFunction(scale1) {
 	if (text1==undefined) return;
+	svgdata=svgPathToCommands(text1);
 	oldlines=[];
 	opx=-1000;
 	opy=-1000;
@@ -1254,10 +1178,6 @@ function myFunction(scale1) {
     lines = [];
     var scale = 25.4 / getvalue('scale');
     if (scale1) scale = 1;
-    //var division = $('division').value;
-
-    //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
-    //$("gsvg").value=text1;
     cmd = getvalue('cmode');
 	cuttablen=getvalue("tablen")*1;
 	cutevery=getvalue("tabevery")*1;
@@ -1278,9 +1198,6 @@ function myFunction(scale1) {
     }
     //alert(cmd);
 
-    var n = text1.indexOf(' d="M');
-    n = n + 5;
-    var handleM = 1;
     var X1 = 0;
     var Y1 = 0;
 
@@ -1300,30 +1217,20 @@ function myFunction(scale1) {
     line = [];
 	//scale=1;
     //alert(div.innerHTML);
-    while (1) {
-        if (handleM) {
-            var mm = ' ';
-            if (text1.charAt(n) == ' ') {
-                mm = ',';
-                n = n + 1;
-            }
-            var res = scale * parseFloat(text1.slice(n, n + 10)); // '111.792 7.'
-            //res=res*scale;
-            //alert(res);
-            xincep = res;
-            var n = text1.indexOf(mm, n + 1);
-            n = n + 1; //7.750 C
-            var res = scale * parseFloat(text1.slice(n, n + 10));
-            //res=res*scale;
-            //alert(res);
-            yincep = res;
+	isvg=0;
+    for (var isvg=0;isvg<svgdata.length;isvg++) {
+		var el=svgdata[isvg];
+		var cr=el.marker;
+        if (cr=='M') {
             cnts = cnts + 1;
             // close shape loop
             if (cnts > 1) {
                 ///
 				//gcode1(f2, X1, Y1);
-                linepush(f2, X1, Y1, lenmm,lenn);
-				gcodepush(lenmm,  X1, Y1, lenmm,line);
+				// no close loop
+                //linepush(f2, X1, Y1, lenmm,lenn);
+				var closed=(xincep==X1)&&(yincep==Y1);
+				gcodepush(lenmm,  X1, Y1, lenmm,line,closed);
 				//gcodes.push(lenmm, div, X1, Y1, prepare_line(lenmm,line),srl,xarea());
 				
                 //lines.push(line);
@@ -1335,93 +1242,48 @@ function myFunction(scale1) {
 			lenn=0;
 
             // deactivate tools and move to cut position
+            xincep = el.values[0]*scale;
+            yincep = el.values[1]*scale;
             X1 = xincep;
             Y1 = yincep;
             ///
-			gcode0(f1, X1, Y1);
+			//gcode0(f1, X1, Y1);
+            linepush(f1, X1, Y1,1);
             // activate tools and prepare the speed
 
             lastf = f2;
-            handleM = 0;
-        }
-        var n = text1.indexOf(' ', n + 1);
-        cr = text1.charAt(n + 1);
-        if ((cr >= '0') && (cr <= '9')) {
-            var n2 = text1.indexOf(' ', n + 2);
-            var xy = text1.slice(n + 1, n2).split(',');
-            p1x = xy[0] * scale;
-            p1y = xy[1] * scale;
-            ///
-			//gcode1(f2, p1x, p1y);
-            linepush(f2, p1x, p1y, lenmm,lenn);
         } else if (cr == 'H') {
-            var n2 = text1.indexOf(' ', n + 3);
-            var xy = text1.slice(n + 3, n2);
+            var n2 = el.values[0]*scale;
+            var xy = el.values[1]*scale;
             p1x = xy * scale;
-
-            ///
-			//gcode1(f2, p1x, y1);
-            linepush(f2, p1x, y1, lenmm,lenn);
-            n = n + 3;
+            linepush(f2, p1x, y1);
         } else if (cr == 'V') {
-            var n2 = text1.indexOf(' ', n + 3);
-            var xy = text1.slice(n + 3, n2);
+            var n2 = el.values[0]*scale;
+            var xy = el.values[1]*scale;
             p1y = xy * scale;
-
-            ///
-			//gcode1(f2, y1, p1y);
-            linepush(f2, y1, p1y, lenmm,lenn);
-
-            n = n + 3;
+            linepush(f2, y1, p1y);
         } else if (cr == 'C') {
             //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
-            var res = scale * parseFloat(text1.slice(n + 2, n + 10));
-            //res=res*scale;
-            //alert(res);
-            p1x = res;
+            p1x = el.values[0]*scale;
+            p1y = el.values[1]*scale;
+            p2x = el.values[2]*scale;
+            p2y = el.values[3]*scale;
 
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //alert(res);
-            p1y = res;
-
-            var n = text1.indexOf(',', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //alert(res);
-            p2x = res;
-
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //alert(res);
-            p2y = res;
-
-            var n = text1.indexOf(',', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //alert(res);
-            xsfar = res;
-
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //alert(res);
-            ysfar = res;
+            xsfar = el.values[4]*scale;
+            ysfar = el.values[5]*scale;
 
             //*****************************
 
-            var a = p1x - xincep
-            var b = p1y - yincep
+            var a = p1x - xincep;
+            var b = p1y - yincep;
             var a = sqrt(a * a + b * b);
 
-            var b = p2x - p1x
-            var c = p2y - p1y
+            var b = p2x - p1x;
+            var c = p2y - p1y;
             var b = sqrt(b * b + c * c);
 
-            var c = xsfar - p2x
-            var d = ysfar - p2y
+            var c = xsfar - p2x;
+            var d = ysfar - p2y;
             var c = sqrt(c * c + d * d);
 
             //g=1/((a+b+c)*division);
@@ -1433,9 +1295,7 @@ function myFunction(scale1) {
 
                 var x = bezierx(i, xincep, p1x, p2x, xsfar);
                 var y = beziery(i, yincep, p1y, p2y, ysfar);
-                ///
-				//gcode1(lastf, x, y);
-                linepush(lastf, x, y, lenmm,lenn);
+                linepush(lastf, x, y);
             }
 
             //******************************************************************
@@ -1443,69 +1303,22 @@ function myFunction(scale1) {
             xincep = xsfar;
             yincep = ysfar;
         } else if (cr == 'L') { //alert("este L");
+			for (var k=0;k<el.values.length/2;k++){
+				p2x = el.values[0+k*2]*scale;
+				p2y = el.values[1+k*2]*scale;
+				linepush(lastf, p2x, p2y);
+				xincep = p2x;
+				yincep = p2y;
+			}
 
-            //div.innerHTML = div.innerHTML +'(este linie) \n\n\n';
-            var res = scale * parseFloat(text1.slice(n + 2, n + 10));
-            //res=res*scale;
-            p1x = res;
-            //console.log(res);
-
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //console.log(res);
-            p1y = res;
-            ///
-			//gcode1(lastf, p1x, p1y);
-            linepush(lastf, p1x, p1y, lenmm,lenn);
-
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //console.log(res);
-            p2x = res;
-
-            var n = text1.indexOf(' ', n + 3);
-            var res = scale * parseFloat(text1.slice(n + 1, n + 10));
-            //res=res*scale;
-            //console.log(res);
-
-            p2y = res;
-            ///
-			//gcode1(lastf, p2x, p2y);
-            linepush(lastf, p2x, p2y, lenmm,lenn);
-
-            xincep = p2x;
-            yincep = p2y;
-
-        } else if (cr == 'M') {
-            //console.log("este M");
-            n = n + 2;
-            handleM = 1;
-        } else if (text1.slice(n + 1, n + 5) == ' d="M') {
-            //console.log("este M");
-            n = n + 5;
-            handleM = 1;
-        } else if (n < 1) {
-            //console.log("lenght depasit");
-            break;
-        } else {
-            console.log("unknown :" + text1.slice(n + 1, n + 10));
-            var n = text1.indexOf(' d="M', n + 1);
-            if (n < 1) break;
-            n = n + 5;
-            handleM = 1;
         }
 
     } //sfarsit while
 
     // close loop
     if (cnts > 0) {
-        ///
-		//gcode1(f2, X1, Y1);
-        linepush(lastf, X1, Y1, lenmm,lenn);
-		gcodepush(lenmm,  X1, Y1, lenmm,line);
-        //gcodes.push([lenmm, "", X1, Y1, prepare_line(lenmm,line),srl,xarea()]);
+		var closed=(xincep==X1)&&(yincep==Y1);
+		gcodepush(lenmm,  X1, Y1, lenmm,line,closed);
     }
     sortedgcode();
 	gcode_verify();
@@ -1528,9 +1341,9 @@ function beziery(t, p0, p1, p2, p3) {
 var gc="g0 x100 y0\ng1 x200\ng1 y100\ng1 x100\ng1 y0\n";
 function gcodetoText1(gx){
 	// try to support G2 and G3
+	gcstyle=[];
 	gs=gx.split("\n");
 	var scale = getvalue('scale')/25.4;
-	sn=0;
 	var c=0;
 	var sc=0;
 	var t1='<svg id="svg" version="1.1" width="142" height="142" xmlns="http://www.w3.org/2000/svg"><path d="';
@@ -1542,6 +1355,7 @@ function gcodetoText1(gx){
 	var xmin=100000;
 	var ymax=-100000;
 	var ymin=100000;
+	var sty=[];
 	for (i in gs){
 		if ((gs[i]) && (gs[i][0]!=';')){
 			var ws=gs[i].split(" ");
@@ -1556,18 +1370,18 @@ function gcodetoText1(gx){
 				//console.log(ws[j][0]+":"+ws[j].substr(1));
 			}
 			if (hasxy){
-				if (wd['g']==1) {
-					xmax=Math.max(xmax,wd['x']*scale);
-					ymax=Math.max(ymax,-wd['y']*scale);
-					xmin=Math.min(xmin,wd['x']*scale);
-					ymin=Math.min(ymin,-wd['y']*scale);
-					
-				}
+				xmax=Math.max(xmax,wd['x']*scale);
+				ymax=Math.max(ymax,-wd['y']*scale);
+				xmin=Math.min(xmin,wd['x']*scale);
+				ymin=Math.min(ymin,-wd['y']*scale);
 			}
 		}
 	}
 	
 	for (i in gs){
+		if (gs[i].indexOf(';@')==0){
+			sty.push(gs[i].substr(2));
+		}
 		if ((gs[i]) && (gs[i][0]!=';')){
 			ws=gs[i].split(" ");
 			wd['g']=-1;
@@ -1576,7 +1390,7 @@ function gcodetoText1(gx){
 				if (ws[j]) {
 					cr=ws[j][0].toLowerCase();
 					if (cr=='x' || cr=='y')hasxy=1;
-					wd[cr]=ws[j].substr(1);
+					wd[cr]=parseFloat(ws[j].substr(1));
 				}
 				//console.log(ws[j][0]+":"+ws[j].substr(1));
 			}
@@ -1586,30 +1400,22 @@ function gcodetoText1(gx){
 					// new shape
 					sc++;
 					if (sc>1){
-						if ((c & 1))t1+=" "+xy1;
 						t1+=" ";
 					}
-					tm="M"+xy;
-					xy1=xy;
+					if (sty.length>0)gcstyle.push(sty);else gcstyle.push(0);
+					sty=[];
+					t1+="M"+xy;
 					c=0;
 				}
 				if (wd['g']==1) {
-					if (c==0){
-						sn++;
-						t1+=tm;
-					}
-					//if (xy!=lxy){
-						c++;
-						if (c & 1)t1+=" L";
-						t1+=" "+xy;
-						lxy=xy;
+					c++;
+					if (c==1)t1+=" L";
+					t1+=" "+xy;
 					//}
 				}
 			}
 		}
 	}
-	if ((c & 1))t1+=" "+xy;
-	//t1+=' L '+xy+' '+xy1;
 	t1+='" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
 	return t1;
 }

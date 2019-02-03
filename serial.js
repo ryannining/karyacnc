@@ -161,13 +161,7 @@ function idleloop(){
 }
 
 function stopit() {
-	var ms=etime.getTime();
-	etime=new Date();
-	console.log("Stop "+etime);
-	ms=etime.getTime()-ms;
-	mss="Real time:"+mround(ms/60000.0);
-	console.log(mss);
-	$("infolain").innerHTML=mss;
+	stopinfo=1;
     //var bt = document.getElementById('btexecute');
     //bt.innerHTML = "Execute";
     var bt = document.getElementById('btpause');
@@ -245,6 +239,7 @@ var eeprom = {};
 var ineeprom = 0;
 var eppos = 0;
 var resp1="";
+var stopinfo=0;
 var onReadCallback = function(s) {
 	resp1+=s;
     for (var i = 0; i < s.length; i++) {
@@ -280,6 +275,16 @@ var onReadCallback = function(s) {
 			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
             if (isok || (lastw.toUpperCase().indexOf('OK')>=0)||(lastw.toUpperCase().indexOf('ERROR:')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
                 okwait=0;
+				if (stopinfo && (lastw.toUpperCase().indexOf('WAIT')>=0)){
+					var ms=etime.getTime();
+					etime=new Date();
+					console.log("Stop "+etime);
+					ms=etime.getTime()-ms;
+					mss="Real time:"+mround(ms/60000.0);
+					console.log(mss);
+					$("infolain").innerHTML=mss;
+					stopinfo=0;
+				}
                 nextgcode();
             }
             lastw = "";
