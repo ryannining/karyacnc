@@ -441,7 +441,7 @@ function drawengrave(){
 	msort=function (a,b) {
         return (b*1 - a*1);
 		};
-	var gc="G0 F"+f2+"\nG1 F"+f2+"\n";
+	var gc="M3 S255\nG0 F"+f2+"\nG1 F"+f2+"\n";
 	var ry=Object.keys(engrave).sort(nsort);
 	var lry=-10000;
 	for (var i=0;i<ry.length;i++){
@@ -457,8 +457,12 @@ function drawengrave(){
 		// go to overshoot
 		var ox=pdata[0]+((i&1)?overs:-overs);
 		gc+="G0 Y"+mround(gy)+" X"+mround(ox)+"\n";
-		var drw=ly-lry>2;
+		var drw=ly-lry>6;
 		if (drw)lry=ly;
+		xmin = Math.min(xmin, pdata[0]);
+		xmax = Math.max(xmax, pdata[0]);
+		ymin = Math.min(ymin, gy);
+		ymax = Math.max(ymax, gy);
 
 		for (var j=0;j<pdata.length/2;j++){
 			x1 = (pdata[j*2]+maxofs) * dpm;
@@ -470,14 +474,16 @@ function drawengrave(){
 			if (drw){
 				ctx.moveTo(x1, ly);
 				ctx.lineTo(x2, ly);
-				ctx.stroke();
 			}
 			totaltime+=1.3*Math.abs(pdata[j*2]-ox)/(f2*0.0167);
 		}
+		xmin = Math.min(xmin, ox);
+		xmax = Math.max(xmax, ox);
 		ox=ox+((i&1)?-overs:overs);
 		gc+="G0 X"+mround(ox)+"\n";
 
 	}
+	ctx.stroke();
 	gc+="G0 X0 Y0\n";
 	$("engcode").value=gc;
 }
@@ -747,7 +753,8 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 		clw="<";
 		if (isClockwise(lines))clw=">";
 	}
-    if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
+	// display ccw and num 
+    //if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
 var lastz = 0;
 var lasee = 0;
@@ -1573,29 +1580,6 @@ function gcodetoText1(gx){
 	return t1;
 }
 
-//***********************************************
-
-var openFile = function(event) {
-    var input = event.target;
-
-    var reader = new FileReader();
-    reader.onload = function() {
-        var dataURL = reader.result;
-        //var output = $('output');
-        //output.src = dataURL;
-
-    };
-    reader.readAsDataURL(input.files[0]);
-    Potrace.loadImageFromFile(input.files[0]);
-    Potrace.process(function() {
-        //displayImg();
-        //displaySVG(scale);
-        text1 = Potrace.getSVG(1); //.toUpperCase();
-        refreshgcode();
-
-    });
-
-};
 
 // handle paste image
 // We start by checking if the browser supports the
@@ -1742,6 +1726,11 @@ function createSVG(source, blob) {
 }
 
 function refreshgcode() {
+    var d = 'none';
+    if ($("segment").checked)
+        d = 'block';
+	
+	$("segm").style.display=d;
     myFunction(0);
     savesetting();
 }

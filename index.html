@@ -1,235 +1,220 @@
 <html>
 	<head>
 		<title>CostyKarya CNC gcode tracer</title>
-</head>
-<style>
-html, body {
-    overflow-y: visible;
-}
-</style>
+	</head>
+	<style>
+	html, body {
+		overflow-y: visible;
+	}
+	</style>
+	<body style="font-family:arial;font-size:12pt">
+		<table width=100%>
+			<tr>
+				<td bgcolor=lightgray style="font-weight:600">
+				<center style="font-size:12pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
+				<center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a>
+				</td>
+			</tr>
+		</table>
+		<table width=100%>
+			<tr valign=top width=1000px>
+				<td id=tracing width=300px>
+				<table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
+					<tr>
+						<td colspan=3 align=left><button id=bthidden>Path Option</button><button id=btengrave>Bitmap Engrave</button>
+						<table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+							<tr><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="0.7" class=saveit></td></tr>
+							<tr><td colspan=3>Tool &#248 (laser is 0.2) </td><td colspan=1><input id=offset class=saveit size=5 value=0></td></tr>
+							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
+							<tr><td colspan=2>Marking Cut </td><td colspan=2><input id=markingcut class=saveit size=15></td></tr>
+							<tr><td colspan=2>Disable Cut </td><td colspan=2><input id=disablecut class=saveit size=15></td></tr>
+							<tr><td colspan=2>Disable Tab </td><td colspan=2><input id=disabletab class=saveit size=15></td></tr>
+							<tr><td colspan=2>Disable Ovc </td><td colspan=2><input id=disableovc class=saveit size=15></td></tr>
+							<tr><td colspan=2>Curve seg. </td><td colspan=2><input id=curveseg class=saveit value='1' size=5></td></tr>
+							<tr><td colspan=2>Tab every </td><td colspan=2><input id=tabevery class=saveit value='200' size=5></td></tr>
+							<tr><td colspan=2>Tab len </td><td colspan=2><input id=tablen class=saveit value='5' size=5></td></tr>
+							<tr><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
+							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
+							<tr><td colspan=2>To Overcut </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
+							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
+							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
+							
+							<tr><td>Overcut </td>
+								<td><input id=overcut value=1 size=2 class=saveit></td>
+								<td>Cos(angle) <input id=sharp value=0.9 size=2 class=saveit></td>
+								<td><input id=segment type=checkbox class=saveit></td>
+							</tr>
+							<tr><td colspan=4><hr></td></tr>
+							<tr><td colspan=2><button id=btrecode2 >Re-gcode</button></td><td colspan=2></td></tr>
+						</table>
+						<br><button id=bthidden5>Inkscape Option</button><button id=bthidden3>Show Gcode</button>
+						<table id=vars3 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+							<tr><td colspan=4><b>INKSCAPE COLORING</b></td></tr>
+							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
+							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
+							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
+							<tr><td colspan=2>Blue engrave outline</td><td colspan=2><input id=rasteroutfeed class=saveit size=15 value=200></td></tr>
+							<tr><td colspan=2>Enable Engrave </td><td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit></td></tr>
+							<tr><td colspan=2>Enable Outline </td><td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit></td></tr>
+							<tr><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
+							<tr><td colspan=2>Enable stroke-width </td><td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit></td></tr>
+						</table>
+				</td></tr>
+				<tr style="background:lime"><td>DPI</td><td colspan=2>Machine</td></tr>
 
-<body style="font-family:arial;font-size:12pt">
-    <table width=100%><tr><td bgcolor=lightgray style="font-weight:600">
-	<center style="font-size:12pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
-   <center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a>
-	</table><table width=100%>
-    <tr valign=top width=1000px>
-	<td id=tracing width=300px>
-      <table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
-        <tr><td colspan=3><input type='file' accept='.bmp,.jpg,.gif,.png' id=btfile>
-	 <tr><td colspan=3 align=left><button id=bthidden>Show Tracing Option</button><button id=btengrave>Engrave</button>
-     
-	 <table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-      <tr><td colspan=3>Retrace Smoothness <td colspan=1><input id=smooth size=2 value="0.7" class=saveit>
-	  <tr><td colspan=3>Tool &#248 (laser is 0.2) <td colspan=1><input id=offset class=saveit size=5 value=0>
-	  <tr><td colspan=2>Pause at <td colspan=2><input id=pauseat class=saveit size=15>
-	  <tr><td colspan=2>Marking Cut <td colspan=2><input id=markingcut class=saveit size=15>
-	  <tr><td colspan=2>Disable Cut <td colspan=2><input id=disablecut class=saveit size=15>
-	  <tr><td colspan=2>Disable Tab <td colspan=2><input id=disabletab class=saveit size=15>
-	  <tr><td colspan=2>Disable Ovc <td colspan=2><input id=disableovc class=saveit size=15>
-	  <tr><td colspan=2>Curve seg. <td colspan=2><input id=curveseg class=saveit value='1' size=5>
-	  <tr><td colspan=2>Tab every <td colspan=2><input id=tabevery class=saveit value='200' size=5>
-	  <tr><td colspan=2>Tab len <td colspan=2><input id=tablen class=saveit value='5' size=5>
-	  <tr><td colspan=2>Tab ofs <td colspan=2><input id=tabofs class=saveit value='0' size=5>
-	  <tr><td colspan=2>To drill <td colspan=2><input id=drill class=saveit value='7' size=5>
-	  <tr><td colspan=2>To Overcut <td colspan=2><input id=overcutmin class=saveit value='14' size=5>
-	  <tr><td colspan=2>Spiral down <td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit>
-	  <tr><td colspan=2>Drill first <td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit>
-	  
-	  
-	  <tr><td>Overcut <td><input id=overcut value=1 size=2 class=saveit>
-	      <td>Cos(angle) <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
-		  <tr><td colspan=4><hr>
-		  <tr><td colspan=2><button id=btrecode2 >Re-gcode</button><td colspan=2>
-	  </table>
-	  <br><button id=bthidden5>Multi Color Option</button><button id=bthidden3>Show Gcode</button>
-	 <table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-	  <tr><td colspan=2>ENABLE COLOR <td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit>
-	  <tr><td colspan=2>RED 1xPLT FEED<td colspan=2><input id=pltfeed class=saveit size=15 value=20>
-	  <tr><td colspan=2>BLUE RASTER FEED<td colspan=2><input id=rasterfeed class=saveit size=15 value=200>
-	  <tr><td colspan=2>BLUE OUTLINE FEED<td colspan=2><input id=rasteroutfeed class=saveit size=15 value=200>
-	  <tr><td colspan=2>ENABLE RASTER <td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit>
-	  <tr><td colspan=2>RASTER 1xPLT <td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit>
-	  <tr><td colspan=2>RASTER DPI <td colspan=2><input id=rasterdpi class=saveit size=15 value=100>
-	  <tr><td colspan=2>ADD STROKE TO OFFSET <td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit>
-	  </table>
-	  
+				<tr><td><input id="scale" size=5 value="72" class=saveit></td>
+					<td colspan=2>
+					<select id=cmode  class=saveit><option value=1>Laser</option><option value=3>CNC</option><option value=2>Foam</option><option value=4>3D Wall</option></select> <br>
+					</td>
+				</tr>
+				<tr><td colspan=3>Material <select id=material class=saveit>
+					<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
+					<option value="8,1,27,1500">Laser Akrilik 2mm</option>
+					<option value="8,1,32,1500">Laser Akrilik 2mm Warna</option>
+					<option value="6,1,37,1500">Laser Akrilik 3mm</option>
+					<option value="6,1,42,1500">Laser Akrilik 3mm Warna</option>
+					<option value="4,1,47,1500">Laser Akrilik 4mm</option>
+					<option value="4,1,52,1500">Laser Akrilik 4mm Warna</option>
+					<option value="3,1,57,1500">Laser Akrilik 5mm</option>
+					<option value="3,1,62,1500">Laser Akrilik 5mm Warna</option>
+					<option value="2,1,67,1500">Laser Akrilik 6mm</option>
+					<option value="2,1,72,1500">Laser Akrilik 6mm Warna</option>
+					<option value="8,1,3,1500">Laser Triplek 3mm</option>
+					<option value="6,1,5,1500">Laser Triplek 5mm</option>
+					<option value="6,2,9,1500">Laser Triplek 9mm</option>
+					<option value="6,1,3,1500">MDF 3mm</option>
+					<option value="30,12,6,1000,6.5">CND MDF 6mm</option>
+					<option value="30,20,9,1000,9.5">CNC MDF 9mm</option>
+					<option value="30,11,9,1000,11">CNC MDF-H 10mm</option>
+					<option value="30,8,27,1000,4.5">CNC ACP 4mm</option>
+					<option value="30,4,20,1000,5.5">CNC PVC 5mm</option>
+					<option value="30,10,32,1000,9.5">CNC PVC 9mm</option>
+				</select></td></tr>
+				<tr><td>Mat Price/cm2</td><td colspan=2><input id=matprice class=saveit size=4></td></tr>
+				<tr><td>Cut Price/min</td><td colspan=2><input id=cutprice class=saveit size=4></td></tr>
 
-	  <tr style="background:lime"><td>DPI<td colspan=2>Machine
+				<tr style="background:lime"><td>Travel</td><td>Feed</td><td>Repeat</td></tr>
 
-        <tr><td><input id="scale" size=5 value="72" class=saveit>
-		  <td colspan=2>
-         <select id=cmode  class=saveit><option value=1>Laser</option><option value=3>CNC</option><option value=2>Foam</option><option value=4>3D Wall</option></select> <br>
-      <tr><td colspan=3>
-    Material <select id=material class=saveit>
-			<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
-			<option value="8,1,27,1500">Laser Akrilik 2mm</option>
-			<option value="8,1,32,1500">Laser Akrilik 2mm Warna</option>
-			<option value="6,1,37,1500">Laser Akrilik 3mm</option>
-			<option value="6,1,42,1500">Laser Akrilik 3mm Warna</option>
-			<option value="4,1,47,1500">Laser Akrilik 4mm</option>
-			<option value="4,1,52,1500">Laser Akrilik 4mm Warna</option>
-			<option value="3,1,57,1500">Laser Akrilik 5mm</option>
-			<option value="3,1,62,1500">Laser Akrilik 5mm Warna</option>
-			<option value="2,1,67,1500">Laser Akrilik 6mm</option>
-			<option value="2,1,72,1500">Laser Akrilik 6mm Warna</option>
-			<option value="8,1,3,1500">Laser Triplek 3mm</option>
-			<option value="6,1,5,1500">Laser Triplek 5mm</option>
-			<option value="6,2,9,1500">Laser Triplek 9mm</option>
-			<option value="6,1,3,1500">MDF 3mm</option>
-			<option value="30,12,6,1000,6.5">CND MDF 6mm</option>
-			<option value="30,20,9,1000,9.5">CNC MDF 9mm</option>
-			<option value="30,11,9,1000,11">CNC MDF-H 10mm</option>
-			<option value="30,8,27,1000,4.5">CNC ACP 4mm</option>
-			<option value="30,4,20,1000,5.5">CNC PVC 5mm</option>
-			<option value="30,10,32,1000,9.5">CNC PVC 9mm</option>
-		</select>
-		<tr><td>Mat Price/cm2<td colspan=2><input id=matprice class=saveit size=4>
-		<tr><td>Cut Price/min<td colspan=2><input id=cutprice class=saveit size=4>
-		<tr style="background:lime"><td>Tools Off<td colspan=2 >Tools On
+				<tr><td><input id=trav size=2 value=150 class=saveit></td>
+					<td><input id=feed size=2 value=6 class=saveit></td>
+					<td><input id=repeat class=saveit size=1 value=1></td>
+				</tr>
+				<tr style="background:lime"><td>Tools Off</td><td colspan=2 >Tools On</td></tr>
 
-      <tr><td><input id=pup size=8 value="m3 s0" class=saveit>
-		<td colspan=2><input id=pdn size=12 value="m3 s255" class="saveit">
+				<tr><td><input id=pup size=8 value="m3 s0" class=saveit></td>
+					<td colspan=2><input id=pdn size=12 value="m3 s255" class="saveit"></td>
+				</tr>
+				<tr style="background:lime"><td>CNC Zdown</td><td colspan=2>CNC Tab Cutout</td></tr>
+				<tr><td><input id=zdown size=1 value=1 class=saveit>
+					</td><td colspan=2><input id=tabc value=0 size=3  class=saveit></td></tr>
+				<tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
+					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
+				<tr><td colspan=3>Cut CCW <input id=cutccw type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
+		</table>
+		<div id=gcodeinit>
+			<br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
+			<textarea style="font-size: 10;width:100%;height:50px" id="pgcode" class=saveit>
+			</textarea>
+		</div>
+		<textarea style="display:none;font-size: 10;width:100%;height:50px" id=segm ></textarea></td>
+		<td>
+			<div  id=gcodepreview style="width:250px">
+			<button id=tracingbt>GCODE SENDER</button><B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
+			  <textarea style="font-size: 10;width:100%;height:300" id="gcode" class=saveit>
+			  </textarea>
+			  <textarea style="font-size: 10;width:100%;height:200" id="engcode" class=saveit>
+			  </textarea><button id=btgcode2vec>ReVector Gcode</button>
+			</div>
+		</td>
+		<td width=auto style="padding:5px;border:solid 1px">
+			<p style="background:yellow" id="area_dimension">Object Preview</p>
+			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
+			<canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
+			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
+			<br><button id=btsaveset style="display:none">Save Config</button>
+		</td>
+		<td width=300px bgcolor=lightblue style="padding:5px">
+			<b>Machine Control</b><br>
+			<button id=bthidden2>Connection Settings</button>
+			<table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+				<tr><td colspan=2>CNC COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
+				<tr><td colspan=2>CNC IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
+				<tr><td colspan=4><hr></td></tr>
+				<tr><td colspan=2>App WS PORT </td><td colspan=2><input id=wsport size=10 class=saveit value="8888"></td></tr>
+			</table><hr>
+			<b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
+			<br><b>WebSocket</b> 
+			<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
+			<hr>
 
-      <tr style="background:lime"><td>Travel<td>Feed<td>Repeat
-
-      <tr><td><input id=trav size=2 value=150 class=saveit>
-		<td><input id=feed size=2 value=6 class=saveit>
-
-      <td><input id=repeat class=saveit size=1 value=1>
-
-      <tr style="background:lime"><td>Zdown<td colspan=2>Tab Cutout
-
-      <tr><td><input id=zdown0 size=1 value=0 class=saveit> - <input id=zdown size=1 value=1 class=saveit>
-      <td colspan=2><input id=tabc value=0 size=3  class=saveit>
-	 <tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
-	  <td>Rotate <input id=rotate type=checkbox class=saveit>
-	  <tr><td colspan=3>Cut CCW <input id=cutccw type=checkbox class=saveit><button id=btrecode >Re-gcode</button>
-   </table>
-    <div id=gcodeinit>
-    <br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
-    <textarea style="font-size: 10;width:100%;height:50px" id="pgcode" class=saveit>
-    </textarea>
-    <B>INIT</b><br>
-    <textarea style="font-size: 10;width:100%;height:50px" id="icode" class=saveit>
-;Init machine
-;===============
-;M206 P80 S0.3 ;x backlash
-;M206 P84 S0.3 ;y backlash
-;M206 P88 S0.3 ;z backlash
-;===============
-    </textarea>
-	</div>
-	Segments:<br><textarea style="font-size: 10;width:100%;height:50px" id=segm ></textarea>
-   <td><div  id=gcodepreview style="width:250px"><button id=tracingbt>GCODE SENDER</button>
-      <B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
-      <textarea style="font-size: 10;width:100%;height:300" id="gcode" class=saveit>
-      </textarea>
-      <textarea style="font-size: 10;width:100%;height:200" id="engcode" class=saveit>
-      </textarea><button id=btgcode2vec>ReVector Gcode</button>
-	<td width=auto style="padding:5px;border:solid 1px"><p style="background:yellow" id="area_dimension">Object Preview</p>
-	
-	<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
-    <canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
-	For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
-    <br><button id=btsaveset style="display:none">Save Config</button>
-	</div>
-
-    <td width=300px bgcolor=lightblue style="padding:5px"><b>Machine Control</b><br>
-<button id=bthidden2>Connection Settings</button>
-     
-	 <table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-      <tr><td colspan=2>CNC COM BAUD <td colspan=2><input id=baudrate size=10 value="115200" class=saveit>
-	  <tr><td colspan=2>CNC IP <td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123">
-	  <tr><td colspan=4><hr>
-	  <tr><td colspan=2>App WS PORT <td colspan=2><input id=wsport size=10 class=saveit value="8888">
-	  </table><hr>
-	
-	<b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
-	<br><b>WebSocket</b> 
-	<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
-	<hr>
-
-	<table><tr align=center valign=center>
-	<td>Move:<select id=move value=50 class=saveit>
-		<option value=0.5>0.5</option>
-		<option value=1>1</option>
-		<option value=5>5</option>
-		<option value=10>10</option>
-		<option value=50>50</option>
-	</select>
-	<td><button id=btleft>&lt;</button>
-	<td><button  id=btup>/\</button><br>
-	<button  id=btdn>\/</button><td>
-	<button  id=btright>&gt;</button>
-	<td><button  id=btzup>Z/\</button><br>
-	<button  id=btzdn>Z\/</button>
-	</table>
-	<br>
-	<button  id=bthit>HIT</button>
-	<button  id=btsethome>Z0</button>
-	<button  id=btsethome3>Z2</button>
-    <button  id=btsethome2>ZERO</button>
-	<button id=bthoming >HOME</button>
-    <button id=bthardstop >HALT</button>
-    <button id=btcekpos >POS</button>
-	<br>
-	<input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
-	<Hr><b>My GCODE</b><br>
-    <button id=btinit style="display:none">Run Init</button>
-	<button id=btpreview>Preview</button>
-	<button id=btexecute>Execute</button>
-	<button id=btexecute2>Engrave</button>
-	<button id=btpause>Pause</button><br>
-	Cut after engrave <input size=1 type=checkbox id=engravecut checked class=saveit>
-	<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
-	<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
-	<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
-	<hr><b>3D printer</b><br>
-	<div id=info3d></div>
-	<button  id=bt3home>Home</button>
-    <button  id=bt3pla>Temp 180'</button>
-	<button  id=bt3t0>Temp 0'</button>
-	<button  id=bt3read>Get Temp</button>
-	<button  id=bt3limit>Check Limit</button>
-	<br><input id=extmm class=saveit size=2 value=5>
-	<button id=bt3Eup>Ext-Up</button>
-   <button id=bt3Edn>Ext-Dn</button>
-	<hr><b>EEPROM</b><br>
-	<button  id=bt3eeprom>Read EEPROM</button><br>
-	<select id=eepromid>
-		
-	</select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
-	<hr><b>OTHER</b><br>
-	<button id=btzero>Grbl Zero</button>
-	<div style='display:none'>
-	<button id=btresume>Resume</button>
-	<button id=btresume2>Resume from</button>
-	</div>
-	<div id=infolain></div>
-</table><center>	
-<!-- Noads
-<script src="https://www.w3counter.com/tracker.js?id=122053"></script>
-	<script async src="//pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"></script>
-<ins class="adsbygoogle"
-     style="display:block"
-     data-ad-client="ca-pub-9111193570003924"
-     data-ad-slot="7668489344"
-     data-ad-format="auto"
-     data-full-width-responsive="true"></ins>
-<script>
-(adsbygoogle = window.adsbygoogle || []).push({});
-</script>
-<script src="https://www.w3counter.com/tracker.js?id=122053"></script>
-<!-- ads -->
-</center>
-	<script src="sha1.js"></script>
-	<script src="http.js"></script>
-	<script src="Potrace.js"></script>
-	<script src="costy-x.js"></script>
-	<script src="clipper.js"></script>
-	<script src="serial.js"></script>
-
-</body>
+			<table>
+				<tr align=center valign=center>
+				<td>Move:<select id=move value=50 class=saveit>
+					<option value=0.5>0.5</option>
+					<option value=1>1</option>
+					<option value=5>5</option>
+					<option value=10>10</option>
+					<option value=50>50</option>
+				</select></td>
+				<td><button id=btleft>&lt;</button></td>
+				<td><button  id=btup>/\</button><br>
+				<button  id=btdn>\/</button></td>
+				<td><button  id=btright>&gt;</button></td>
+				<td><button  id=btzup>Z/\</button><br>
+				<button  id=btzdn>Z\/</button></td>
+				</tr>
+			</table>
+			<br>
+			<button  id=bthit>HIT</button>
+			<button  id=btsethome>Z0</button>
+			<button  id=btsethome3>Z2</button>
+			<button  id=btsethome2>ZERO</button>
+			<button id=bthoming >HOME</button>
+			<button id=bthardstop >HALT</button>
+			<button id=btcekpos >POS</button>
+			<br>
+			<input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
+			<Hr><b>My GCODE</b><br>
+			<button id=btinit style="display:none">Run Init</button>
+			<button id=btpreview>Preview</button>
+			<button id=btexecute>Execute</button>
+			<button id=btexecute2>Engrave</button>
+			<button id=btpause>Pause</button><br>
+			Cut after engrave <input size=1 type=checkbox id=engravecut checked class=saveit>
+			<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
+			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
+			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
+			<hr><b>3D printer</b><br>
+			<div id=info3d></div>
+			<button  id=bt3home>Home</button>
+			<button  id=bt3pla>Temp 180'</button>
+			<button  id=bt3t0>Temp 0'</button>
+			<button  id=bt3read>Get Temp</button>
+			<button  id=bt3limit>Check Limit</button>
+			<br><input id=extmm class=saveit size=2 value=5>
+			<button id=bt3Eup>Ext-Up</button>
+			<button id=bt3Edn>Ext-Dn</button>
+			<hr><b>EEPROM</b><br>
+			<button  id=bt3eeprom>Read EEPROM</button><br>
+			<select id=eepromid>
+				
+			</select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
+			<hr><b>OTHER</b><br>
+			<button id=btzero>Grbl Zero</button>
+			<div style='display:none'>
+			<button id=btresume>Resume</button>
+			<button id=btresume2>Resume from</button>
+			</div>
+			<div id=infolain></div>
+		</td></tr>
+		</table>
+		<center></center>
+		<script src="sha1.js"></script>
+		<script src="http.js"></script>
+		<script src="Potrace.js"></script>
+		<script src="costy-x.js"></script>
+		<script src="clipper.js"></script>
+		<script src="serial.js"></script>
+	</body>
 
 </html>

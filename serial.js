@@ -10,10 +10,10 @@ var px = 0;
 var py = 0;
 var pz = 0;
 var pe = 0;
-var etime=new Date();
-var checktemp=1;
-var isgrbl=0;
-var gcstyle=[];
+var etime = new Date();
+var checktemp = 1;
+var isgrbl = 0;
+var gcstyle = [];
 
 function comconnect() {
     var bt = document.getElementById('btconnect');
@@ -72,7 +72,10 @@ function homing() {
 }
 
 function setashome2() {
-    if (isgrbl)sendgcode("g10 p0 l20 x0 y0 z0");else sendgcode("G92 X0 Y0 Z0 E0");
+    if (isgrbl)
+        sendgcode("g10 p0 l20 x0 y0 z0");
+    else
+        sendgcode("G92 X0 Y0 Z0 E0");
     px = 0;
     py = 0;
     pz = 0;
@@ -86,100 +89,107 @@ function setashome3() {
 
 function setashome() {
     sendgcode("G0 Z0");
-	pz=0;
+    pz = 0;
 }
 
 function hardstop() {
     sendgcode("M2");
     sendgcode("G0 Z2 F5000");
     sendgcode("G0 X0 Y0");
-    px=0;
-	py=0;
-	pz=2;
+    px = 0;
+    py = 0;
+    pz = 2;
     stopit();
 }
 
-
-
-var comtype = 0; // 0 serial, 1 websocket
+var comtype = 0;
+// 0 serial, 1 websocket
 var egcodes = [];
 var debugs = 2;
 function sendgcode(g) {
-    if (debugs & 1) console.log(g);
-	try {
-		if (comtype == 0) writeSerial(g + "\n");
-		if (comtype == 1) ws.send(g + "\n");
-	}
-	catch (e) {        }
+    if (debugs & 1)
+        console.log(g);
+    try {
+        if (comtype == 0)
+            writeSerial(g + "\n");
+        if (comtype == 1)
+            ws.send(g + "\n");
+    } catch (e) {}
 }
 
-var shapefinish='';
-var currentshape=0;
+var shapefinish = '';
+var currentshape = 0;
 function nextgcode() {
     if (comtype == 1 && !wsconnected) {
         //setTimeout(nextgcode,1000);
         return;
-    }; // wait until socket connected
-    if (okwait>0) return;
-    if (!running) return;
+    }
+    ;// wait until socket connected
+    if (okwait > 0)
+        return;
+    if (!running)
+        return;
     while (eline < egcodes.length) {
         var g = egcodes[eline];
-		if (g.indexOf(";SHAPE")==0){
-			var sp=g.split("#")[1]*1;
-			if (currentshape && (sp!=currentshape)){
-				if (shapefinish)shapefinish+=',';
-				shapefinish+=currentshape;
-				$("shapes").value=shapefinish;
-			}
-			currentshape=sp;
-		}
+        if (g.indexOf(";SHAPE") == 0) {
+            var sp = g.split("#")[1] * 1;
+            if (currentshape && (sp != currentshape)) {
+                if (shapefinish)
+                    shapefinish += ',';
+                shapefinish += currentshape;
+                $("shapes").value = shapefinish;
+            }
+            currentshape = sp;
+        }
         eline++;
-		if (g==";PAUSE")pause();
+        if (g == ";PAUSE")
+            pause();
         if ((g) && (g[0] != ';') && (g[0] != '(')) {
-			okwait=1;
+            okwait = 1;
             sendgcode(g.split(";")[0]);
-			$("progress1").value=eline*100/egcodes.length;
-			var bt = document.getElementById('btresume2');
-			bt.innerHTML = "Resume from "+eline;
+            $("progress1").value = eline * 100 / egcodes.length;
+            var bt = document.getElementById('btresume2');
+            bt.innerHTML = "Resume from " + eline;
             return;
         }
     }
     sendgcode("G4");
-	sendgcode("M114");
+    sendgcode("M114");
     stopit();
     var bt = document.getElementById('btexecute');
-	bt.innerHTML = "Execute";
+    bt.innerHTML = "Execute";
     var bt = document.getElementById('btexecute2');
-	bt.innerHTML = "Engrave";
+    bt.innerHTML = "Engrave";
 }
-function idleloop(){
-	
-	if (wsconnected && checktemp) {
-        if (!running)sendgcode("M105");
-		checktemp=0;
+function idleloop() {
+
+    if (wsconnected && checktemp) {
+        if (!running)
+            sendgcode("M105");
+        checktemp = 0;
     }
-	setTimeout(idleloop,3000);
+    setTimeout(idleloop, 3000);
 }
 
 function stopit() {
-	stopinfo=1;
+    stopinfo = 1;
     //var bt = document.getElementById('btexecute');
     //bt.innerHTML = "Execute";
     var bt = document.getElementById('btpause');
-	bt.innerHTML = "PAUSE";
+    bt.innerHTML = "PAUSE";
     running = 0;
     okwait = 0;
     egcodes = [];
 }
 
 function execute(gcodes) {
-	shapefinish="";
-	setvalue("shapes","");
-	currentshape=0;
-	etime=new Date();
-	console.log("Start "+etime);
+    shapefinish = "";
+    setvalue("shapes", "");
+    currentshape = 0;
+    etime = new Date();
+    console.log("Start " + etime);
     var bt = document.getElementById('btpause');
-	bt.innerHTML = "PAUSE";
+    bt.innerHTML = "PAUSE";
     egcodes = gcodes.split("\n");
     eline = 0;
     running = egcodes.length;
@@ -194,7 +204,7 @@ function executegcodes() {
         execute(document.getElementById('gcode').value);
         bt.innerHTML = "Stop";
     } else {
-		bt.innerHTML = "Execute";
+        bt.innerHTML = "Execute";
         stopit();
         sendgcode("M2");
     }
@@ -202,12 +212,13 @@ function executegcodes() {
 function executegcodes2() {
     var bt = document.getElementById('btexecute2');
     if (bt.innerHTML == "Engrave") {
-		if ($("engravecut").checked) 
-		execute(document.getElementById('engcode').value+"\n"+document.getElementById('gcode').value);
-		else execute(document.getElementById('engcode').value);
+        if ($("engravecut").checked)
+            execute(document.getElementById('engcode').value + "\n" + document.getElementById('gcode').value);
+        else
+            execute(document.getElementById('engcode').value);
         bt.innerHTML = "Stop";
     } else {
-		bt.innerHTML = "Engrave";
+        bt.innerHTML = "Engrave";
         stopit();
         sendgcode("M2");
     }
@@ -216,10 +227,6 @@ function executegcodes2() {
 function executepgcodes() {
     execute(document.getElementById('pgcode').value);
     pz = 2;
-}
-
-function executeicodes() {
-    execute(document.getElementById('icode').value);
 }
 
 function pause() {
@@ -239,26 +246,30 @@ var ss = "";
 var eeprom = {};
 var ineeprom = 0;
 var eppos = 0;
-var resp1="";
-var stopinfo=0;
+var resp1 = "";
+var stopinfo = 0;
 var onReadCallback = function(s) {
-	resp1+=s;
+    resp1 += s;
     for (var i = 0; i < s.length; i++) {
         if (s[i] == "\n") {
-			
-			if (ss.indexOf("Z:")>0){
-				px=parseFloat(ss.substr(ss.indexOf("X:")+2));
-				py=parseFloat(ss.substr(ss.indexOf("Y:")+2));
-				pz=parseFloat(ss.substr(ss.indexOf("Z:")+2));
-				pe=parseFloat(ss.substr(ss.indexOf("E:")+2));
-			}
-            if (debugs & 2) console.log(ss);
+
+            if (ss.indexOf("Z:") > 0) {
+                px = parseFloat(ss.substr(ss.indexOf("X:") + 2));
+                py = parseFloat(ss.substr(ss.indexOf("Y:") + 2));
+                pz = parseFloat(ss.substr(ss.indexOf("Z:") + 2));
+                pe = parseFloat(ss.substr(ss.indexOf("E:") + 2));
+            }
+            if (debugs & 2)
+                console.log(ss);
             ss = "";
-        } else ss += s[i];
+        } else
+            ss += s[i];
         if ((s[i] == "\n") || (s[i] == " ") || (s[i] == "*")) {
             if (ineeprom > 0) {
-                if (ineeprom == 3) eppos = lastw;
-                if (ineeprom == 2) eeprom[eppos] = lastw;
+                if (ineeprom == 3)
+                    eppos = lastw;
+                if (ineeprom == 2)
+                    eeprom[eppos] = lastw;
                 if (ineeprom == 1) {
                     var sel = document.getElementById("eepromid");
                     sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + lastw + "</option>";
@@ -270,26 +281,28 @@ var onReadCallback = function(s) {
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;
-				checktemp=1;
+                checktemp = 1;
             }
-			if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL')>=0))isgrbl=1;
-			isok=(lastw.length==2) && (lastw[0].toUpperCase()=='O');
-            if (isok || (lastw.toUpperCase().indexOf('OK')>=0)||(lastw.toUpperCase().indexOf('ERROR:')>=0)|| (lastw.toUpperCase().indexOf('WAIT')>=0)) {
-                okwait=0;
-				if (stopinfo && (lastw.toUpperCase().indexOf('WAIT')>=0)){
-					var ms=etime.getTime();
-					etime=new Date();
-					console.log("Stop "+etime);
-					ms=etime.getTime()-ms;
-					mss="Real time:"+mround(ms/60000.0);
-					console.log(mss);
-					$("infolain").innerHTML=mss;
-					stopinfo=0;
-				}
+            if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0))
+                isgrbl = 1;
+            isok = (lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
+            if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
+                okwait = 0;
+                if (stopinfo && (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
+                    var ms = etime.getTime();
+                    etime = new Date();
+                    console.log("Stop " + etime);
+                    ms = etime.getTime() - ms;
+                    mss = "Real time:" + mround(ms / 60000.0);
+                    console.log(mss);
+                    $("infolain").innerHTML = mss;
+                    stopinfo = 0;
+                }
                 nextgcode();
             }
             lastw = "";
-        } else lastw = lastw + s[i];
+        } else
+            lastw = lastw + s[i];
     }
 }
 
@@ -297,21 +310,24 @@ var listPorts = function() {
     chrome.serial.getDevices(onGotDevices);
 };
 
-
 var onGotDevices = function(ports) {
     var s = "";
     for (var i = 0; i < ports.length; i++) {
-        if (ports[i].path) s = s + "<option value=" + ports[i].path + ">" + ports[i].path + "</option>";
+        if (ports[i].path)
+            s = s + "<option value=" + ports[i].path + ">" + ports[i].path + "</option>";
     }
     document.getElementById("comport").innerHTML = s;
 };
-var baud=115200;
+var baud = 115200;
 var connect = function(path) {
-	try{baud=parseFloat(getvalue("baudrate"));}
-	catch(e){baud=115200*2;}
-	
+    try {
+        baud = parseFloat(getvalue("baudrate"));
+    } catch (e) {
+        baud = 115200 * 2;
+    }
+
     var options = {
-        bitrate: baud 
+        bitrate: baud
     };
     chrome.serial.connect(path, options, onConnect)
 };
@@ -326,10 +342,8 @@ var disconnect = function() {
 };
 
 var onDisconnect = function(result) {
-    if (result) {
-        //console.log("Disconnected from the serial port");
-    } else {
-        //console.log("Disconnect failed");
+    if (result) {//console.log("Disconnected from the serial port");
+    } else {//console.log("Disconnect failed");
     }
 };
 
@@ -347,8 +361,7 @@ var onReceiveCallback = function(info) {
         }
     }
 };
-var onSend = function(sendInfo) {
-    //console.log(sendInfo);
+var onSend = function(sendInfo) {//console.log(sendInfo);
 }
 
 var writeSerial = function(str) {
@@ -424,7 +437,9 @@ function initserial() {
         comtype = -1;
     }
 }
-setclick("btcekpos", function(){sendgcode("m114");});
+setclick("btcekpos", function() {
+    sendgcode("m114");
+});
 setclick("btinitser", initserial);
 setclick("btconnect", comconnect);
 setclick("btsethome", setashome);
@@ -432,7 +447,6 @@ setclick("btsethome2", setashome2);
 setclick("btsethome3", setashome3);
 setclick("bthoming", homing);
 setclick("bthardstop", hardstop);
-setclick("btinit", executeicodes);
 setclick("btpreview", executepgcodes);
 setclick("btexecute", executegcodes);
 setclick("btexecute2", executegcodes2);
@@ -452,30 +466,29 @@ setclick("btsend", function() {
 setclick("btmotoroff", function() {
     sendgcode("M84");
 })
-setevent("change", "btfile", openFile);
 setevent("change", "cmode", modechange);
 
 setevent("change", "material", changematerial);
 setclick("btresume", function() {
-    okwait=0;
-    sendgcode("m3 S255");	
-	nextgcode();
+    okwait = 0;
+    sendgcode("m3 S255");
+    nextgcode();
 });
-setclick("btsetcut",function(){
-	setvalue("disablecut",getvalue("shapes"));
+setclick("btsetcut", function() {
+    setvalue("disablecut", getvalue("shapes"));
 });
 
-setclick("btengrave",function(){
-	window.open("http://localhost:"+port+"/engrave",'prn','width=700,height=500');
+setclick("btengrave", function() {
+    window.open("http://localhost:" + port + "/engrave", 'prn', 'width=700,height=500');
 });
 setclick("btresume2", function() {
-    okwait=0;
+    okwait = 0;
     var bt = document.getElementById('btresume2');
-	ln=bt.innerHTML.split(" ")[2];
-	eline=ln*1;
-	
-    sendgcode("m3 S255");	
-	nextgcode();
+    ln = bt.innerHTML.split(" ")[2];
+    eline = ln * 1;
+
+    sendgcode("m3 S255");
+    nextgcode();
 });
 
 // 3d printer
@@ -521,37 +534,40 @@ setevent("change", "eepromid", function() {
     eppos = v[1];
 });
 
-var hidd=true;
-setclick("bthidden",function(){
-	var d='none';
-	if (hidd)d='block';
-	hidd=!hidd;
-	$("vars").style.display=d;
+var hidd = true;
+setclick("bthidden", function() {
+    var d = 'none';
+    if (hidd)
+        d = 'block';
+    hidd = !hidd;
+    $("vars").style.display = d;
 });
-var hidd5=true;
-setclick("bthidden5",function(){
-	var d='none';
-	if (hidd5)d='block';
-	hidd5=!hidd5;
-	$("vars2").style.display=d;
+var hidd5 = true;
+setclick("bthidden5", function() {
+    var d = 'none';
+    if (hidd5)
+        d = 'block';
+    hidd5 = !hidd5;
+    $("vars3").style.display = d;
 });
-var hidd2=true;
-setclick("bthidden2",function(){
-	var d='none';
-	if (hidd2)d='block';
-	hidd2=!hidd2;
-	$("vars2").style.display=d;
-});
-// gcode editor
-var hidd3=true;
-setclick("bthidden3",function(){
-	var d='none';
-	if (hidd3)d='block';
-	hidd3=!hidd3;
-	$("gcodepreview").style.display=d;
+var hidd2 = true;
+setclick("bthidden2", function() {
+    var d = 'none';
+    if (hidd2)
+        d = 'block';
+    hidd2 = !hidd2;
+    $("vars2").style.display = d;
 });
 // gcode editor
-
+var hidd3 = true;
+setclick("bthidden3", function() {
+    var d = 'none';
+    if (hidd3)
+        d = 'block';
+    hidd3 = !hidd3;
+    $("gcodepreview").style.display = d;
+});
+// gcode editor
 
 setclick("btcopy1", function() {
     copy_to_clipboard('gcode');
@@ -572,7 +588,9 @@ setclick("tracingbt", function() {
     }
 
 });
-setclick("wsconnect",function(){connectwebsock();});
+setclick("wsconnect", function() {
+    connectwebsock();
+});
 
 var stotype = 0;
 try {
@@ -587,9 +605,12 @@ function savesetting() {
     var a = document.getElementsByClassName("saveit");
     sett = {};
     for (var i = 0; i < a.length; i++) {
-		if (a[i].type=='text')sett[a[i].id] = a[i].value;
-		if (a[i].type=='select-one')sett[a[i].id] = a[i].value;
-		if (a[i].type=='checkbox')sett[a[i].id] = a[i].checked;
+        if (a[i].type == 'text')
+            sett[a[i].id] = a[i].value;
+        if (a[i].type == 'select-one')
+            sett[a[i].id] = a[i].value;
+        if (a[i].type == 'checkbox')
+            sett[a[i].id] = a[i].checked;
     }
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
@@ -604,50 +625,53 @@ function savesetting() {
     }
 }
 setclick("btsaveset", savesetting);
-setclick("btgcode2vec",function(){
-	text1=gcodetoText1(getvalue("gcode"));
-	refreshgcode();
+setclick("btgcode2vec", function() {
+    text1 = gcodetoText1(getvalue("gcode"));
+    refreshgcode();
 });
 
 try {
-	if (stotype == 0) {
-			storage.get("text1", function(r) {
-				text1 = r.text1;
-			})
-			storage.get("gcstyle", function(r) {
-				gcstyle = r.gcstyle;
-			})
-			storage.get("settings", function(r) {
-				sett = r.settings;
-				for (var k in sett) {
-					var a=$(k);
-					if (a.type=='checkbox')a.checked=sett[k];else setvalue(k, sett[k]);
-				}
-			});
-	} else {
-		text1 = storage.text1;
-		if (text1 == undefined) text1 = "";
-		if (storage.gcstyle != undefined) 
-			gcstyle = JSON.parse(storage.gcstyle);
-		if (storage.settings != undefined) {
-			sett = JSON.parse(storage.settings);
-			for (var k in sett) {
-				setvalue(k, sett[k]);
-			}
-		}
-	}
+    if (stotype == 0) {
+        storage.get("text1", function(r) {
+            text1 = r.text1;
+        })
+        storage.get("gcstyle", function(r) {
+            gcstyle = r.gcstyle;
+        })
+        storage.get("settings", function(r) {
+            sett = r.settings;
+            for (var k in sett) {
+                var a = $(k);
+                if (a.type == 'checkbox')
+                    a.checked = sett[k];
+                else
+                    setvalue(k, sett[k]);
+            }
+        });
+    } else {
+        text1 = storage.text1;
+        if (text1 == undefined)
+            text1 = "";
+        if (storage.gcstyle != undefined)
+            gcstyle = JSON.parse(storage.gcstyle);
+        if (storage.settings != undefined) {
+            sett = JSON.parse(storage.settings);
+            for (var k in sett) {
+                setvalue(k, sett[k]);
+            }
+        }
+    }
     //connectwebsock();
 
 } catch (e) {}
-	
 
 // websocket
 function connectwebsock() {
-	if (wsconnected){
-		ws.close();
-		return;
-	}
-	h=getvalue("wsip");
+    if (wsconnected) {
+        ws.close();
+        return;
+    }
+    h = getvalue("wsip");
     if (h) {
         var lastcomtype = comtype;
         comtype = 1;
@@ -660,147 +684,149 @@ function connectwebsock() {
             //if (debugs & 2) console.log(msg);
         }
 
-        ws = new WebSocket('ws://' + h + ':81/', ['arduino']);
+        ws = new WebSocket('ws://' + h + ':81/',['arduino']);
         ws.onerror = function(e) {
             comtype = lastcomtype;
             a.innerHTML = "Web socket:Failed connect ! ";
-			$("wsconnect").innerHTML='Connect';
-			ws.close();
-			wsconnected=0;
+            $("wsconnect").innerHTML = 'Connect';
+            ws.close();
+            wsconnected = 0;
 
-        } // back to serial if error.
+        }
+        // back to serial if error.
         ws.onmessage = handlemessage;
         ws.onopen = function(e) {
             console.log('Ws Connected!');
             a.innerHTML = "Web socket:Connected";
-			$("wsconnect").innerHTML='Close';
+            $("wsconnect").innerHTML = 'Close';
             wsconnected = 1;
             nextgcode();
-        };
+        }
+        ;
 
         ws.onclose = function(e) {
             console.log('ws Disconnected!');
             a = document.getElementById("status");
             a.innerHTML = "Web socket:disconnected";
-			$("wsconnect").innerHTML='Connect';
+            $("wsconnect").innerHTML = 'Connect';
             wsconnected = 0;
-        };
-		idleloop();
+        }
+        ;
+        idleloop();
     }
 }
 
-
 function createCORSRequest(method, url) {
-  var xhr = new XMLHttpRequest();
-  xhr.withCredentials = false;
-  if ("withCredentials" in xhr) {
+    var xhr = new XMLHttpRequest();
+    xhr.withCredentials = false;
+    if ("withCredentials"in xhr) {
 
-    // Check if the XMLHttpRequest object has a "withCredentials" property.
-    // "withCredentials" only exists on XMLHTTPRequest2 objects.
-    xhr.open(method, url, true);
+        // Check if the XMLHttpRequest object has a "withCredentials" property.
+        // "withCredentials" only exists on XMLHTTPRequest2 objects.
+        xhr.open(method, url, true);
 
-  } else if (typeof XDomainRequest != "undefined") {
+    } else if (typeof XDomainRequest != "undefined") {
 
-    // Otherwise, check if XDomainRequest.
-    // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
-    xhr = new XDomainRequest();
-    xhr.open(method, url);
+        // Otherwise, check if XDomainRequest.
+        // XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+        xhr = new XDomainRequest();
+        xhr.open(method, url);
 
-  } else {
+    } else {
 
-    // Otherwise, CORS is not supported by the browser.
-    xhr = null;
+        // Otherwise, CORS is not supported by the browser.
+        xhr = null;
 
-  }
-  return xhr;
+    }
+    return xhr;
 }
-
-
 
 // web socket server, to receive gcode from other
 var port = 8888;
 var isServer = false;
-function startserver(){
-	if (http.Server && http.WebSocketServer) {
-	  // Listen for HTTP connections.
-	  port=getvalue("wsport")*1;
-	  var server = new http.Server();
-	  var wsServer = new http.WebSocketServer(server);
-	  server.listen(port);
-	  isServer = true;
+function startserver() {
+    if (http.Server && http.WebSocketServer) {
+        // Listen for HTTP connections.
+        port = getvalue("wsport") * 1;
+        var server = new http.Server();
+        var wsServer = new http.WebSocketServer(server);
+        server.listen(port);
+        isServer = true;
 
-	  server.addEventListener('request', function(req) {
-		var url = req.headers.url;
-		if (url == '/') url = '/engrave';
-		if (url == '/engrave') url = '/graf.html';
-		// Serve the pages of this chrome application.
-		req.serveUrl(url);
-		return true;
-	  });
+        server.addEventListener('request', function(req) {
+            var url = req.headers.url;
+            if (url == '/')
+                url = '/engrave';
+            if (url == '/engrave')
+                url = '/graf.html';
+            // Serve the pages of this chrome application.
+            req.serveUrl(url);
+            return true;
+        });
 
-	  // A list of connected websockets.
-	  var connectedSockets = [];
+        // A list of connected websockets.
+        var connectedSockets = [];
 
-	  wsServer.addEventListener('request', function(req) {
-		console.log('Client connected');
-		var socket = req.accept();
-		connectedSockets.push(socket);
+        wsServer.addEventListener('request', function(req) {
+            console.log('Client connected');
+            var socket = req.accept();
+            connectedSockets.push(socket);
 
-		// When a message is received on one socket, rebroadcast it on all
-		// connected sockets.
-		var buff="";
-		socket.addEventListener('message', function(e) {
-				if (e.data==">PAUSE"){
-					socket.send("DATA");
-					//setvalue("engcode",buff);
-				}
-				if (e.data==">FINISH"){
-					socket.send("OK");
-					setvalue("engcode",buff);
-					buff="";
-				}
-				if (e.data==">REVECTOR"){
-					text1=gcodetoText1(buff);
-					refreshgcode();
-					buff="";
-				} else {
-					buff+=e.data;
-				}
-		  });
+            // When a message is received on one socket, rebroadcast it on all
+            // connected sockets.
+            var buff = "";
+            socket.addEventListener('message', function(e) {
+                if (e.data == ">PAUSE") {
+                    socket.send("DATA");
+                    //setvalue("engcode",buff);
+                }
+                if (e.data == ">FINISH") {
+                    socket.send("OK");
+                    setvalue("engcode", buff);
+                    buff = "";
+                }
+                if (e.data == ">REVECTOR") {
+                    text1 = gcodetoText1(buff);
+                    refreshgcode();
+                    buff = "";
+                } else {
+                    buff += e.data;
+                }
+            });
 
-		// When a socket is closed, remove it from the list of connected sockets.
-		socket.addEventListener('close', function() {
-		  console.log('Client disconnected');
-		  for (var i = 0; i < connectedSockets.length; i++) {
-			if (connectedSockets[i] == socket) {
-			  connectedSockets.splice(i, 1);
-			  break;
-			}
-		  }
-		});
-		socket.send("DATA");
-		return true;
-	  });
-	}
+            // When a socket is closed, remove it from the list of connected sockets.
+            socket.addEventListener('close', function() {
+                console.log('Client disconnected');
+                for (var i = 0; i < connectedSockets.length; i++) {
+                    if (connectedSockets[i] == socket) {
+                        connectedSockets.splice(i, 1);
+                        break;
+                    }
+                }
+            });
+            socket.send("DATA");
+            return true;
+        });
+    }
 }
 
-
-window.onresize=function(){
-	var nw=Math.max(100,window.innerWidth-765);
-	var v=$('myCanvas1');
-	v.width=nw;
-	v.height=Math.max(300,500*nw/600);
-	gcode_verify();
+window.onresize = function() {
+    var nw = Math.max(100, window.innerWidth - 765);
+    var v = $('myCanvas1');
+    v.width = nw;
+    v.height = Math.max(300, 500 * nw / 600);
+    gcode_verify();
 }
 
-setTimeout(function (){
-	//var h=window.location.host;
+setTimeout(function() {
+    //var h=window.location.host;
     //a = document.activeElement;
     //if ((a.tagName == "DIV") && (stotype == 1)) a.remove();
-	//if (h)setvalue("wsip",h);
-	startserver();
-	window.onresize();
-	if (text1) refreshgcode();
-	hideId("gcodepreview");
-	hideId("gcodeinit");
-},2000);
+    //if (h)setvalue("wsip",h);
+    startserver();
+    window.onresize();
+    if (text1)
+        refreshgcode();
+    hideId("gcodepreview");
+    hideId("gcodeinit");
+}, 2000);
