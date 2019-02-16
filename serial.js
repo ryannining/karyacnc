@@ -13,6 +13,7 @@ var pe = 0;
 var etime=new Date();
 var checktemp=1;
 var isgrbl=0;
+var gcstyle=[];
 
 function comconnect() {
     var bt = document.getElementById('btconnect');
@@ -527,6 +528,13 @@ setclick("bthidden",function(){
 	hidd=!hidd;
 	$("vars").style.display=d;
 });
+var hidd5=true;
+setclick("bthidden5",function(){
+	var d='none';
+	if (hidd5)d='block';
+	hidd5=!hidd5;
+	$("vars2").style.display=d;
+});
 var hidd2=true;
 setclick("bthidden2",function(){
 	var d='none';
@@ -586,10 +594,12 @@ function savesetting() {
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
         storage.setItem("text1", text1);
+        storage.setItem("gcstyle", JSON.stringify(gcstyle));
     } else {
         storage.set({
             "settings": sett,
-            "text1": text1
+            "text1": text1,
+            "gcstyle": gcstyle
         });
     }
 }
@@ -604,6 +614,9 @@ try {
 			storage.get("text1", function(r) {
 				text1 = r.text1;
 			})
+			storage.get("gcstyle", function(r) {
+				gcstyle = r.gcstyle;
+			})
 			storage.get("settings", function(r) {
 				sett = r.settings;
 				for (var k in sett) {
@@ -614,6 +627,8 @@ try {
 	} else {
 		text1 = storage.text1;
 		if (text1 == undefined) text1 = "";
+		if (storage.gcstyle != undefined) 
+			gcstyle = JSON.parse(storage.gcstyle);
 		if (storage.settings != undefined) {
 			sett = JSON.parse(storage.settings);
 			for (var k in sett) {

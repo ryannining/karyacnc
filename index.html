@@ -40,8 +40,20 @@ html, body {
 	  <tr><td>Overcut <td><input id=overcut value=1 size=2 class=saveit>
 	      <td>Cos(angle) <input id=sharp value=0.9 size=2 class=saveit><td><input id=segment type=checkbox class=saveit>
 		  <tr><td colspan=4><hr>
-		  <tr><td colspan=2><button id=btrecode2 >Re-gcode</button><td colspan=2><button id=bthidden3>Show Gcode</button>
+		  <tr><td colspan=2><button id=btrecode2 >Re-gcode</button><td colspan=2>
 	  </table>
+	  <br><button id=bthidden5>Multi Color Option</button><button id=bthidden3>Show Gcode</button>
+	 <table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+	  <tr><td colspan=2>ENABLE COLOR <td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit>
+	  <tr><td colspan=2>RED 1xPLT FEED<td colspan=2><input id=pltfeed class=saveit size=15 value=20>
+	  <tr><td colspan=2>BLUE RASTER FEED<td colspan=2><input id=rasterfeed class=saveit size=15 value=200>
+	  <tr><td colspan=2>BLUE OUTLINE FEED<td colspan=2><input id=rasteroutfeed class=saveit size=15 value=200>
+	  <tr><td colspan=2>ENABLE RASTER <td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit>
+	  <tr><td colspan=2>RASTER 1xPLT <td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit>
+	  <tr><td colspan=2>RASTER DPI <td colspan=2><input id=rasterdpi class=saveit size=15 value=100>
+	  <tr><td colspan=2>ADD STROKE TO OFFSET <td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit>
+	  </table>
+	  
 
 	  <tr style="background:lime"><td>DPI<td colspan=2>Machine
 
