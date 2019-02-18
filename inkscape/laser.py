@@ -780,24 +780,43 @@ class laser_gcode(inkex.Effect):
                     cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
                     np = []
                     # need to check if its clockwise
-                    outer=col!="#ffff00"
+                    yellow=col=="#ffff00"
+                    outer=not yellow
+                    def isClockwise(poly):
+                        sum = 0;
+                        for i in range(len(poly)):
+                            cur = poly[i][1]
+                            ii=i + 1
+                            if ii==len(poly):ii=0;
+                            next = poly[ii][1]
+                            sum += (next[1] * cur[0]) - (next[0] * cur[1])
+                        return sum;
+                    
+                    
                     for sp in csp1:
                         first = True
                         num=len(sp)
                         #gcode+=";"+str(cw)+"\n"
-
-                        flip=False
-                        if outer:flip=True
-                        flips.append(flip)
-                        pc.append(pstyle)    
+                        sum=0
                         for icsp in range(num):
                             csp=sp[icsp]
+                            icsp2=icsp+1
+                            if icsp2==num:icsp2=0
+                            csp2=sp[icsp2]
+                            
                             cmd = 'L'
                             if first:
                                 cmd = 'M'
                             first = False
                             np.append([cmd,[csp[1][0],csp[1][1]]])
+                            sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
                             #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
+                        
+                        flip=sum>0
+                        if yellow:flip=False
+                        if outer:flip=True
+                        flips.append(flip)
+                        pc.append(pstyle)    
                         outer=False
                     #node.set('d',simplepath.formatPath(np))
                     #print(simplepath.formatPath(np))

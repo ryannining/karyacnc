@@ -425,6 +425,7 @@ var engraveDPI = 50;
 
 
 function drawengrave(){
+	if (cmd!=CMD_LASER)return;
 	if (!$("enableraster").checked)return;
     var c = $("myCanvas1");
     var ctx = c.getContext("2d");
@@ -441,7 +442,7 @@ function drawengrave(){
 	msort=function (a,b) {
         return (b*1 - a*1);
 		};
-	var gc="M3 S255\nG0 F"+f2+"\nG1 F"+f2+"\n";
+	var gc="M3 S255\nG0 F"+f1+"\nG1 F"+f2+"\n";
 	var ry=Object.keys(engrave).sort(nsort);
 	var lry=-10000;
 	for (var i=0;i<ry.length;i++){
@@ -455,7 +456,8 @@ function drawengrave(){
 			4 - 5
 		*/
 		// go to overshoot
-		var ox=pdata[0]+((i&1)?overs:-overs);
+		var tx=pdata[0];
+		var ox=tx+((i&1)?overs:-overs);
 		gc+="G0 Y"+mround(gy)+" X"+mround(ox)+"\n";
 		var drw=ly-lry>6;
 		if (drw)lry=ly;
@@ -463,7 +465,7 @@ function drawengrave(){
 		xmax = Math.max(xmax, pdata[0]);
 		ymin = Math.min(ymin, gy);
 		ymax = Math.max(ymax, gy);
-
+        
 		for (var j=0;j<pdata.length/2;j++){
 			x1 = (pdata[j*2]+maxofs) * dpm;
 			ox=pdata[j*2+1];
@@ -475,7 +477,9 @@ function drawengrave(){
 				ctx.moveTo(x1, ly);
 				ctx.lineTo(x2, ly);
 			}
-			totaltime+=1.3*Math.abs(pdata[j*2]-ox)/(f2*0.0167);
+			totaltime+=3.5*Math.abs(pdata[j*2]-tx)/(f1*0.0167);
+			totaltime+=1.5*Math.abs(pdata[j*2]-ox)/(f2*0.0167);
+			tx=ox;
 		}
 		xmin = Math.min(xmin, ox);
 		xmax = Math.max(xmax, ox);
@@ -496,6 +500,7 @@ function addengrave(cx,cy){
 	p.push(cx);
 }
 function engraveline(x1,y1,x2,y2){
+	if (cmd!=CMD_LASER)return;
 	if (!$("enableraster").checked)return;
 	var ry1=Math.round(y1/25.4*engraveDPI);
 	var ry2=Math.round(y2/25.4*engraveDPI);
@@ -585,7 +590,11 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 	nc=2;
 	var doengrave=0;
 	if ($("enablecolor").checked) doengrave = (sty["stroke"]=="#0000ff") || (sty["fill"]=="#0000ff");
-	
+	var cll=false;
+	if (closed){
+		cll=isClockwise(lines);
+		if (!cll)lcol="#00C800";
+	}
     for (var ci = 0; ci < lines.length; ci++) {
 		if (ccw){
 			i=(lines.length-1)-ci;}
@@ -600,6 +609,7 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 		}
         x = lines[i][1];
         y = lines[i][2];
+		
         if (sc == -1) {
             x = sxmax - x;
         }
@@ -748,10 +758,10 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 	ctx.fillStyle = "#000000";
 	if (ccw){
 		clw=">";
-		if (isClockwise(lines))clw="<";
+		if (cll)clw="<";
 	} else {
 		clw="<";
-		if (isClockwise(lines))clw=">";
+		if (cll)clw=">";
 	}
 	// display ccw and num 
     //if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
@@ -1098,7 +1108,7 @@ function gcode_verify() {
     var menit = mround(totaltime / 60.0 + jmltravel * 20/ getvalue('trav') / 60.0);
     //var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
-    menit = menit * re;
+    //menit = menit * re;
     text = $("material");
     mat = text.options[text.selectedIndex].innerText;
 	if (cmd==CMD_3D){
@@ -1158,7 +1168,7 @@ function sortedgcode() {
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
     var ov = getvalue("overcut")*1.0;
-    s = "G92 Z0\nG0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+    s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X5\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     pup1=getvalue("pup");
 	cncdeep0 = -getvalue("zdown");
 	pdn1 = getvalue("pdn").replace("=cncz", mround(cncdeep0)) + '\n';
