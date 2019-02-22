@@ -798,6 +798,7 @@ class laser_gcode(inkex.Effect):
                         num=len(sp)
                         #gcode+=";"+str(cw)+"\n"
                         sum=0
+                        ln=0
                         for icsp in range(num):
                             csp=sp[icsp]
                             icsp2=icsp+1
@@ -810,11 +811,13 @@ class laser_gcode(inkex.Effect):
                             first = False
                             np.append([cmd,[csp[1][0],csp[1][1]]])
                             sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
+                            ln = ln + vector_from_to_length(csp2[1],csp[1])
                             #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
                         
                         flip=sum>0
                         if yellow:flip=False
                         if outer:flip=True
+                        if ln<4:flip=False
                         flips.append(flip)
                         pc.append(pstyle)    
                         outer=False

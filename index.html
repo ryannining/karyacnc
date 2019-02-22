@@ -8,18 +8,20 @@
 	}
 	</style>
 	<body style="font-family:arial;font-size:12pt">
-		<table width=100%>
+		<table width=100%  id=title1  style="background:lightgray;font-weight:600">
 			<tr>
-				<td bgcolor=lightgray style="font-weight:600">
-				<center style="font-size:12pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
-				<center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a>
+				<td>
+				<center><h2 id=title0>KARYACNC</h2></center>
+				<center style="font-size:9pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, 
+				hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
+				<center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a></center>
 				</td>
 			</tr>
 		</table>
 		<table width=100%>
 			<tr valign=top width=1000px>
-				<td id=tracing width=300px>
-				<table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;background: yellow;">
+				<td id=title2 id=tracing width=300px style="background: yellow;">
+				<table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;">
 					<tr>
 						<td colspan=3 align=left><button id=bthidden>Path Option</button><button id=btengrave>Bitmap Engrave</button>
 						<table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
@@ -105,7 +107,7 @@
 					<td colspan=2><input id=pdn size=12 value="m3 s255" class="saveit"></td>
 				</tr>
 				<tr style="background:lime"><td>CNC Zdown</td><td colspan=2>CNC Tab Cutout</td></tr>
-				<tr><td><input id=zdown size=1 value=1 class=saveit>
+				<tr><td><input id=zdown0 size=1 value=0 class=saveit> - <input id=zdown size=1 value=1 class=saveit>
 					</td><td colspan=2><input id=tabc value=0 size=3  class=saveit></td></tr>
 				<tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
 					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
@@ -118,7 +120,7 @@
 		</div>
 		<textarea style="display:none;font-size: 10;width:100%;height:50px" id=segm ></textarea></td>
 		<td>
-			<div  id=gcodepreview style="width:250px">
+			<div  id=gcodepreview style="width:220px">
 			<button id=tracingbt>GCODE SENDER</button><B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
 			  <textarea style="font-size: 10;width:100%;height:300" id="gcode" class=saveit>
 			  </textarea>
@@ -126,10 +128,13 @@
 			  </textarea><button id=btgcode2vec>ReVector Gcode</button>
 			</div>
 		</td>
-		<td width=auto style="padding:5px;border:solid 1px">
+		<td id="myCanvas1td" width=600 style="padding:5px;border:solid 1px">
 			<p style="background:yellow" id="area_dimension">Object Preview</p>
 			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
-			<canvas id="myCanvas1" width="600" height="500" style="margin:3px"></canvas><br>
+			<div id="myCanvas1div" style="width:600px;height:500px;overflow:scroll">
+			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
+			</div>
+			<p style="background:yellow" id="area_dimension2"></p><br>
 			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
 			<br><button id=btsaveset style="display:none">Save Config</button>
 		</td>
@@ -137,10 +142,12 @@
 			<b>Machine Control</b><br>
 			<button id=bthidden2>Connection Settings</button>
 			<table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-				<tr><td colspan=2>CNC COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
-				<tr><td colspan=2>CNC IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
+				<tr><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
+				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
 				<tr><td colspan=4><hr></td></tr>
 				<tr><td colspan=2>App WS PORT </td><td colspan=2><input id=wsport size=10 class=saveit value="8888"></td></tr>
+				<tr><td colspan=2>Window Color </td><td colspan=2><input id=wcolor size=10 class=saveit value="lightgreen"></td></tr>
+				<tr><td colspan=2>Window Title </td><td colspan=2><input id=wtitle size=10 class=saveit value="KARYACNC"></td></tr>
 			</table><hr>
 			<b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
 			<br><b>WebSocket</b> 
@@ -184,17 +191,21 @@
 			<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
 			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
-			<hr><b>3D printer</b><br>
-			<div id=info3d></div>
-			<button  id=bt3home>Home</button>
-			<button  id=bt3pla>Temp 180'</button>
-			<button  id=bt3t0>Temp 0'</button>
-			<button  id=bt3read>Get Temp</button>
-			<button  id=bt3limit>Check Limit</button>
-			<br><input id=extmm class=saveit size=2 value=5>
-			<button id=bt3Eup>Ext-Up</button>
-			<button id=bt3Edn>Ext-Dn</button>
-			<hr><b>EEPROM</b><br>
+			<hr>
+			<div id=machine_3d style="display:none">
+				<b>3D printer</b><br>
+				<div id=info3d></div>
+				<button  id=bt3home>Home</button>
+				<button  id=bt3pla>Temp 180'</button>
+				<button  id=bt3t0>Temp 0'</button>
+				<button  id=bt3read>Get Temp</button>
+				<button  id=bt3limit>Check Limit</button>
+				<br><input id=extmm class=saveit size=2 value=5>
+				<button id=bt3Eup>Ext-Up</button>
+				<button id=bt3Edn>Ext-Dn</button>
+				<hr>
+			</div>
+			<b>EEPROM</b><br>
 			<button  id=bt3eeprom>Read EEPROM</button><br>
 			<select id=eepromid>
 				

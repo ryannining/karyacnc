@@ -226,7 +226,7 @@ function executegcodes2() {
 
 function executepgcodes() {
     execute(document.getElementById('pgcode').value);
-    pz = 2;
+//    pz = 2;
 }
 
 function pause() {
@@ -612,6 +612,8 @@ function savesetting() {
         if (a[i].type == 'checkbox')
             sett[a[i].id] = a[i].checked;
     }
+	updatestyle("wcolor",getvalue("wcolor"));
+	updatestyle("wtitle",getvalue("wtitle"));
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
         storage.setItem("text1", text1);
@@ -630,6 +632,26 @@ setclick("btgcode2vec", function() {
     refreshgcode();
 });
 
+function updatestyle(k,va){
+	if (k=='wtitle'){
+		$("title0").innerHTML=va;
+	}
+	if (k=='wcolor'){
+		$("title1").style.background=va;
+		$("title2").style.background=va;
+	}
+}
+function updateweb(sett){
+	for (var k in sett) {
+		var a = $(k);
+		if (a.type == 'checkbox')
+			a.checked = sett[k];
+		else
+			setvalue(k, sett[k]);
+		// custom
+		updatestyle(k,sett[k]);
+	}
+}
 try {
     if (stotype == 0) {
         storage.get("text1", function(r) {
@@ -639,26 +661,14 @@ try {
             gcstyle = r.gcstyle;
         })
         storage.get("settings", function(r) {
-            sett = r.settings;
-            for (var k in sett) {
-                var a = $(k);
-                if (a.type == 'checkbox')
-                    a.checked = sett[k];
-                else
-                    setvalue(k, sett[k]);
-            }
+			updateweb(r.settings);
         });
     } else {
         text1 = storage.text1;
-        if (text1 == undefined)
-            text1 = "";
-        if (storage.gcstyle != undefined)
-            gcstyle = JSON.parse(storage.gcstyle);
+        if (text1 == undefined)text1 = "";
+        if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
         if (storage.settings != undefined) {
-            sett = JSON.parse(storage.settings);
-            for (var k in sett) {
-                setvalue(k, sett[k]);
-            }
+			updateweb(JSON.parse(storage.settings));
         }
     }
     //connectwebsock();
@@ -813,8 +823,12 @@ function startserver() {
 window.onresize = function() {
     var nw = Math.max(100, window.innerWidth - 765);
     var v = $('myCanvas1');
-    v.width = nw;
-    v.height = Math.max(300, 500 * nw / 600);
+    v.width = nw*2;
+	nh=Math.max(300, 500 * nw / 600);
+    v.height = nh*2;
+	$('myCanvas1td').width=nw+50;
+	$('myCanvas1div').style.width=nw+50;
+	$('myCanvas1div').style.height=nh;
     gcode_verify();
 }
 

@@ -775,9 +775,14 @@ var lastspeed = 1;
 var tabcutspeed = 1;
 var spiraldown=1;
 var totaltime=0;
+var skipz=0;
 function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,snum,f2) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
+	if (z2>skipz){
+		lastz=z;
+		return "";
+	}
 	if (cmd==CMD_LASER){
 		z=0;
 		z2=0;
@@ -871,7 +876,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
 
 
     if (pw2) div = div + "M106 S" + pw1 + "\n";
-    if (firstlayer)div = div + pup + '\n';
+    //if (firstlayer)div = div + pup + '\n';
     if (cmd == 2) {
         gcode0(f1, X1, 0);
     }
@@ -882,7 +887,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
     if (cmd != CMD_3D){
-		if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
+		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
 		div = div + pdn.replace("=cncz", mround(z)) + '\n';
 	}
     var incut = 0;
@@ -894,7 +899,6 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
 		// ??
 	
 	}		
-		
     for (var ci = 0; ci < lines.length; ci++) {
 		if (ccw){
 			i=(lines.length-1)-ci;}
@@ -1104,7 +1108,7 @@ function gcode_verify() {
     ctx.font = "12px Arial";
     w = mround((xmax - xmin) / 10);
     h = mround((ymax - ymin) / 10);
-    ctx.fillText("W:" + w + " H:" + h + " Luas:" + mround(w * h) + " cm2", 0, c.height - 20);
+    $("area_dimension2").innerHTML="W:" + w + " H:" + h + " Luas:" + mround(w * h) + " cm2";
     var menit = mround(totaltime / 60.0 + jmltravel * 20/ getvalue('trav') / 60.0);
     //var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
@@ -1118,6 +1122,10 @@ function gcode_verify() {
 	} else {
 		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Biaya Cut:" + Math.round(menit * hargacut) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * hargacut + w * h * harga);
 	}
+    sc = 1;
+    if ($("flipx").checked) sc = -1;
+	var f1 = getvalue('trav') * 60;
+    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
 function sortedgcode() {
@@ -1170,7 +1178,10 @@ function sortedgcode() {
     var ov = getvalue("overcut")*1.0;
     s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X5\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
     pup1=getvalue("pup");
+	
 	cncdeep0 = -getvalue("zdown");
+	skipz = -getvalue("zdown0");
+	if (skipz==undefined)skipz=0;
 	pdn1 = getvalue("pdn").replace("=cncz", mround(cncdeep0)) + '\n';
     cncdeep = cncdeep0;
     var cuttab = 0;
@@ -1233,6 +1244,15 @@ function sortedgcode() {
 				}
 			}				
 			var cncz2=0;
+			var len=0.1;
+			var lines=sgcodes[j][0][4];
+			for (var ci = 0; ci < lines.length; ci++) {
+				len += lines[ci][4];
+			}
+			sgcodes[j][0][0]=len;
+			
+			// do pen up
+			s+=pup1;
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
@@ -1258,7 +1278,6 @@ function sortedgcode() {
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
     setvalue("gcode", s);
-    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n");
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
