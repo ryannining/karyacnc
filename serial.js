@@ -33,9 +33,10 @@ function testlaser() {
 
 function gcodemove(x, y, z) {
     var mm = document.getElementById('move').value;
+    var mmz = document.getElementById('movez').value;
     px = px + x * mm;
     py = py + y * mm;
-    pz = pz + z;
+    pz = pz + z * mmz;
     sendgcode("G0 F5000 X" + (px) + " Y" + (py) + " Z" + (pz));
 }
 
@@ -56,11 +57,11 @@ function gcodedown() {
 }
 
 function gcodezup() {
-    gcodemove(0, 0, 0.5);
+    gcodemove(0, 0, 1);
 }
 
 function gcodezdown() {
-    gcodemove(0, 0, -0.5);
+    gcodemove(0, 0, -1);
 }
 
 function homing() {
@@ -288,15 +289,17 @@ var onReadCallback = function(s) {
             isok = (lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
             if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
                 okwait = 0;
-                if (stopinfo && (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
-                    var ms = etime.getTime();
-                    etime = new Date();
-                    console.log("Stop " + etime);
-                    ms = etime.getTime() - ms;
-                    mss = "Real time:" + mround(ms / 60000.0);
-                    console.log(mss);
-                    $("infolain").innerHTML = mss;
-                    stopinfo = 0;
+                if ((lastw.toUpperCase().indexOf('WAIT') >= 0)) {
+					if (stopinfo) {
+						var ms = etime.getTime();
+						etime = new Date();
+						console.log("Stop " + etime);
+						ms = etime.getTime() - ms;
+						mss = "Real time:" + mround(ms / 60000.0);
+						console.log(mss);
+						$("infolain").innerHTML = mss;
+						stopinfo = 0;
+					} else sendgcode("M114");
                 }
                 nextgcode();
             }
@@ -710,7 +713,8 @@ function connectwebsock() {
             a.innerHTML = "Web socket:Connected";
             $("wsconnect").innerHTML = 'Close';
             wsconnected = 1;
-            nextgcode();
+            //nextgcode(); // 
+			sendgcode("M114");
         }
         ;
 
@@ -720,6 +724,7 @@ function connectwebsock() {
             a.innerHTML = "Web socket:disconnected";
             $("wsconnect").innerHTML = 'Connect';
             wsconnected = 0;
+			
         }
         ;
         idleloop();

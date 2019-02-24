@@ -1087,6 +1087,7 @@ function gcode_verify() {
 		if (sty==undefined)sty=defaultsty;
 		nocut=disable_cut.indexOf(sgcodes[i][1]+"")>=0;
 		if ((sty["stroke"]=="#0000ff") || (sty["fill"]=="#0000ff")) nocut=!c1;
+		if ((sty["stroke"]=="#00ff00") || (sty["fill"]=="#00ff00")) nocut=1;
         if (nocut)
 		{
 			dash=[5, 5];
@@ -1241,6 +1242,9 @@ function sortedgcode() {
 				if ((sty["stroke"]=="#0000ff")||(sty["fill"]=="#0000ff")){
 					_re=$("rasteroutline").checked?1:0;
 					f2 = getvalue('rasteroutfeed') * 60;
+				}
+				if ((sty["stroke"]=="#00ff00")||(sty["fill"]=="#00ff00")){
+					_re=0;
 				}
 			}				
 			var cncz2=0;

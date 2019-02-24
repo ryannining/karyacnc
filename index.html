@@ -6,6 +6,41 @@
 	html, body {
 		overflow-y: visible;
 	}
+	.arrow-up {
+	  width: 0; 
+	  height: 0; 
+	  border-left: 10px solid transparent;
+	  border-right: 10px solid transparent;
+	  
+	  border-bottom: 10px solid blue;
+	}
+
+	.arrow-down {
+	  width: 0; 
+	  height: 0; 
+	  border-left: 10px solid transparent;
+	  border-right: 10px solid transparent;
+	  
+	  border-top: 10px solid blue;
+	}
+
+	.arrow-right {
+	  width: 0; 
+	  height: 0; 
+	  border-top: 10px solid transparent;
+	  border-bottom: 10px solid transparent;
+	  
+	  border-left: 10px solid blue;
+	}
+
+	.arrow-left {
+	  width: 0; 
+	  height: 0; 
+	  border-top: 10px solid transparent;
+	  border-bottom: 10px solid transparent; 
+	  
+	  border-right:10px solid blue; 
+	}	
 	</style>
 	<body style="font-family:arial;font-size:12pt">
 		<table width=100%  id=title1  style="background:lightgray;font-weight:600">
@@ -51,7 +86,7 @@
 						</table>
 						<br><button id=bthidden5>Inkscape Option</button><button id=bthidden3>Show Gcode</button>
 						<table id=vars3 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-							<tr><td colspan=4><b>INKSCAPE COLORING</b></td></tr>
+							<tr><td colspan=4><b>INKSCAPE COLORING</b><br>RED:Outline BLUE:Engrave GREEN:Disable</td></tr>
 							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
 							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
 							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
@@ -154,27 +189,31 @@
 			<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
 			<hr>
 
-			<table>
-				<tr align=center valign=center>
-				<td>Move:<select id=move value=50 class=saveit>
-					<option value=0.5>0.5</option>
-					<option value=1>1</option>
-					<option value=5>5</option>
-					<option value=10>10</option>
-					<option value=50>50</option>
-				</select></td>
-				<td><button id=btleft>&lt;</button></td>
-				<td><button  id=btup>/\</button><br>
-				<button  id=btdn>\/</button></td>
-				<td><button  id=btright>&gt;</button></td>
-				<td><button  id=btzup>Z/\</button><br>
-				<button  id=btzdn>Z\/</button></td>
-				</tr>
+			<table id=buttons>
+				<tr><td>X,Y</td><td></td><td><button  id=btup><div class="arrow-up"></div></button></td><td></td><td>Z</td><td><button  id=btzup><div class="arrow-up"></button></td></tr>
+				<tr><td>
+					<select id=move value=50 class=saveit>
+						<option value=0.5>0.5</option>
+						<option value=1>1</option>
+						<option value=5>5</option>
+						<option value=10>10</option>
+						<option value=50>50</option>
+					</select>
+					</td>
+					<td><button id=btleft><div class="arrow-left"></button></td><td></td><td><button  id=btright><div class="arrow-right"></button></td><td>
+					<select id=movez value=50 class=saveit>
+						<option value=0.25>0.25</option>
+						<option value=0.5>0.5</option>
+						<option value=1>1</option>
+						<option value=2>2</option>
+					</select>
+					
+					</td><td><button  id=btsethome>Z0</button>&nbsp;<button  id=btsethome3>Z2</button></td></tr>
+				<tr><td></td><td></td><td><button  id=btdn><div class="arrow-down"></button></td><td></td><td></td><td><button  id=btzdn><div class="arrow-down"></button></td></td></tr>
 			</table>
 			<br>
 			<button  id=bthit>HIT</button>
-			<button  id=btsethome>Z0</button>
-			<button  id=btsethome3>Z2</button>
+			
 			<button  id=btsethome2>ZERO</button>
 			<button id=bthoming >HOME</button>
 			<button id=bthardstop >HALT</button>
