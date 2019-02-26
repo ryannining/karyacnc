@@ -213,21 +213,27 @@ var cross=0;
 function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
     var sum = 0;
     ci = idx;
-    nci = ci + 1;
-    pci = ci - 1;
-    if (nci >= poly.length) nci -= poly.length;
-    if (pci < 0) pci += poly.length;
-    prev = poly[pci];
+    nci = ci;
+    pci = ci;
     cur = poly[ci];
-    next = poly[nci];
+	d1=0;
+	d2=0;
+	while (d1==0) {
+		pci--;
+		if (pci < 0) pci += poly.length;
+		prev = poly[pci];
+		vec1 = [prev[px] - cur[px], prev[py] - cur[py]];
+		d1 = sqrt(vec1[0] * vec1[0] + vec1[1] * vec1[1]);
+	}
+	while (d2==0){
+		nci++;
+		if (nci >= poly.length) nci -= poly.length;
+		next = poly[nci];
+		vec2 = [next[px] - cur[px], next[py] - cur[py]];
+		d2 = sqrt(vec2[0] * vec2[0] + vec2[1] * vec2[1]);
+	}
 
-    vec1 = [prev[px] - cur[px], prev[py] - cur[py]];
-    vec2 = [next[px] - cur[px], next[py] - cur[py]];
 
-
-
-    d1 = sqrt(vec1[0] * vec1[0] + vec1[1] * vec1[1]);
-    d2 = sqrt(vec2[0] * vec2[0] + vec2[1] * vec2[1]);
     vec1 = [vec1[0]/d1, vec1[1]/d1];
     vec2 = [vec2[0]/d2, vec2[1]/d2];
     dot = (vec1[0] * vec2[0] ) + (vec1[1]  * vec2[1] );
@@ -323,7 +329,7 @@ function prepare_line2(lenmm,lines) {
 			for (var i = 0; i < offsetted_paths.length; i++) {
 				var newline=[];
 				var path=offsetted_paths[i];
-				//var path=ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
+				var path=ClipperLib.JS.Lighten(offsetted_paths[i],0.02*scale);			
 				for (var j = 0; j < path.length; j++) {			
 					var jj=j;
 					if (clk)jj=path.length-1-j;
@@ -1177,7 +1183,11 @@ function sortedgcode() {
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
     var ov = getvalue("overcut")*1.0;
-    s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X5\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+	
+    if (cmd == CMD_LASER) {
+		s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X1\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+	} else
+		s="G92 Z0\nG0 F3000\nG1 F3000\n";
     pup1=getvalue("pup");
 	
 	cncdeep0 = -getvalue("zdown");
@@ -1256,7 +1266,7 @@ function sortedgcode() {
 			sgcodes[j][0][0]=len;
 			
 			// do pen up
-			s+=pup1;
+			s+=pup1+"\n";
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
@@ -1268,6 +1278,7 @@ function sortedgcode() {
 			if (spiraldown && !ismark){
 				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0,snum,f2);
 			}
+			//s+=pup1+"\n\n";
 		}
     }
     s = s + getvalue("pup");
@@ -1338,10 +1349,12 @@ function svgPathToCommands(svg) {
 }
 
 var svgdata=[];
-
+var sflipx;
+var sflipy;
 function myFunction(scale1) {
 	if (text1==undefined) return;
 	svgdata=svgPathToCommands(text1);
+
 	oldlines=[];
 	opx=-1000;
 	opy=-1000;
@@ -1369,6 +1382,9 @@ function myFunction(scale1) {
     lines = [];
     var scale = 25.4 / getvalue('scale');
     if (scale1) scale = 1;
+	scalex=scale;
+	scaley=scale;
+	
     cmd = getvalue('cmode');
 	cuttablen=getvalue("tablen")*1;
 	cutevery=getvalue("tabevery")*1;
@@ -1431,8 +1447,8 @@ function myFunction(scale1) {
             div = "";
 
             // deactivate tools and move to cut position
-            xincep = el.values[0]*scale;
-            yincep = el.values[1]*scale;
+            xincep = el.values[0]*scalex;
+            yincep = el.values[1]*scaley;
             X1 = xincep;
             Y1 = yincep;
             ///
@@ -1444,24 +1460,24 @@ function myFunction(scale1) {
 
             lastf = f2;
         } else if (cr == 'H') {
-            var n2 = el.values[0]*scale;
-            var xy = el.values[1]*scale;
+            var n2 = el.values[0]*scalex;
+            var xy = el.values[1]*scaley;
             p1x = xy * scale;
             linepush(f2, p1x, y1);
         } else if (cr == 'V') {
-            var n2 = el.values[0]*scale;
-            var xy = el.values[1]*scale;
+            var n2 = el.values[0]*scalex;
+            var xy = el.values[1]*scaley;
             p1y = xy * scale;
             linepush(f2, y1, p1y);
         } else if (cr == 'C') {
             //path d="M111.792 7.750 C 109.785 10.407,102.466 13.840,100.798 12.907 C
-            p1x = el.values[0]*scale;
-            p1y = el.values[1]*scale;
-            p2x = el.values[2]*scale;
-            p2y = el.values[3]*scale;
+            p1x = el.values[0]*scalex;
+            p1y = el.values[1]*scaley;
+            p2x = el.values[2]*scalex;
+            p2y = el.values[3]*scaley;
 
-            xsfar = el.values[4]*scale;
-            ysfar = el.values[5]*scale;
+            xsfar = el.values[4]*scalex;
+            ysfar = el.values[5]*scaley;
 
             //*****************************
 
@@ -1495,8 +1511,8 @@ function myFunction(scale1) {
             yincep = ysfar;
         } else if (cr == 'L') { //alert("este L");
 			for (var k=0;k<el.values.length/2;k++){
-				p2x = el.values[0+k*2]*scale;
-				p2y = el.values[1+k*2]*scale;
+				p2x = el.values[0+k*2]*scalex;
+				p2y = el.values[1+k*2]*scaley;
 				linepush(lastf, p2x, p2y);
 				xincep = p2x;
 				yincep = p2y;
@@ -1535,6 +1551,9 @@ function gcodetoText1(gx){
 	gcstyle=[];
 	gs=gx.split("\n");
 	var scale = getvalue('scale')/25.4;
+	var cflipx=1;
+	var cflipy=1;
+
 	var c=0;
 	var sc=0;
 	var t1='<svg id="svg" version="1.1" width="142" height="142" xmlns="http://www.w3.org/2000/svg"><path d="';

@@ -41,19 +41,19 @@ function gcodemove(x, y, z) {
 }
 
 function gcoderight() {
-    gcodemove(-1, 0, 0);
-}
-
-function gcodeleft() {
     gcodemove(1, 0, 0);
 }
 
+function gcodeleft() {
+    gcodemove(-1, 0, 0);
+}
+
 function gcodeup() {
-    gcodemove(0, 1, 0);
+    gcodemove(0, -1, 0);
 }
 
 function gcodedown() {
-    gcodemove(0, -1, 0);
+    gcodemove(0, 1, 0);
 }
 
 function gcodezup() {
@@ -679,7 +679,15 @@ try {
 } catch (e) {}
 
 // websocket
+var websockOK=0;
+function reconnectwebsock(){
+	if (websockOK){
+		setTimeout(connectwebsock, 2000);
+	}
+}
+
 function connectwebsock() {
+	websockOK=0;
     if (wsconnected) {
         ws.close();
         return;
@@ -704,6 +712,7 @@ function connectwebsock() {
             $("wsconnect").innerHTML = 'Connect';
             ws.close();
             wsconnected = 0;
+			reconnectwebsock();
 
         }
         // back to serial if error.
@@ -715,6 +724,8 @@ function connectwebsock() {
             wsconnected = 1;
             //nextgcode(); // 
 			sendgcode("M114");
+			websockOK=1;
+			
         }
         ;
 
@@ -724,7 +735,7 @@ function connectwebsock() {
             a.innerHTML = "Web socket:disconnected";
             $("wsconnect").innerHTML = 'Connect';
             wsconnected = 0;
-			
+			reconnectwebsock();
         }
         ;
         idleloop();
