@@ -154,7 +154,7 @@ function nextgcode() {
             return;
         }
     }
-    sendgcode("G4");
+    //sendgcode("G4");
     sendgcode("M114");
     stopit();
     var bt = document.getElementById('btexecute');
@@ -248,6 +248,7 @@ var eeprom = {};
 var ineeprom = 0;
 var eppos = 0;
 var resp1 = "";
+var totalwork=0;
 var stopinfo = 0;
 var onReadCallback = function(s) {
     resp1 += s;
@@ -296,6 +297,7 @@ var onReadCallback = function(s) {
 						console.log("Stop " + etime);
 						ms = etime.getTime() - ms;
 						mss = "Real time:" + mround(ms / 60000.0);
+						setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
 						console.log(mss);
 						$("infolain").innerHTML = mss;
 						stopinfo = 0;

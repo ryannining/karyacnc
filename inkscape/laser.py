@@ -165,7 +165,7 @@ def atan2(*arg):
 
 def draw_text(text,x,y,style = None, font_size = 20) :
     if style == None :
-        style = "font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;"
+        style = "font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;deep:0"
     style += "font-size:%fpx;"%font_size
     t = inkex.etree.SubElement(    options.doc_root, inkex.addNS('text','svg'), {
                             'x':    str(x),
@@ -447,6 +447,14 @@ class laser_gcode(inkex.Effect):
             feed = f if lg not in ['G01','G02','G03'] else ''
             if s[1]    == 'move':
                 pp=pc[s[4]];
+                try:
+                    if pp["deep:"]>0:g+= ";@deep:"+pp["deep:"]+"\n";
+                except:
+                    pass
+                try:
+                    if pp["repeat:"]>0:g+= ";@repeat:"+pp["repeat:"]+"\n";
+                except:
+                    pass
                 g += ";@fill:"+pp["fill:"]+"\n";
                 g += ";@stroke:"+pp["stroke:"]+"\n";
                 g += ";@stroke-width:"+pp["stroke-width:"]+"\n";
@@ -649,17 +657,21 @@ class laser_gcode(inkex.Effect):
                     self.layers += [i]
                     recursive_search(i,i)
                 elif i.get('gcodetools') == "Gcodetools orientation group" :
-                    points = self.get_orientation_points(i)
+                    try:
+                        points = self.get_orientation_points(i)
+                    except:
+                        points=None
+                        pass
                     if points != None :
                         self.orientation_points[layer] = self.orientation_points[layer]+[points[:]] if layer in self.orientation_points else [points[:]]
                         print_("Found orientation points in '%s' layer: %s" % (layer.get(inkex.addNS('label','inkscape')), points))
                     else :
                         self.error(_("Warning! Found bad orientation points in '%s' layer. Resulting Gcode could be corrupt!") % layer.get(inkex.addNS('label','inkscape')), "bad_orientation_points_in_some_layers")
                 elif i.tag == inkex.addNS('path','svg'):
-                    if "gcodetools"  not in i.keys() :
-                        self.paths[layer] = self.paths[layer] + [i] if layer in self.paths else [i]
-                        if i.get("id") in self.selected :
-                            self.selected_paths[layer] = self.selected_paths[layer] + [i] if layer in self.selected_paths else [i]
+                    # ryan if "gcodetools"  not in i.keys() :
+                    self.paths[layer] = self.paths[layer] + [i] if layer in self.paths else [i]
+                    if i.get("id") in self.selected :
+                        self.selected_paths[layer] = self.selected_paths[layer] + [i] if layer in self.selected_paths else [i]
                 elif i.tag == inkex.addNS("g",'svg'):
                     recursive_search(i,layer, (i.get("id") in self.selected) )
                 elif i.get("id") in self.selected :
@@ -736,7 +748,10 @@ class laser_gcode(inkex.Effect):
         
         getstyles=('fill:','stroke:','stroke-width:')
         def getStyles(node):
-            res={"fill:":"#ffffff","stroke:":"#000000","stroke-width:":"0"}
+            res={"fill:":"#ffffff","stroke:":"#000000","stroke-width:":"0","deep:":0,"repeat:":0}
+            #if 'deep' in node.attrib:
+            res['deep:']=node.get('deep')
+            res['repeat:']=node.get('repeat')
             if 'style' in node.attrib:
                 style=node.get('style') # fixme: this will break for presentation attributes!
                 if style!='':

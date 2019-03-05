@@ -86,7 +86,7 @@
 						</table>
 						<br><button id=bthidden5>Inkscape Option</button><button id=bthidden3>Show Gcode</button>
 						<table id=vars3 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
-							<tr><td colspan=4><b>INKSCAPE COLORING</b><br>RED:Outline BLUE:Engrave GREEN:Disable</td></tr>
+							<tr><td colspan=4 align=left><b>INKSCAPE COLORING</b><br>RED:Outline BLUE:Engrave GREEN:Disable</td></tr>
 							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
 							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
 							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
@@ -95,6 +95,11 @@
 							<tr><td colspan=2>Enable Outline </td><td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit></td></tr>
 							<tr><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
 							<tr><td colspan=2>Enable stroke-width </td><td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit></td></tr>
+							<tr><td colspan=4 align=left><b>PINK CNC Carving </b></td></tr>
+							<tr><td colspan=4 align=left>Feed using standar feed</td></tr>
+							<tr><td colspan=2>Depth </td><td colspan=2><input size=1 id=carved value=3 class=saveit></td></tr>
+							<tr><td colspan=2>Repeat </td><td colspan=2><input size=1 id=carverep value=2 class=saveit></td></tr>
+							<tr><td colspan=2>Safe Z  </td><td colspan=2><input size=1 id=safez value="0.5" class=saveit></td></tr>
 						</table>
 				</td></tr>
 				<tr style="background:lime"><td>DPI</td><td colspan=2>Machine</td></tr>
@@ -255,9 +260,11 @@
 			<hr><b>OTHER</b><br>
 			<button id=btzero>Grbl Zero</button>
 			<div style='display:none'>
+			
 			<button id=btresume>Resume</button>
 			<button id=btresume2>Resume from</button>
 			</div>
+			<input id=totaltime value=0 size=10 class=saveit>
 			<div id=infolain></div>
 		</td></tr>
 		</table>

@@ -329,7 +329,7 @@ ditherit = function() {
 			var ii=0;
 			var sb=0;
 			for (var i=pxstart;i<=pxstop;i++){
-				gcc+=gc[i];
+				if (gc[i]==undefined)gcc+="a";else gcc+=gc[i];
 				ii++;
 				if ((gcc.length>70) || (i==pxstop)){
 					gccb.push(gcc);
