@@ -179,7 +179,7 @@
 			<br><button id=btsaveset style="display:none">Save Config</button>
 		</td>
 		<td width=300px bgcolor=lightblue style="padding:5px">
-			<b>Machine Control</b><br>
+			<b>Machine Control <span id=portnum></span></b><br>
 			<button id=bthidden2>Connection Settings</button>
 			<table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
 				<tr><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
@@ -235,6 +235,7 @@
 			<button id=btexecute2>Engrave</button>
 			<button id=btpause>Pause</button><br>
 			Cut after engrave <input size=1 type=checkbox id=engravecut checked class=saveit>
+			<br><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
 			<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
 			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>

@@ -502,7 +502,7 @@ function drawengrave(){
     var pup = "G0 Z"+getvalue('safez')+"\n";
     var pdn = getvalue('pdn');
 	var overs=10;
-	if (cmd==CMD_CNC)overs=1;
+	if (cmd==CMD_CNC)overs=0;
 	ctx.setLineDash([1,1]);
 	ctx.strokeStyle = "#0000ff";
     ctx.beginPath();
@@ -579,6 +579,8 @@ function drawengrave(){
 		lengr=engr;
 		var gy=(y*25.4/engraveDPI);
 		var ly=(gy+maxofs)*dpm;
+		lx=-100;
+		gc+=pup;
 		for (var r=0;r<_re;r++){
 			ri++;
 			var pdata=engr.sort(((ri)&1)?msort:nsort);
@@ -593,7 +595,6 @@ function drawengrave(){
 			var dx=(cmd==CMD_LASER)?0:ox;
 			if (!c1)dx=0;
 			dx=0;
-			gc+=pup;
 			gc+="G0 Y"+mround(gy)+" X"+mround(ox)+"\n";
 			var drw=1;
 			if (cmd==CMD_LASER)drw=ly-lry>6;
@@ -603,7 +604,8 @@ function drawengrave(){
 			ymin = Math.min(ymin, gy);
 			ymax = Math.max(ymax, gy);
 			z-=_rz;
-			for (var j=0;j<pdata.length/2;j++){
+			pp=pdata.length/2-1;
+			for (var j=0;j<=pp;j++){
 				ox=pdata[j*2+1]*1+dx;
 				fx=pdata[j*2]*1-dx;
 				x1 = (fx+maxofs) * dpm;
@@ -613,10 +615,12 @@ function drawengrave(){
 					gc+="G1 X"+mround(ox)+" F"+f2+"\n";
 				} else {
 					// repeat until deep satisfied
-					gc+="G0 X"+mround(fx)+"\n";
-					gc+="G1 Z"+mround(z)+"\n";
-					gc+="G1 X"+mround(ox)+"\n";
-					gc+=pup;
+					if (Math.abs(ox-fx)>=ofs){
+						gc+="G0 X"+	mround(fx)+"\n";
+						gc+="G1 Z"+mround(z)+"\n";
+						gc+="G1 X"+mround(ox)+"\n";
+						if (j<pp)gc+=pup;
+					}
 				}
 				if (drw && !r){
 					ctx.moveTo(x1, ly);
@@ -673,6 +677,9 @@ function engraveline(x1,y1,x2,y2){
 var dpm;
 var defaultsty={"stroke":"#000000","stroke-width":0,"deep":undefined,"repeat":undefined};
 var carvesty={"stroke":"#0000ff","fill":"#ff00ff","stroke-width":0,"deep":undefined,"repeat":undefined};
+
+
+
 function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
     //if (sxmax < sxmin);
 	cuttabz=1;
@@ -1223,7 +1230,7 @@ function getRandomColor() {
     }
     return color;
 }
-
+var autoprobe="";
 function gcode_verify() {
     var c = $("myCanvas1");
     cmd = getvalue('cmode');
@@ -1287,6 +1294,7 @@ function gcode_verify() {
 	var f1 = getvalue('trav') * 60;
 	pdn1 = getvalue("pdn").replace("=cncz", "0") + '\n';
     setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n"+pdn1+"\n");
+    autoprobe="G30 S150 X" + mround(w*10) + " Y" + mround(h*10) ;
 }
 
 function sortedgcode() {

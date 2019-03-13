@@ -250,11 +250,30 @@ var eppos = 0;
 var resp1 = "";
 var totalwork=0;
 var stopinfo = 0;
+
+function handleuserkey(n){
+	if (n==1){
+		// do preview
+		if (running)return;
+		executepgcodes();
+	}
+	if (n==2){
+		// do execute
+		if (running)hardstop(); else executegcodes();
+	}
+	if (n==3){
+		// do engrave
+	}
+}
 var onReadCallback = function(s) {
     resp1 += s;
     for (var i = 0; i < s.length; i++) {
         if (s[i] == "\n") {
 
+            if (ss.indexOf("USERKEY:") >= 0) {
+                uk = Math.floor(parseFloat(ss.substr(ss.indexOf("USERKEY:") + 8)));
+				handleuserkey(uk);
+			}
             if (ss.indexOf("Z:") > 0) {
                 px = parseFloat(ss.substr(ss.indexOf("X:") + 2));
                 py = parseFloat(ss.substr(ss.indexOf("Y:") + 2));
@@ -465,8 +484,15 @@ setclick("btzup", gcodezup);
 setclick("btzdn", gcodezdown);
 setclick("btrecode", refreshgcode);
 setclick("btrecode2", refreshgcode);
+
 setclick("btsend", function() {
     sendgcode(getvalue("edgcode"));
+})
+setclick("btautolevel1", function() {
+    sendgcode(autoprobe);
+})
+setclick("btautolevel2", function() {
+    sendgcode("G29 S0");
 })
 setclick("btmotoroff", function() {
     sendgcode("M84");
@@ -776,6 +802,7 @@ function startserver() {
     if (http.Server && http.WebSocketServer) {
         // Listen for HTTP connections.
         port = getvalue("wsport") * 1;
+		$("portnum").innerHTML=port;
         var server = new http.Server();
         var wsServer = new http.WebSocketServer(server);
         server.listen(port);
