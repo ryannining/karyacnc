@@ -1,5 +1,7 @@
 # karyacnc
 New feature until March 2019
+- Auto Level for current work area
+- Upload GCODE to internal Flash and run it
 
 Inkscape can send path data to karyaCNC
 
