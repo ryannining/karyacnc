@@ -22,7 +22,8 @@
       "scripts": ["background.js"]
     }
   },
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "permissions": [
-   "serial","storage"
+   "serial","storage","http://*/upload","http://*/startprint","http://*/stopprint"
    ]
 }

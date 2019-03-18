@@ -1361,14 +1361,15 @@ function sortedgcode() {
     lastz = 0;
 
     cmd = getvalue('cmode');
+	var _spiraldown;
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
         s += "g0 f350 z" + mround(lastz);
 		cuttab = cncdeep + getvalue("tabc") * 1;
-		spiraldown=$("spiraldown").checked;
+		_spiraldown=$("spiraldown").checked;
     } else {
-		spiraldown=0;
+		_spiraldown=0;
 		cuttab=cncdeep;
 	}
 	
@@ -1406,8 +1407,10 @@ function sortedgcode() {
 				zdown=-1;
 				_re=2;
 			}
+			spiraldown=_spiraldown;
 			if ($("enablecolor").checked) {
 				if (sty["stroke"]=="#ff0000"){
+					spiraldown=0;
 					_re=1;
 					f2 = getvalue('pltfeed') * 60;
 				}				
@@ -1420,6 +1423,7 @@ function sortedgcode() {
 							zdown = (sty["deep"]!=undefined)?sty["deep"]:getvalue("carved");
 							zdown*=-1 / _re;
 							//zdown=cncz;
+							spiraldown=0;
 						}
 					} else _re=0;
 					f2 = getvalue('rasteroutfeed') * 60;
