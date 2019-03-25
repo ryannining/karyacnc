@@ -61,6 +61,13 @@
 						<td colspan=3 align=left><button id=bthidden>Path Option</button><button id=btengrave>Bitmap Engrave</button>
 						<table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
 							<tr><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="0.7" class=saveit></td></tr>
+							<tr><td colspan=3>As </td><td colspan=1>
+							<select id=pasteas value="0" class=saveit>
+								<option value=0>Cutting</option>
+								<option value=1>Engrave</option>
+								<option value=2>Vcarve</option>
+							
+							</select></td></tr>
 							<tr><td colspan=3>Tool &#248 (laser is 0.2) </td><td colspan=1><input id=offset class=saveit size=5 value=0></td></tr>
 							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
 							<tr><td colspan=2>Marking Cut </td><td colspan=2><input id=markingcut class=saveit size=15></td></tr>
@@ -262,7 +269,9 @@
 				
 			</select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
 			<hr><b>OTHER</b><br>
-			<button id=btzero>Grbl Zero</button>
+			<button id=btzero>Grbl Zero</button><br>
+			Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
+			<button id=btvcarve>VCarve</button>
 			<div style='display:none'>
 			
 			<button id=btresume>Resume</button>

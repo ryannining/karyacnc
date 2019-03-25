@@ -889,3 +889,9 @@ setTimeout(function() {
     hideId("gcodepreview");
     hideId("gcodeinit");
 }, 2000);
+
+
+setclick("btvcarve", function() {
+	var r=Math.max(sxmax,symax)/getvalue("vres");
+    vcarve(getvalue("vdia")*1,getvalue("vangle")*1,r,veeline);
+});

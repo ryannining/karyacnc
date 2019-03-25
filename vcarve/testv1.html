@@ -1,0 +1,62 @@
+<body>
+<canvas id=mycanv width=800 height=700></canvas>
+<script>
+function $(id) {
+    return document.getElementById(id);
+}
+
+var p2=[179.3,67,209.3,37];
+var p1=[398.2,305,348.2,325];
+
+
+var v1=[p1[2]-p1[0],p1[3]-p1[1]];
+
+var v2=[p2[2]-p2[0],p2[3]-p2[1]];
+
+var c1=[p1[0]+v1[0]/2,p1[1]+v1[1]/2];
+var c2=[p2[0]+v2[0]/2,p2[1]+v2[1]/2];
+
+var dx1=[-v1[1],v1[0]];
+var dx2=[-v2[1],v2[0]];
+
+p3x=c1[0]+(c2[0]-c1[0])*dx1[0]/(dx1[0]-dx2[0]);
+p3y=c1[1]+(c2[1]-c1[1])*dx1[1]/(dx1[1]-dx2[1]);
+
+
+var c = $("mycanv");
+var ctx = c.getContext("2d");
+ctx.beginPath();
+ctx.strokeStyle = "#0000ff";
+sqrt=Math.sqrt;
+sqr=function(x){return x*x;}
+
+var r=sqrt(sqr(p3x-p1[0])+sqr(p3y-p1[1]));
+var c=50;
+ctx.moveTo(p1[0]+c, p1[1]+c);
+ctx.lineTo(p1[2]+c, p1[3]+c);
+
+ctx.moveTo(p2[0]+c, p2[1]+c);
+ctx.lineTo(p2[2]+c, p2[3]+c);
+
+ctx.stroke();
+ctx.beginPath();
+
+ctx.strokeStyle = "#00ff00";
+ctx.moveTo(c1[0]+c, c1[1]+c);
+ctx.lineTo(c2[0]+c, c2[1]+c);
+
+ctx.moveTo(c1[0]+c, c1[1]+c);
+ctx.lineTo(p3x+c, p3y+c);
+ctx.moveTo(c2[0]+c, c2[1]+c);
+ctx.lineTo(p3x+c, p3y+c);
+ctx.stroke();
+ctx.beginPath();
+
+ctx.strokeStyle = "#ff0000";
+ctx.moveTo(p3x+c+r-5, p3y+c);
+ctx.arc(p3x+c,p3y+c,r-5,0,2*Math.PI);
+
+ctx.stroke();
+
+</script>
+</body>
