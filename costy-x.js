@@ -2006,13 +2006,11 @@ function copy_to_clipboard(id) {
 }
 
 
-function vcarve(maxd,angle,d,path){
+
+// Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
+function vcarve(maxr,angle,step,path,dstep,dstep2){
 	sqrt=Math.sqrt;
 	sqr=function(x){return x*x;}
-	sample=0;
-
-	var dstep=0.001;
-	var dstep2=dstep*20;
 	// segmentation
 	var segs=[];
 	var c = $("myCanvas1");
@@ -2041,17 +2039,13 @@ function vcarve(maxd,angle,d,path){
 					ctx.lineTo((x2+maxofs)*dpm,(y2+maxofs)*dpm);
 					vx=(x2-x1)/L;
 					vy=(y2-y1)/L;
-					L=Math.floor(L/d)+1;
+					L=Math.floor(L/step)+1;
 					dx=(x2-x1)/L;
 					dy=(y2-y1)/L;
 					
 					for (var j=0;j<L;j++){
 						px=x1+(j+.5)*dx;
 						py=y1+(j+.5)*dy;
-						//ctx.beginPath();
-						//ctx.moveTo(px,py);
-						//ctx.arc(px,py,1,0,2*Math.PI);
-						//ctx.stroke();
 						segs.push([px,py,s,0,0,0,0,vx,vy,0]); // last 3 is to store data
 					}
 					s++;
@@ -2080,77 +2074,67 @@ function vcarve(maxd,angle,d,path){
 	var gc="G0 F6000 Z2\nG1 F2000\n";
 	ve=Math.tan(angle*Math.PI/360);
 	var jj,seg2,seg1,mr2;
+	var maxz=-maxr/ve;
 	for (var i=0;i<segs.length;i++){
-		mr2=-1; // d squared
+		mr2=0; // d squared
 		seg1=segs[i];
 		if (seg1[2]==-1){
 			// move
 			continue;
 		}
 		if (seg1[6]>0)continue;
-		n++;
-		var cx,cy,ox,oy;
-		found=0;
-		var jj=-1;
+		var cx,cy,cz,ox,oy;
+		var ks=10000;
 		for (var j=0;j<segs.length;j++){
 			seg2=segs[j];
 			if (seg1[2]==seg2[2])continue; // if on same line dont do it
 			seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
-			
+			if (ks>=seg2[9])ks=seg2[9];
 		}
-		for (var k=dstep2;k<maxd;k+=dstep2){
+		ks=ks*0.02;
+		for (var k=ks;k<maxr;k+=dstep2){
 			ox=seg1[0]-seg1[8]*k;
 			oy=seg1[1]+seg1[7]*k;
 			k2=sqr(k);
-			k3=sqr(k*2);
+			k3=sqr(k*2.3);
 			for (var j=0;j<segs.length;j++){
 				seg2=segs[j];
 				if ((seg1[2]==-1) || (seg1[2]==seg2[2]) ||  (seg2[9]>k3))continue; // if on same line dont do it
 				// find the distance to the seg2
 				// simple way 
-				r3=sqr(ox-seg2[0])+sqr(oy-seg2[1]);
 				
-				if (r3<=k2){
-					jj=j;
+				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])<k2){
 					mr2=k;
-					found=1;
 					break;
 				}
 			}
-			if (found)break;
+			if (mr2)break;
 		}
-		if (!found){
+		if (!mr2){
 			cx=ox;
 			cy=oy;
-			r=maxd;
+			cz=maxz;
+			r=maxr;
 		} else {
 			// recalculate to get more precission
-			seg2=segs[jj];
-			r=mr2;
-			for (var k=mr2;k>mr2-dstep2;k-=dstep){
-				cx=seg1[0]-seg1[8]*k;
-				cy=seg1[1]+seg1[7]*k;
-				k2=sqr(k);
-				r3=sqr(ox-seg2[0])+sqr(oy-seg2[1]);
-				if (r3>=k2){
-					r=k;
+			for (var r=mr2;r>mr2-dstep2;r-=dstep){
+				cx=seg1[0]-seg1[8]*r;
+				cy=seg1[1]+seg1[7]*r;
+				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])>=sqr(r)){
 					break;
 				}
 			}	
-		}
-		cz=-r/ve;
-		seg1[3]=cx;
-		seg1[4]=cy;
-		seg1[5]=cz;
-		seg1[6]=r;
-		
-		if (jj>=0){
-			seg2=segs[jj];
+			cz=-r/ve;
 			seg2[3]=cx;
 			seg2[4]=cy;
 			seg2[5]=cz;
 			seg2[6]=r;
 		}
+		seg1[3]=cx;
+		seg1[4]=cy;
+		seg1[5]=cz;
+		seg1[6]=r;
+		
 	}
 
 	ctx.beginPath();
