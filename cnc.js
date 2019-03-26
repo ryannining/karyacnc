@@ -383,6 +383,197 @@ setclick("btupload", function() {
     begincompress(getvalue("engcode")+"\n"+getvalue("gcode"));
 	upload();
 });
+setclick("btjob5", function() {
+    begincompress(jobs.join("\n"));
+	upload();
+});
 
 setclick("btuploadstart",startprint);
 setclick("btuploadstop",stopprint);
+
+
+
+var segs=[];
+// Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
+function vcarve(maxr,angle,step,path,dstep,dstep2){
+	sqrt=Math.sqrt;
+	sqr=function(x){return x*x;}
+	// segmentation
+	segs=[];
+	var s=0;
+	segmentation=function (path,rev){
+		PL=path.length/2;
+		var x1,y1,x2,y2,i,dx,dy,L,vx,vy,px,py;
+		for (var p=0;p<PL;p++){
+			i=p;
+
+			if (rev){
+				i=PL-i-1;
+			}
+			x2=path[i*2+0];
+			y2=path[i*2+1];
+			
+			if (p>0){
+
+				L=(sqrt(sqr(x2-x1)+sqr(y2-y1)));
+				if (L>0)
+				{
+					vx=(x2-x1)/L;
+					vy=(y2-y1)/L;
+					L=Math.floor(L/step)+1;
+					dx=(x2-x1)/L;
+					dy=(y2-y1)/L;
+					
+					for (var j=0;j<L;j++){
+						px=x1+(j+.5)*dx;
+						py=y1+(j+.5)*dy;
+						segs.push([px,py,s,0,0,0,0,vx,vy,0]); // last 3 is to store data
+					}
+					s++;
+					x1=x2;
+					y1=y2;
+				}
+			} else { 
+				x1=x2;
+				y1=y2;
+				segs.push([x1,y1,-1,x1,y1,0,0,0,0,0]); // last 3 is to store data
+			}
+		}
+	}
+	var sc=1;
+    if ($("flipx").checked) sc = 0;
+    if ($("flipve").checked) sc = !sc;
+	
+	for (var i=0;i<path.length;i++){
+		segmentation(path[i],sc);
+	}
+	// create toolpath
+	// s= number of line
+	var n=0;
+	var gc="G0 F6000 Z2\nG1 F2000\n";
+	ve=Math.tan(angle*Math.PI/360);
+	var jj,seg2,seg1,mr2;
+	var maxz=-maxr/ve;
+	for (var i=0;i<segs.length;i++){
+		mr2=0; // d squared
+		seg1=segs[i];
+		if (seg1[2]==-1){
+			// move
+			continue;
+		}
+		if (seg1[6]>0)continue;
+		var cx,cy,cz,ox,oy;
+		var ks=10000;
+		for (var j=0;j<segs.length;j++){
+			seg2=segs[j];
+			if (seg1[2]==seg2[2])continue; // if on same line dont do it
+			seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
+			if (ks>=seg2[9])ks=seg2[9];
+		}
+		ks=ks*0.02;
+		for (var k=ks;k<maxr;k+=dstep2){
+			ox=seg1[0]-seg1[8]*k;
+			oy=seg1[1]+seg1[7]*k;
+			k2=sqr(k);
+			k3=sqr(k*2.3);
+			for (var j=0;j<segs.length;j++){
+				seg2=segs[j];
+				if ((seg1[2]==-1) || (seg1[2]==seg2[2]) ||  (seg2[9]>k3))continue; // if on same line dont do it
+				// find the distance to the seg2
+				// simple way 
+				
+				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])<k2){
+					mr2=k;
+					break;
+				}
+			}
+			if (mr2)break;
+		}
+		if (!mr2){
+			cx=ox;
+			cy=oy;
+			cz=maxz;
+			r=maxr;
+		} else {
+			// recalculate to get more precission
+			for (var r=mr2;r>mr2-dstep2;r-=dstep){
+				cx=seg1[0]-seg1[8]*r;
+				cy=seg1[1]+seg1[7]*r;
+				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])>=sqr(r)){
+					break;
+				}
+			}	
+			cz=-r/ve;
+			seg2[3]=cx;
+			seg2[4]=cy;
+			seg2[5]=cz;
+			seg2[6]=r;
+		}
+		seg1[3]=cx;
+		seg1[4]=cy;
+		seg1[5]=cz;
+		seg1[6]=r;
+		
+	}
+
+	var ftrav=getvalue("trav")*60;
+	var ffeed=getvalue("feed")*60;
+	for (var i=0;i<segs.length;i++){
+		seg1=segs[i];
+		cx=(seg1[3]+maxofs)*dpm;
+		cy=(seg1[4]+maxofs)*dpm;
+		r=seg1[6]*dpm;
+		if (seg1[2]==-1){
+			gc+="G0 Z2\n";
+			gc+="G0 F"+ftrav+" X"+mround(seg1[3])+" Y"+mround(seg1[4])+"\n";
+			gc+="G0 Z0\n";
+			continue;
+		}
+		// F is depend on 2*phi*radius
+		// 
+		var fs=ffeed;
+		if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
+		if (r>dstep)gc+="G1 F"+mround(fs)+" X"+mround(seg1[3])+" Y"+mround(seg1[4])+" Z"+mround(seg1[5])+"\n";
+		//r=1;
+		//ctx.moveTo(cx+r,cy);
+		//ctx.arc(cx,cy,r,0,2*Math.PI);
+	}
+	gc+="G0 Z2\nG0 X0 Y0\n";
+	$("engcode").value=gc;
+	gcode_verify();
+}
+
+function drawvcarve(){
+	var c = $("myCanvas1");
+	var ctx = c.getContext("2d");
+	ctx.strokeStyle = "#0000ff";
+	ctx.setLineDash([]);
+	ctx.beginPath();
+	ctx.strokeStyle = "#ff0000";
+	for (var i=0;i<segs.length;i++){
+		var seg1=segs[i];
+		cx=(seg1[3]+maxofs)*dpm;
+		cy=(seg1[4]+maxofs)*dpm;
+		r=seg1[6]*dpm;
+		if (seg1[2]==-1){
+			ctx.moveTo(cx,cy);
+			continue;
+		}
+		ctx.lineTo(cx,cy);
+	}
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.strokeStyle = "#00ffff";
+	for (var i=0;i<segs.length;i++){
+		var seg1=segs[i];
+		cx=(seg1[0]+maxofs)*dpm;
+		cy=(seg1[1]+maxofs)*dpm;
+		r=seg1[6]*dpm;
+		if (seg1[2]==-1){
+			ctx.moveTo(cx,cy);
+			continue;
+		}
+		ctx.lineTo(cx,cy);
+	}
+	ctx.stroke();
+}

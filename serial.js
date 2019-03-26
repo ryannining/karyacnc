@@ -199,10 +199,10 @@ function execute(gcodes) {
     //sendgcode("M105");
 }
 
-function executegcodes() {
+function executegcodes(gcodes) {
     var bt = document.getElementById('btexecute');
     if (bt.innerHTML == "Execute") {
-        execute(document.getElementById('gcode').value);
+        execute(gcodes);
         bt.innerHTML = "Stop";
     } else {
         bt.innerHTML = "Execute";
@@ -214,9 +214,9 @@ function executegcodes2() {
     var bt = document.getElementById('btexecute2');
     if (bt.innerHTML == "Engrave") {
         if ($("engravecut").checked)
-            execute(document.getElementById('engcode').value + "\n" + document.getElementById('gcode').value);
+            execute(getvalue('engcode') + "\n" + getvalue('gcode'));
         else
-            execute(document.getElementById('engcode').value);
+            execute(getvalue('engcode'));
         bt.innerHTML = "Stop";
     } else {
         bt.innerHTML = "Engrave";
@@ -259,7 +259,7 @@ function handleuserkey(n){
 	}
 	if (n==2){
 		// do execute
-		if (running)hardstop(); else executegcodes();
+		if (running)hardstop(); else executegcodes(getvalue("gcode"));
 	}
 	if (n==3){
 		// do engrave
@@ -302,6 +302,9 @@ var onReadCallback = function(s) {
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;
+                checktemp = 1;
+            }
+            if (lastw.toUpperCase().indexOf("MESH") >= 0) {
                 checktemp = 1;
             }
             if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0))
@@ -472,7 +475,7 @@ setclick("btsethome3", setashome3);
 setclick("bthoming", homing);
 setclick("bthardstop", hardstop);
 setclick("btpreview", executepgcodes);
-setclick("btexecute", executegcodes);
+setclick("btexecute", function(){executegcodes(getvalue("gcode"));});
 setclick("btexecute2", executegcodes2);
 setclick("btpause", pause);
 setclick("bthit", testlaser);
@@ -490,6 +493,7 @@ setclick("btsend", function() {
 })
 setclick("btautolevel1", function() {
     sendgcode(autoprobe);
+	checktemp = 0;	
 })
 setclick("btautolevel2", function() {
     sendgcode("G29 S0");
@@ -868,9 +872,9 @@ function startserver() {
 window.onresize = function() {
     var nw = Math.max(100, window.innerWidth - 765);
     var v = $('myCanvas1');
-    v.width = nw*2;
+    v.width = nw;
 	nh=Math.max(300, 500 * nw / 600);
-    v.height = nh*2;
+    v.height = nh;
 	$('myCanvas1td').width=nw+50;
 	$('myCanvas1div').style.width=nw+50;
 	$('myCanvas1div').style.height=nh;
@@ -893,5 +897,26 @@ setTimeout(function() {
 
 setclick("btvcarve", function() {
 	var r=Math.max(sxmax,symax)/getvalue("vres");
-    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.0005,0.2);
+    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.0005*getvalue("vdia"),0.2);
+});
+var jobcnt=0;
+var jobs=[];
+
+setclick("btjob1", function() {
+	jobcnt++;
+	jobs.push(getvalue("gcode"));
+	$("jobinfo").innerHTML=jobcnt+" JOBS";
+});
+setclick("btjob2", function() {
+	jobcnt++;
+	jobs.push(getvalue("engcode"));
+	$("jobinfo").innerHTML=jobcnt+" JOBS";
+});
+setclick("btjob3", function() {
+	jobcnt=0;
+	jobs=[];
+	$("jobinfo").innerHTML=jobcnt+" JOBS";
+});
+setclick("btjob4", function() {
+	executegcodes(jobs.join("\n"));
 });

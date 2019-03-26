@@ -243,11 +243,10 @@
 			<button id=btpause>Pause</button><br>
 			Cut after engrave <input size=1 type=checkbox id=engravecut checked class=saveit>
 			<br><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
-			<button id=btmotoroff style="display:none">MOTOROFF</button><hr>Progress/Finished Object<br>
+			<button id=btmotoroff style="display:none">MOTOROFF</button>
+			Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
-			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
-			<hr>
-			Upload to FLASH<br>
+			<b>MACHINE FLASH</b><br>
 			<button id=btupload>Upload</button><button id=btuploadstart>Start</button><button id=btuploadstop>Stop</button>
 			<hr>
 			<div id=machine_3d style="display:none">
@@ -268,11 +267,21 @@
 			<select id=eepromid>
 				
 			</select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
+			<hr><b id=jobinfo>JOBS</b><br>
+			<button id=btjob1>Cut -&gt; Job</button>
+			<button id=btjob2>Engr -&gt; Job</button>
+			<button id=btjob3>Clear Jobs</button>
+			<button id=btjob4>Run Jobs</button>
+			<button id=btjob5>Upload Jobs</button>
+			<hr><b>CARVING</b><br>
+			Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
+			<button id=btvcarve>VCarve</button><br>
+			Gcode is in Engrave box
 			<hr><b>OTHER</b><br>
 			<button id=btzero>Grbl Zero</button><br>
-			Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
-			<button id=btvcarve>VCarve</button>
+			
 			<div style='display:none'>
+			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>
 			
 			<button id=btresume>Resume</button>
 			<button id=btresume2>Resume from</button>
