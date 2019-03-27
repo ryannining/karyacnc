@@ -76,7 +76,7 @@ function setashome2() {
     if (isgrbl)
         sendgcode("g10 p0 l20 x0 y0 z0");
     else
-        sendgcode("G92 X0 Y0 Z0 E0");
+        sendgcode("G92");
     px = 0;
     py = 0;
     pz = 0;

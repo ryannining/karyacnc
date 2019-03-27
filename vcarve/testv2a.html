@@ -12,13 +12,12 @@ paths=[[74.231,44.436,74.003,44.476,73.778,44.61,73.559,44.836,73.501,45.055,73.
 scale=3;
 move=10;
 
-var step=12; // 
-var maxr=5;
+var step=1; // 
+var maxr=15;
 var dstep=0.0005;
 var dstep2=0.2;
 // segmentation
 var segs=[];
-var lines=[];
 var c = $("mycanv");
 var ctx = c.getContext("2d");
 ctx.strokeStyle = "#0000ff";
@@ -39,13 +38,13 @@ function segmentation(path,rev){
 		x2=path[i*2+0]*scale+move;
 		y2=path[i*2+1]*scale+move;
 		if (p>0){
+
 			L=(sqrt(sqr(x2-x1)+sqr(y2-y1)));
 			if (L>0){
 				ctx.moveTo(x1,y1);
 				ctx.lineTo(x2,y2);
 				vx=(x2-x1)/L;
 				vy=(y2-y1)/L;
-				lines.push([x1,y1,x2,y2,s]);
 				L=Math.floor(L/step)+1;
 				dx=(x2-x1)/L;
 				dy=(y2-y1)/L;
@@ -86,38 +85,6 @@ var gc="G0 Z5 F10\nG1 F10\nG64 P0.001\nM3\nT1\n";
 ve=Math.tan(v*Math.PI/360);
 var jj,seg2,seg1,mr2;
 var maxz=-maxr/ve;
-
-function dotProduct2(v1, v2) {
-	return (v1[0] * v2[0]) + (v1[1] * v2[1]);
-}
-function scale2(v, s) {
-	v[0] * s;
-	v[1] * s;
-	return v;
-}
-
-function projectPointOnLine(x1,y1,x2,y2,xp,yp) {
-    var ap = [xp - x1, yp - y1];
-    var ab = [x2 - x1, y2 - y1];
-
-
-    var coef = dotProduct2(ap, ab) / dotProduct2(ab, ab);
-    return [x1 + (coef * ab[0]), y1 + (coef * ab[1])];
-}
-
-function isProjectedPointOnLine(x1,y1, x2,y2,xp,yp) {
-    //x1 < x < x2
-    //y1 < y < y2
-    if ((x1 < xp && xp < x2) ||
-        (x1 > xp && xp > x2) ||
-        (y1 < yp && yp < y2) ||
-        (y1 > yp && yp > y2)) {
-        return true;
-    }
-
-    return false;
-}
-
 for (var i=0;i<segs.length;i++){
 	mr2=0; // d squared
 	seg1=segs[i];
@@ -133,53 +100,55 @@ for (var i=0;i<segs.length;i++){
 	for (var j=0;j<segs.length;j++){
 		seg2=segs[j];
 		if (seg1[2]==seg2[2])continue; // if on same line dont do it
-		//if (ks>=seg2[9])ks=seg2[9];
+		seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
+		if (ks>=seg2[9])ks=seg2[9];
 	}
-	ks=dstep2;
-	for (var k=ks;k<maxr;k+=dstep2){
-		ox=seg1[0]-k*seg1[8];
-		oy=seg1[1]+k*seg1[7];
-		k2=sqr(k);
-		k3=sqr(k*2.3);
-		for (var j=0;j<lines.length;j++){
-			line=lines[j];
-			if ((seg1[2]==-1) || (seg1[2]==line[4]))continue; // if on same line dont do it
-			n++;
-			// find the distance to the seg2
-			// simple way 
-			// correct way
-			///*
-			proj=projectPointOnLine(line[0],line[1],line[2],line[3],ox,oy);
-			//if (proj[0]-seg1[0]
-			r3=sqr(ox-proj[0])+sqr(oy-proj[1]);
-			if (r3<k2 && isProjectedPointOnLine(line[0],line[1],line[2],line[3],proj[0],proj[0])){			
-				mr2=k;
-				break;
-			}
+	rmin=10000;
+	jj=-1;
+	k3=sqr(maxr*2);
+	for (var j=0;j<segs.length;j++){
+		seg2=segs[j];
+		if ((seg1[2]==-1) || (seg1[2]==seg2[2]))continue; // if on same line dont do it
+		n++;
+		// find the distance to the seg2
+		// simple way 
+		 //r2=sqr(ox-seg2[0])+sqr(oy-seg2[1]);
+		// correct way
+		///*
+		r3=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
+		if (r3>k3)continue;
+		r3=Math.abs(r3/(2*(seg2[1]-seg1[1])));
+		//if (r3<0.2)continue;
+		/*if (r2>k3)continue;
+		if ((seg2[7]==0) || (seg2[8]==0)) {   // vertical
+			r3=r2;
+		} else {
+			a=seg2[8]/seg2[7];
+			c=seg2[1]-seg2[0]*a;
+			r3 = sqr(Math.abs(a * ox -  oy + c)) / (a*a+1); 
 		}
-		if (mr2)break;
+		//*/
+		
+		if (Math.abs(r3)<Math.abs(rmin)){
+			rmin=r3;
+			jj=j;
+		}
 	}
-	if (!mr2){
-		cx=ox;
-		cy=oy;
-		r=maxr;
-		cz=maxz;
-	} else {
-		// recalculate to get more precission
-		r=mr2;
-		cx=ox;
-		cy=oy;
-		cz=-r/ve;
-		seg2[3]=cx;
-		seg2[4]=cy;
-		seg2[5]=cz;
-		seg2[6]=r;
-	}
+	r=Math.min(maxr,rmin);
+	cx=seg1[0]-seg1[8]*r;
+	cy=seg1[1]+seg1[7]*r;
+	cz=-r/ve;
+	
 	seg1[3]=cx;
 	seg1[4]=cy;
 	seg1[5]=cz;
 	seg1[6]=r;
-	
+	/*
+	seg2[3]=cx;
+	seg2[4]=cy;
+	seg2[5]=cz;
+	seg2[6]=r;
+	*/
 }
 function mround(x) {
     return (parseFloat(x*0.1)).toFixed(2);

@@ -394,6 +394,7 @@ setclick("btuploadstop",stopprint);
 
 
 var segs=[];
+var carvetime=0;
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
 function vcarve(maxr,angle,step,path,dstep,dstep2){
 	sqrt=Math.sqrt;
@@ -401,6 +402,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 	// segmentation
 	segs=[];
 	var s=0;
+	carvetime=0;
 	segmentation=function (path,rev){
 		PL=path.length/2;
 		var x1,y1,x2,y2,i,dx,dy,L,vx,vy,px,py;
@@ -425,8 +427,8 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 					dy=(y2-y1)/L;
 					
 					for (var j=0;j<L;j++){
-						px=x1+(j+.5)*dx;
-						py=y1+(j+.5)*dy;
+						px=x1+(j)*dx;
+						py=y1+(j)*dy;
 						segs.push([px,py,s,0,0,0,0,vx,vy,0]); // last 3 is to store data
 					}
 					s++;
@@ -463,19 +465,19 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		}
 		if (seg1[6]>0)continue;
 		var cx,cy,cz,ox,oy;
-		var ks=10000;
+		//var ks=10000;
 		for (var j=0;j<segs.length;j++){
 			seg2=segs[j];
 			if (seg1[2]==seg2[2])continue; // if on same line dont do it
 			seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
-			if (ks>=seg2[9])ks=seg2[9];
+			//if (ks>=seg2[9])ks=seg2[9];
 		}
-		ks=ks*0.02;
-		for (var k=ks;k<maxr;k+=dstep2){
+//		ks=ks*0.02;
+		for (var k=0.1;k<maxr;k+=dstep2){
 			ox=seg1[0]-seg1[8]*k;
 			oy=seg1[1]+seg1[7]*k;
 			k2=sqr(k);
-			k3=sqr(k*2.3);
+			k3=sqr(k*3);
 			for (var j=0;j<segs.length;j++){
 				seg2=segs[j];
 				if ((seg1[2]==-1) || (seg1[2]==seg2[2]) ||  (seg2[9]>k3))continue; // if on same line dont do it
@@ -504,10 +506,12 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 				}
 			}	
 			cz=-r/ve;
+			// /*
 			seg2[3]=cx;
 			seg2[4]=cy;
 			seg2[5]=cz;
 			seg2[6]=r;
+			// */
 		}
 		seg1[3]=cx;
 		seg1[4]=cy;
@@ -518,10 +522,16 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 
 	var ftrav=getvalue("trav")*60;
 	var ffeed=getvalue("feed")*60;
+	var rdis;
+	var lx=0;
+	var ly=0;
 	for (var i=0;i<segs.length;i++){
 		seg1=segs[i];
+		rdis=sqrt(sqr(lx-seg1[3])+sqr(ly-seg1[4]));
 		cx=(seg1[3]+maxofs)*dpm;
 		cy=(seg1[4]+maxofs)*dpm;
+		lx=seg1[3];
+		ly=seg1[4];
 		r=seg1[6]*dpm;
 		if (seg1[2]==-1){
 			gc+="G0 Z2\n";
@@ -534,6 +544,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		var fs=ffeed;
 		if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
 		if (r>dstep)gc+="G1 F"+mround(fs)+" X"+mround(seg1[3])+" Y"+mround(seg1[4])+" Z"+mround(seg1[5])+"\n";
+		carvetime+=rdis/(fs*0.0167);
 		//r=1;
 		//ctx.moveTo(cx+r,cy);
 		//ctx.arc(cx,cy,r,0,2*Math.PI);
@@ -549,6 +560,21 @@ function drawvcarve(){
 	ctx.strokeStyle = "#0000ff";
 	ctx.setLineDash([]);
 	ctx.beginPath();
+	ctx.strokeStyle = "#aaaaaa";
+	for (var i=0;i<segs.length;i++){
+		var seg1=segs[i];
+		cx=(seg1[3]+maxofs)*dpm;
+		cy=(seg1[4]+maxofs)*dpm;
+		r=seg1[6]*dpm;
+		if (seg1[2]==-1){
+			continue;
+		}
+		ctx.moveTo(cx+r,cy);
+		ctx.arc(cx,cy,r,0,Math.PI*2);
+		
+	}
+	ctx.stroke();
+	ctx.beginPath();
 	ctx.strokeStyle = "#ff0000";
 	for (var i=0;i<segs.length;i++){
 		var seg1=segs[i];
@@ -560,6 +586,7 @@ function drawvcarve(){
 			continue;
 		}
 		ctx.lineTo(cx,cy);
+		
 	}
 	ctx.stroke();
 	ctx.beginPath();

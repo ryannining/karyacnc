@@ -13,7 +13,7 @@ scale=3;
 move=10;
 
 var step=2; // 
-var maxr=5;
+var maxr=15;
 var dstep=0.0005;
 var dstep2=0.2;
 // segmentation
@@ -50,8 +50,8 @@ function segmentation(path,rev){
 				dy=(y2-y1)/L;
 				
 				for (var j=0;j<L;j++){
-					px=x1+(j+.5)*dx;
-					py=y1+(j+.5)*dy;
+					px=x1+(j+.1)*dx;
+					py=y1+(j+.1)*dy;
 					//ctx.beginPath();
 					//ctx.moveTo(px,py);
 					//ctx.arc(px,py,1,0,2*Math.PI);
@@ -119,6 +119,7 @@ for (var i=0;i<segs.length;i++){
 			// correct way
 			///*
 			r3=sqr(ox-seg2[0])+sqr(oy-seg2[1]);
+			r3=Math.min(r3,sqr(ox-seg2[0]-seg2[7]*step)+sqr(oy-seg2[1]-seg2[8])*step);
 			/*if (r2>k3)continue;
 			if ((seg2[7]==0) || (seg2[8]==0)) {   // vertical
 				r3=r2;
@@ -146,7 +147,10 @@ for (var i=0;i<segs.length;i++){
 		for (var r=mr2;r>mr2-dstep2;r-=dstep){
 			cx=seg1[0]-r*seg1[8];
 			cy=seg1[1]+r*seg1[7];
-			if (sqr(cx-seg2[0])+sqr(cy-seg2[1])>=sqr(r)){
+			r3=sqr(cx-seg2[0])+sqr(cy-seg2[1]);
+			//r3=Math.min(r3,sqr(cx-seg2[0]-seg2[7]*step)+sqr(cy-seg2[1]-seg2[8]*step));
+			
+			if (r3>=sqr(r)){
 				break;
 			}
 		}	

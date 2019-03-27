@@ -307,7 +307,7 @@ function prepare_line2(lenmm,lines) {
 	} else {
 		var glines=[];
 		var clk=isClockwise(lines);
-		if (ofs!=0){
+		if (1){//(ofs!=0){
 			// generate offset
 			///*
 			var path=[];
@@ -371,10 +371,13 @@ function prepare_line2(lenmm,lines) {
 			}
 			//if (newline.length>0)
 			// keep old lines
-			oldlines.push(lines)
+			if (ofs>0)oldlines.push(lines)
 			//
 			//*/
-		} else glines.push(lines);
+		} else {
+			glines.push(lines);
+			//oldlines.push(lines);
+		}
 		if (sty["fill"]=="#ff00ff"){
 			// temporary save to combined and return empty			
 			return newlines;
@@ -501,6 +504,28 @@ function drawengrave(){
 	if (!$("enableraster").checked)return;
     var c = $("myCanvas1");
     var ctx = c.getContext("2d");
+	ctx.setLineDash([1,1]);
+	ctx.strokeStyle = "#0000ff";
+    ctx.beginPath();
+	for (var i=0;i<engrave1.length;i++){
+		var e=engrave1[i];
+		ctx.strokeStyle=e[3];
+		ctx.moveTo((e[0]+maxofs)*dpm,(e[2]+maxofs)*dpm);
+		ctx.lineTo((e[1]+maxofs)*dpm,(e[2]+maxofs)*dpm);
+		
+	}		
+	ctx.stroke();
+}
+var engrave1=[];
+var engravetime=0;
+function doengrave(){
+	
+//	if (cmd!=CMD_LASER)return;
+    engrave1=[];
+	engravetime=0;
+	if (!$("enableraster").checked)return;
+	var c = $("myCanvas1");
+    var ctx = c.getContext("2d");
     var ofs = getvalue('offset')*1;
 	carvedeep=getvalue('carved')*1;
     var f1 = getvalue('trav')*60;
@@ -510,9 +535,6 @@ function drawengrave(){
     var pdn = getvalue('pdn');
 	var overs=10;
 	if (cmd==CMD_CNC)overs=0;
-	ctx.setLineDash([1,1]);
-	ctx.strokeStyle = "#0000ff";
-    ctx.beginPath();
 	nsortx=function (a,b) {
         return (a[0]*1 - b[0]*1);
 		};
@@ -575,17 +597,16 @@ function drawengrave(){
 				} // half almost
 			}
 		}
+		var ctxstrokeStyle;
 		if (slowdown){
 			gc+=";Y:"+mround(y)+" Slowdown .. \nG1 F"+(f2*0.5)+"\n";
-			ctx.strokeStyle = "#ff0000";
+			ctxstrokeStyle = "#ff0000";
 		} else {
 			gc+=";Y:"+mround(y)+"\n";
-			ctx.strokeStyle = "#0000ff";
+			ctxstrokeStyle = "#0000ff";
 		}
-		ctx.beginPath();
 		lengr=engr;
 		var gy=(y*25.4/engraveDPI);
-		var ly=(gy+maxofs)*dpm;
 		lx=-100;
 		gc+=pup;
 		for (var r=0;r<_re;r++){
@@ -604,8 +625,8 @@ function drawengrave(){
 			dx=0;
 			gc+="G0 Y"+mround(gy)+" X"+mround(ox)+"\n";
 			var drw=1;
-			if (cmd==CMD_LASER)drw=ly-lry>6;
-			if (drw)lry=ly;
+			if (cmd==CMD_LASER)drw=gy-lry>6;
+			if (drw)lry=gy;
 			xmin = Math.min(xmin, pdata[0]);
 			xmax = Math.max(xmax, pdata[0]);
 			ymin = Math.min(ymin, gy);
@@ -615,8 +636,6 @@ function drawengrave(){
 			for (var j=0;j<=pp;j++){
 				ox=pdata[j*2+1]*1+dx;
 				fx=pdata[j*2]*1-dx;
-				x1 = (fx+maxofs) * dpm;
-				x2 = (ox+maxofs) * dpm;
 				if (cmd==CMD_LASER){
 					gc+="G0 X"+mround(fx)+" F"+f1+"\n";
 					gc+="G1 X"+mround(ox)+" F"+f2+"\n";
@@ -630,11 +649,10 @@ function drawengrave(){
 					}
 				}
 				if (drw && !r){
-					ctx.moveTo(x1, ly);
-					ctx.lineTo(x2, ly);
+					engrave1.push([fx,ox,gy,ctxstrokeStyle]);
 				}
-				totaltime+=3.5*Math.abs(pdata[j*2]-tx)/(f1*0.0167);
-				totaltime+=1.5*Math.abs(pdata[j*2]-ox)/(f2*0.0167);
+				engravetime+=3.5*Math.abs(pdata[j*2]-tx)/(f1*0.0167);
+				engravetime+=1.5*Math.abs(pdata[j*2]-ox)/(f2*0.0167);
 				tx=ox;
 			}
 			xmin = Math.min(xmin, ox);
@@ -643,13 +661,12 @@ function drawengrave(){
 			gc+="G0 X"+mround(ox)+"\n";
 		}
 		if (slowdown)gc+="G1 F"+(f2)+"\n";
-		ctx.stroke();
 	}
-	ctx.stroke();
 	gc+="G0 Z2\n";
 	gc+="G0 X0 Y0\n";
 	$("engcode").value=gc;
 }
+
 function addengrave(cx,cy){
 
 	if (engrave[cy]==undefined)engrave[cy]=[];
@@ -797,6 +814,12 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
             x = y;
             y = sxmax-xx;
         }
+		
+		xmax=Math.max(xmax,x);
+		ymax=Math.max(ymax,y);
+		xmin=Math.min(xmin,x);
+		ymin=Math.min(ymin,y);
+		
 		dline.push(x);
 		dline.push(y);
 		if (cmd == CMD_CNC) {
@@ -1247,7 +1270,7 @@ function getRandomColor() {
     return color;
 }
 var autoprobe="";
-function gcode_verify() {
+function gcode_verify(en=0) {
 	veeline=[];
     var c = $("myCanvas1");
     cmd = getvalue('cmode');
@@ -1282,17 +1305,18 @@ function gcode_verify() {
 		}			
 		draw_line(sgcodes[i][1], col, sgcodes[i][0][4],sgcodes[i][0][5],dash,sgcodes[i][0][0],sgcodes[i][0][7],snum);
     }
-	
+	if (en)	doengrave();	
+
 	for (var i=0;i<oldlines.length;i++){
 		
 		draw_line("", "#CCCCCC", oldlines[i],[],[1,2],0,false);
     }
-	//sfinal+=jmltravel*10;
+	sfinal+=jmltravel*10;
     ctx.font = "12px Arial";
     w = mround((xmax - xmin) / 10);
     h = mround((ymax - ymin) / 10);
     $("area_dimension2").innerHTML="W:" + w + " H:" + h + " Luas:" + mround(w * h) + " cm2";
-    var menit = mround(totaltime / 60.0 + jmltravel * 20/ getvalue('trav') / 60.0);
+    var menit = mround((carvetime+totaltime+engravetime) / 60.0 + jmltravel * 20/ getvalue('trav') / 60.0);
     //var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
     //menit = menit * re;
@@ -1303,7 +1327,7 @@ function gcode_verify() {
 		
 		area_dimension.innerHTML = 'Total filament =' + mround(gram) + "gram Time:" + mround(menit) + " menit <br>Biaya Total:" + Math.round(gram * hargacut);
 	} else {
-		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Biaya Cut:" + Math.round(menit * hargacut) + " bahan (" + mat + "):" + mround(w * h * harga) + " TOTAL:" + mround(menit * hargacut + w * h * harga);
+		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Jasa CNC:" + Math.round(menit * hargacut) + " | bahan (" + mat + "):" + mround(w * h * harga) + " | TOTAL:" + mround(menit * hargacut + w * h * harga)+" |";
 	}
     sc = 1;
     if ($("flipx").checked) sc = -1;
@@ -1311,11 +1335,13 @@ function gcode_verify() {
 	pdn1 = getvalue("pdn").replace("=cncz", "0") + '\n';
     setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n"+pdn1+"\n");
     autoprobe="G30 S450 X" + mround(w*10) + " Y" + mround(h*10) ;
+	drawengrave();	
 	drawvcarve();
 }
 
 function sortedgcode() {
 	totaltime=0;
+	carvetime=0;
     sgcodes = [];
     sxmax = xmax;
     symax = ymax;
@@ -1425,6 +1451,7 @@ function sortedgcode() {
 				_re=2;
 			}
 			spiraldown=_spiraldown;
+			var docarve=0;
 			if ($("enablecolor").checked) {
 				if (sty["stroke"]=="#ff0000"){
 					spiraldown=0;
@@ -1451,6 +1478,10 @@ function sortedgcode() {
 				if ((sty["stroke"]=="#00ff00")||(sty["fill"]=="#00ff00")){
 					_re=0;
 				}
+				if ((sty["stroke"]=="#00ffff")||(sty["fill"]=="#00ffff")){
+					_re=1;
+					docarve=1;
+				}
 			}				
 			cncz = zdown;
 			var cncz2=0;
@@ -1466,7 +1497,8 @@ function sortedgcode() {
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2);
+				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2);
+				if(!docarve)s+=sr;
 				cncz+=zdown;
 				cncz2+=zdown;
 			}
@@ -1550,7 +1582,8 @@ var sflipy;
 function myFunction(scale1) {
 	if (text1==undefined) return;
 	svgdata=svgPathToCommands(text1);
-
+	// clear vcarve
+	segs=[];
 	oldlines=[];
 	opx=-1000;
 	opy=-1000;
@@ -1730,8 +1763,7 @@ function myFunction(scale1) {
     }
 	gcodepushcombined();
     sortedgcode();
-	gcode_verify();
-	drawengrave();	
+	gcode_verify(1);
 
 
 } //sfarsit myFunction
