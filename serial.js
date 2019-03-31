@@ -464,6 +464,8 @@ function initserial() {
         comtype = -1;
     }
 }
+function gcodefunc(s){return function(){sendgcode(s);};}
+
 setclick("btcekpos", function() {
     sendgcode("m114");
 });
@@ -487,6 +489,8 @@ setclick("btzup", gcodezup);
 setclick("btzdn", gcodezdown);
 setclick("btrecode", refreshgcode);
 setclick("btrecode2", refreshgcode);
+setclick("btm3", gcodefunc("m3"));
+setclick("btm5", gcodefunc("m5"));
 
 setclick("btsend", function() {
     sendgcode(getvalue("edgcode"));
@@ -495,12 +499,9 @@ setclick("btautolevel1", function() {
     sendgcode(autoprobe);
 	checktemp = 0;	
 })
-setclick("btautolevel2", function() {
-    sendgcode("G29 S0");
-})
-setclick("btmotoroff", function() {
-    sendgcode("M84");
-})
+setclick("btautolevel2", gcodefunc("G29 S0"));
+setclick("btmotoroff", gcodefunc("M84"));
+
 setevent("change", "cmode", modechange);
 
 setevent("change", "material", changematerial);
@@ -720,9 +721,10 @@ function reconnectwebsock(){
 
 function connectwebsock() {
 	websockOK=0;
+	wsconnected=$("wsconnect").innerHTML=="Close";
     if (wsconnected) {
         ws.close();
-        return;
+    //    return;
     }
     h = getvalue("wsip");
     if (h) {
@@ -897,7 +899,7 @@ setTimeout(function() {
 
 setclick("btvcarve", function() {
 	var r=Math.max(sxmax,symax)/getvalue("vres");
-    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.0005*getvalue("vdia"),0.2);
+    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.0001*getvalue("vdia"),0.01*getvalue("vdia"));
 });
 var jobcnt=0;
 var jobs=[];

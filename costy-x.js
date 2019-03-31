@@ -1334,7 +1334,7 @@ function gcode_verify(en=0) {
 	var f1 = getvalue('trav') * 60;
 	pdn1 = getvalue("pdn").replace("=cncz", "0") + '\n';
     setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n"+pdn1+"\n");
-    autoprobe="G30 S450 X" + mround(w*10) + " Y" + mround(h*10) ;
+    autoprobe="G30 S"+getvalue("alres")+" X" + mround(w*10) + " Y" + mround(h*10) ;
 	drawengrave();	
 	drawvcarve();
 }
@@ -1392,7 +1392,7 @@ function sortedgcode() {
     if (cmd == CMD_LASER) {
 		s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X1\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
 	} else
-		s="G0 F3000\nG1 F3000\n";
+		s="G0 Z2 F3000\nM3\nG1 F3000\n";
     pup1=getvalue("pup");
 	
 	cncdeep0 = -getvalue("zdown");
@@ -1520,6 +1520,7 @@ function sortedgcode() {
         s = "g28\ng0 z0 f350\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
+	s+="\nM5\nM3 S0\n";
     setvalue("gcode", s);
 }
 

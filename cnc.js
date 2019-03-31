@@ -59,9 +59,10 @@ var eMul = 50;
 var eBound = 127;
 var eSize = 1;
 
-
+var ln=0;
 function addgcode(g) {
     // read gcode
+	ln++;
     totalgcode += g.length;
     gd = {};
     lv = "";
@@ -108,7 +109,10 @@ function addgcode(g) {
     if (gk.indexOf('M') + 1) {
         h = 1;
         switch (gd['M']) {
-            case 3:
+            case 3: // spindle on
+                h |= 0;
+                break;
+            case 5: // let the firmware detect second M3 as M5 , spindle off
                 h |= 0;
                 break;
             case 109:
@@ -121,10 +125,11 @@ function addgcode(g) {
                 return; // not implemented
         }
         s = gd['S'];
+		if (s==undefined)s=255;
         h |= 1 << 3;
         write(h, 1);
         write(s, 1);
-        //zprintf(PSTR("M%d S%d\n"), fi(gd['M), fi(s));
+        console.log(ln+" M"+gd['M']+" S"+s);
     }
     if (gk.indexOf('G') + 1) {
         h = 0;
@@ -236,6 +241,7 @@ function addgcode(g) {
             // add printtime
             printtime += Math.sqrt((dx * dx + dy * dy + dz * dz) * 0.0001) / lf;
         }
+        //console.log("G"+gd['G']+" X"+X);
     }
     if (!cntg28) {
         endcompress();
@@ -311,6 +317,7 @@ function begincompress(paste) {
     if (paste) texts = paste.split("\n");
     else texts = getvalue("gcode").split("\n");
     cntg28 = 2;
+	ln=0;
     for (var i = 0; i < texts.length; i++) {
         addgcode(texts[i]);
         if (i & 31 == 0) pv = i * 100.0 / texts.length;
@@ -427,9 +434,9 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 					dy=(y2-y1)/L;
 					
 					for (var j=0;j<L;j++){
-						px=x1+(j)*dx;
-						py=y1+(j)*dy;
-						segs.push([px,py,s,0,0,0,0,vx,vy,0]); // last 3 is to store data
+						px=x1+(j+.5)*dx;
+						py=y1+(j+.5)*dy;
+						segs.push([px,py,s,0,0,0,0,vx,vy,0,0]); // last 3 is to store data
 					}
 					s++;
 					x1=x2;
@@ -438,7 +445,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 			} else { 
 				x1=x2;
 				y1=y2;
-				segs.push([x1,y1,-1,x1,y1,0,0,0,0,0]); // last 3 is to store data
+				segs.push([x1,y1,-1,x1,y1,0,0,0,0,0,0]); // last 3 is to store data
 			}
 		}
 	}
@@ -453,9 +460,11 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 	// s= number of line
 	var n=0;
 	var gc="G0 F6000 Z2\nG1 F2000\n";
-	ve=Math.tan(angle*Math.PI/360);
+	ve=1/Math.tan(angle*Math.PI/360);
 	var jj,seg2,seg1,mr2;
-	var maxz=-maxr/ve;
+	var maxz=-maxr*ve;
+	var ftrav=getvalue("trav")*60;
+	var ffeed=getvalue("feed")*60;
 	for (var i=0;i<segs.length;i++){
 		mr2=0; // d squared
 		seg1=segs[i];
@@ -465,63 +474,73 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		}
 		if (seg1[6]>0)continue;
 		var cx,cy,cz,ox,oy;
-		//var ks=10000;
 		for (var j=0;j<segs.length;j++){
 			seg2=segs[j];
 			if (seg1[2]==seg2[2])continue; // if on same line dont do it
 			seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
-			//if (ks>=seg2[9])ks=seg2[9];
 		}
-//		ks=ks*0.02;
-		for (var k=0.1;k<maxr;k+=dstep2){
-			ox=seg1[0]-seg1[8]*k;
-			oy=seg1[1]+seg1[7]*k;
-			k2=sqr(k);
-			k3=sqr(k*3);
+		var r=0;
+		for (;r<maxr;r+=dstep2){
+			cx=seg1[0]-r*seg1[8];
+			cy=seg1[1]+r*seg1[7];
+			k2=sqr(r);
+			k3=sqr(r*2);
 			for (var j=0;j<segs.length;j++){
 				seg2=segs[j];
 				if ((seg1[2]==-1) || (seg1[2]==seg2[2]) ||  (seg2[9]>k3))continue; // if on same line dont do it
-				// find the distance to the seg2
-				// simple way 
-				
-				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])<k2){
-					mr2=k;
+				n++;
+				r3=sqr(cx-seg2[0])+sqr(cy-seg2[1]);
+				if (r3<k2){
+					mr2=r;
 					break;
 				}
 			}
 			if (mr2)break;
 		}
+		var r1=r;
+		var r2=r;
+		var fs=ffeed;
+		if (r>1)fs=ffeed/(r);	
 		if (!mr2){
-			cx=ox;
-			cy=oy;
 			cz=maxz;
-			r=maxr;
 		} else {
 			// recalculate to get more precission
 			for (var r=mr2;r>mr2-dstep2;r-=dstep){
-				cx=seg1[0]-seg1[8]*r;
-				cy=seg1[1]+seg1[7]*r;
-				if (sqr(ox-seg2[0])+sqr(oy-seg2[1])>=sqr(r)){
+				cx=seg1[0]-r*seg1[8];
+				cy=seg1[1]+r*seg1[7];
+				r3=sqr(cx-seg2[0])+sqr(cy-seg2[1]);
+				//r3=Math.min(r3,sqr(cx-seg2[0]-seg2[7]*step)+sqr(cy-seg2[1]-seg2[8]*step));
+				
+				if (r3>=sqr(r)){
 					break;
 				}
-			}	
-			cz=-r/ve;
-			// /*
+			}
+			//r1=r;
+			//r2=r;
+					
+			// for other type bit must be different
+			cz=-r*ve;
+			if (r>1)fs=ffeed/(r);	
+			///*
 			seg2[3]=cx;
 			seg2[4]=cy;
 			seg2[5]=cz;
+			
+			//if (i<jj)r1=r1/2;else r2=r2/2;
 			seg2[6]=r;
-			// */
+			seg2[10]=fs;
+			//fs=fs*2;
+			//*/
+			
 		}
 		seg1[3]=cx;
 		seg1[4]=cy;
 		seg1[5]=cz;
-		seg1[6]=r;
+		seg1[6]=r1;
+		seg1[10]=fs;
 		
-	}
+	}	
 
-	var ftrav=getvalue("trav")*60;
-	var ffeed=getvalue("feed")*60;
 	var rdis;
 	var lx=0;
 	var ly=0;
@@ -541,15 +560,15 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		}
 		// F is depend on 2*phi*radius
 		// 
-		var fs=ffeed;
-		if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
+		var fs=seg1[10];
+		//if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
 		if (r>dstep)gc+="G1 F"+mround(fs)+" X"+mround(seg1[3])+" Y"+mround(seg1[4])+" Z"+mround(seg1[5])+"\n";
 		carvetime+=rdis/(fs*0.0167);
 		//r=1;
 		//ctx.moveTo(cx+r,cy);
 		//ctx.arc(cx,cy,r,0,2*Math.PI);
 	}
-	gc+="G0 Z2\nG0 X0 Y0\n";
+	gc+="G0 Z2\nG0 X0 Y0\ng0 Z0\n";
 	$("engcode").value=gc;
 	gcode_verify();
 }

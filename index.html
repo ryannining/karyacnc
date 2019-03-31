@@ -234,6 +234,9 @@
 			<button id=bthardstop >HALT</button>
 			<button id=btcekpos >POS</button>
 			<br>
+			<button  id=btm3>SPINDLE ON</button>
+			<button  id=btm5>SPINDLE OFF</button>
+			<br>
 			<input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
 			<Hr><b>My GCODE</b><br>
 			<button id=btinit style="display:none">Run Init</button>
@@ -242,7 +245,7 @@
 			<button id=btexecute2>Engrave</button>
 			<button id=btpause>Pause</button><br>
 			Cut after engrave <input size=1 type=checkbox id=engravecut checked class=saveit>
-			<br><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
+			<br><input id=alres size=2 value=400><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
 			<button id=btmotoroff style="display:none">MOTOROFF</button>
 			Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
