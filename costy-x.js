@@ -663,7 +663,7 @@ function doengrave(){
 		if (slowdown)gc+="G1 F"+(f2)+"\n";
 	}
 	gc+="G0 Z2\n";
-	gc+="G0 X0 Y0\n";
+	gc+="G0 X0 Y0\ng0 z0\nm3 s0\nm5";
 	$("engcode").value=gc;
 }
 

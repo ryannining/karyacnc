@@ -112,9 +112,6 @@ function addgcode(g) {
             case 3: // spindle on
                 h |= 0;
                 break;
-            case 5: // let the firmware detect second M3 as M5 , spindle off
-                h |= 0;
-                break;
             case 109:
                 h |= 1 << 1;
                 break;
@@ -568,7 +565,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		//ctx.moveTo(cx+r,cy);
 		//ctx.arc(cx,cy,r,0,2*Math.PI);
 	}
-	gc+="G0 Z2\nG0 X0 Y0\ng0 Z0\n";
+	gc+="G0 Z2\nG0 X0 Y0\ng0 Z0\nm3 s0\nm5";
 	$("engcode").value=gc;
 	gcode_verify();
 }
