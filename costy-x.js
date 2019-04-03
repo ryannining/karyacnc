@@ -30,11 +30,15 @@ function log(text) {
 }
 
 function getvalue(el) {
-    return $(el).value;
+	if (el=="gcode")return editorgcode.getValue();
+	else if (el=="enggcode")return editorenggcode.getValue();
+    else return $(el).value;
 }
 
 function setvalue(el, val) {
-    $(el).value = val;
+	if (el=="gcode")editorgcode.setValue(val,-1);
+	else if (el=="enggcode") editorenggcode.setValue(val,-1);
+    else $(el).value = val;
 }
 
 function setevent(ev, bt, act) {

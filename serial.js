@@ -818,8 +818,9 @@ function startserver() {
             var url = req.headers.url;
             if (url == '/')
                 url = '/engrave';
-            if (url == '/engrave')
-                url = '/graf.html';
+            if (url == '/engrave') {
+				if (getvalue("cmode")==3)url = '/engrave.html';else url = '/graf.html';
+			}
             // Serve the pages of this chrome application.
             req.serveUrl(url);
             return true;
@@ -840,17 +841,18 @@ function startserver() {
                 if (e.data == ">PAUSE") {
                     socket.send("DATA");
                     //setvalue("engcode",buff);
-                }
+                }else 
                 if (e.data == ">FINISH") {
                     socket.send("OK");
                     setvalue("engcode", buff);
                     buff = "";
-                }
+                }else 
                 if (e.data == ">REVECTOR") {
                     text1 = gcodetoText1(buff);
                     refreshgcode();
                     buff = "";
                 } else {
+					
                     buff += e.data;
                 }
             });
@@ -872,9 +874,10 @@ function startserver() {
 }
 
 window.onresize = function() {
+	var sc=parseFloat(getvalue("zoom1"));
     var nw = Math.max(100, window.innerWidth - 765);
     var v = $('myCanvas1');
-    v.width = nw;
+    v.width = nw*sc;
 	nh=Math.max(300, 500 * nw / 600);
     v.height = nh;
 	$('myCanvas1td').width=nw+50;
@@ -882,6 +885,8 @@ window.onresize = function() {
 	$('myCanvas1div').style.height=nh;
     gcode_verify();
 }
+
+
 
 setTimeout(function() {
     //var h=window.location.host;
@@ -896,6 +901,7 @@ setTimeout(function() {
     hideId("gcodeinit");
 }, 2000);
 
+setclick("btzoom", window.onresize);
 
 setclick("btvcarve", function() {
 	var r=Math.max(sxmax,symax)/getvalue("vres");
@@ -922,3 +928,13 @@ setclick("btjob3", function() {
 setclick("btjob4", function() {
 	executegcodes(jobs.join("\n"));
 });
+
+
+var editorgcode = ace.edit("gcode");
+//editorgcode.setReadOnly(true);
+editorgcode.session.setMode("ace/mode/gcode");
+editorgcode.renderer.setShowGutter(false);
+var editorengcode = ace.edit("engcode");
+//editorengcode.setReadOnly(true);
+editorengcode.session.setMode("ace/mode/gcode");
+editorengcode.renderer.setShowGutter(false);
