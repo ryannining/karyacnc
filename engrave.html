@@ -26,17 +26,20 @@
 <tr><td colspan=2><p id=mwidth></p>
 <tr><td colspan=2><b>Endmill setting</b>
 <tr><td>Bit <td><select id=endmill class=saveit>
-<option value=0>V bit</option>
 <option value=1 selected>Ballnose</option>
+<option value=0>V bit</option>
+<option value=2>Flat</option>
 </select><br>
 <tr><td>Max Dia <td><input id=dia value=3 size=2 class=saveit>
 <tr><td>V Angle <td><input id=vangle value=90 size=2 class=saveit>
 <tr><td colspan=2><b>Gcode</b>
 <tr><td>Feed <td><input id=speed size=3 value="100" class=saveit>mm/s 
 <tr><td>Max Depth <td><input id=zdown value=3 size=3 class=saveit>mm
+<tr><td>First repeat<td><input id=repeat1 value=4 size=3 class=saveit>x
 
 
 </table>
+<button id=regcode>Generate GCODE </button>
 <td width=600>
 <b>Original Image</b>
 <hr>
@@ -47,40 +50,12 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 <td>
 <b>GCODE</b>
 <hr>
-<button id=regcode>Generate GCODE </button>
-<button id=showgcode>Show GCODE </button>
 <br><div id=waktu>Waktu Kerja:</div><B>GCODE</b><button id=btcopy2b>Send to KaryaCNC</button>
 <div id=transfer>xx</div>
 <div id=gcode class=hid style="font-size:11pt;width:auto;height:500px" >
-G0 Z2 F3000
-M3
-G1 F3000
-g0 f350 z0.24G0 F350 Z2
-
-;SHAPE #1
-G0 F18000.00 X5.72 Y5.20
-G0 F240 Z-1.25
-G1 F3000.00 X5.72 Y5.20 Z-1.25
-G1 X5.72 Y5.19
-G1 X5.72 Y5.20
-G1 X5.92 Y5.28
-G1 X6.07 Y5.43
-G1 X6.15 Y5.62
-G1 X6.15 Y5.84
-G1 X6.07 Y6.04
-G1 X5.92 Y6.20
-G1 X5.72 Y6.28
-G1 X5.49 Y6.28
-G1 X5.30 Y6.20
-G1 X5.15 Y6.04
-G1 X5.07 Y5.85
-G1 X5.07 Y5.62
-G1 X5.15 Y5.43
-G1 X5.29 Y5.28
-G1 X5.49 Y5.20
-G1 X5.72 Y5.20
-G1 X5.72 Y5.19
-G1 X5.72 Y5.20
+; selamat datang di karyacnc
+; copy pastekan heightmap kesini 
+; dan pilih opsi yang diinginkan
 
 </div>
 </table>
@@ -103,7 +78,7 @@ G1 X5.72 Y5.20
 	  console.log(text);
 	}
 	function mround(x) {
-		return Math.round(x * 1000.0) / 1000.0;
+		return Math.round(x * 100.0) / 100.0;
 	}
 
 	function getvalue(el){
@@ -210,11 +185,16 @@ G1 X5.72 Y5.20
 		
 		for (var ji=-Math.ceil(ry);ji<=ry;ji++){
 			for (var ii=-Math.ceil(rx);ii<=rx;ii++){
+				// flat bit
+				if (endmill==2){
+					lr=sqr(ii*stepx)+sqr(ji*stepy);
+					if (lr<=r2)rd.push([ji*row+ii,0,ii,ji]);
+				}			
 				// v bit
 				if (endmill==0){
 					lr=sqr(ii*stepx)+sqr(ji*stepy);
 					c2=sqrt(lr)*ve; //  0  1         2  3  4          5 
-					if (c2>=0)rd.push([ji*row+ii,c2,ii,ji]);
+					if (lr<=r2)rd.push([ji*row+ii,c2,ii,ji]);
 				}			
 				// ballnose
 				if (endmill==1){
@@ -238,42 +218,66 @@ G1 X5.72 Y5.20
 		var total=mw*mh/stepy;
 		rx=0;
 		ry=0;
-		for (var j = Math.floor(ry); j < Math.floor(bmh-ry); j += 1) {
-			n=!n;
-			var i;
-			mrx=Math.floor(rx);
-			for (var ni = mrx; ni < bmw-mrx; ni += 1) {
-				// alternate direction left right left right
-				if (n) i=ni; else i=bmw-ni;
+		for (var j = 0; j < bmh; j += 1) {
+			for (var i = 0; i < bmw; i += 1) {
 				// lets check surrounding area
 				var cp=j*row+i;
 				var zm=1000;
 				for (var k=0;k<rd.length;k++){
 					var rdk=rd[k];
-					if ((j+rdk[3]<0) || (j+rdk[3]>=bmh) || 
-						(i+rdk[2]<0) || (i+rdk[2]>=bmw) )continue;	
+					//skip if outside tool
+					if ((j+rdk[3]<0) || (j+rdk[3]>bmh) || 
+						(i+rdk[2]<0) || (i+rdk[2]>bmw) )continue;	
+					//
 					zp=(255-bmd[cp+rdk[0]])*zscale+rdk[1];
 					if (zp<zm)zm=zp;
 					
 				}
 				bmdz[cp]=zm;
 				totalz+=Math.abs(lz-zm);	
-				xp=i*stepx;
-				yp=j*stepy;
-				gcodes.push("G1 X"+mround(xp)+" Y"+mround(yp)+" Z-"+mround(zm));
 				lz=zm;
 			}
 		}
+		var rep1=getvalue("repeat1");
+		var zm=0;
 		for (var j = 0; j < bmh; j += 1) {
-		for (var i = 0; i < bmw; i += 1) {
-			var a=j*bmw+i;		
-			oldr=bmdz[a]/zscale;
-			a=j*row*4+i*4;
-			bm.data[a]=oldr;
-			bm.data[a+1]=oldr;
-			bm.data[a+2]=oldr;
-			bm.data[a+3]=255;
-		}}
+			var rep=1;
+			var  a;
+			if (j==0)rep=rep1;
+			gcodes.push("\nG1 Z-"+mround(zm)+" Y"+mround(j*stepy));
+			for (var r=0;r<rep;r++){
+				n=!n;
+				var lz=-1000;
+				var lx=0;
+				var zsc=(r+1)/rep;
+				for (var ni = 0; ni < bmw; ni ++) {
+					// alternate direction left right left right
+					if (n) i=ni; else i=bmw-ni-1;
+					a=j*bmw+i;		
+					xp=i*stepx;
+					yp=j*stepy;
+					// tolerance = 0.05mm 
+					zm=Math.round(bmdz[a]*zsc*40)*0.025;
+					if (zm==undefined)zm=0;
+					if (zm==NaN)zm=0;
+					if ((lz!=zm) || (ni==0) || (ni==bmw-1)){
+						if (ni>0)gcodes.push("G1 X"+mround(lx)+" Z-"+mround(lz));
+						gcodes.push("G1 X"+mround(xp)+" Z-"+mround(zm));
+						lz=zm;
+					}
+					lx=xp;
+					a*=4;
+					if (r==0){
+						oldr=255-zm/zscale;
+						bm.data[a]=oldr;
+						bm.data[a+1]=oldr;
+						bm.data[a+2]=oldr;
+						bm.data[a+3]=255;
+					}
+				}
+			}
+			if (j<bmh-1)zm=Math.round(bmdz[a/4+row]*zsc);
+		}
 		// generate gcode
 		
 
@@ -283,6 +287,7 @@ G1 X5.72 Y5.20
 		harga=t/60*1500;
 		document.getElementById("waktu").innerHTML="<b>TOTAL BIAYA:Rp "+mround(harga)+"</b><br>Waktu:"+mround(t/60)+"menit";
 		//img.width=220;
+		editor.setValue(gcodes.join("\n"),-1);
 		savesetting();
 	}
 
@@ -299,11 +304,9 @@ G1 X5.72 Y5.20
 		c.height=getvalue("height");
 		var ctx = c.getContext("2d");
 		var flip=$("flip").checked;
-		var stepx=mw/bmw;
-		var stepy=mh/bmh;
 		var d=0;//getvalue("dia")*0.75;
-		var dx=d/stepx;
-		var dy=d/stepy;
+		var dx=0;
+		var dy=0;
 		
 		ctx.fillStyle="#000000";
 		ctx.fillRect(0, 0, c.width, c.height);
@@ -319,6 +322,8 @@ G1 X5.72 Y5.20
 		var gamma=getvalue("gamma")*1.0;
 		mw=rwidth*1.0;
 		mh=rheight*1.0;
+		var stepx=mw/bmw;
+		var stepy=mh/bmh;
 		$("mwidth").innerHTML="Size: "+mround(mw)+" x "+mround(mh)+"mm <br>Step mm X:"+mround(stepx)+ " Y:"+mround(stepy);
 		//var mh=mw*c.height/c.width;
 		var dotscale=mw/bmw;
@@ -409,7 +414,6 @@ G1 X5.72 Y5.20
 
 	setclick("btcopy2b",function(){copy_to_server('gcode');});
 	setclick("regcode",generategcode);
-	setclick("showgcode",function(){	editor.setValue(gcodes.join("\n"),-1);});
 
 	var stotype=0;
 	try {

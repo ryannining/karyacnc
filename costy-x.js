@@ -31,13 +31,13 @@ function log(text) {
 
 function getvalue(el) {
 	if (el=="gcode")return editorgcode.getValue();
-	else if (el=="enggcode")return editorenggcode.getValue();
+	else if (el=="engcode")return editorengcode.getValue();
     else return $(el).value;
 }
 
 function setvalue(el, val) {
 	if (el=="gcode")editorgcode.setValue(val,-1);
-	else if (el=="enggcode") editorenggcode.setValue(val,-1);
+	else if (el=="engcode") editorengcode.setValue(val,-1);
     else $(el).value = val;
 }
 

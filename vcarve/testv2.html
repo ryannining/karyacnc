@@ -15,7 +15,7 @@ paths=[[14.853,7.621,14.852888903534444,7.620204920259664,14.853,7.621,16.055,7.
 scale=1;
 move=10;
 
-var step=1*scale; // 
+var step=0.5*scale; // 
 var maxr=5*scale;
 var dstep=0.00001*scale;
 var dstep2=0.1*scale;
@@ -25,10 +25,27 @@ var c = $("mycanv");
 var ctx = c.getContext("2d");
 ctx.strokeStyle = "#0000ff";
 var s=0;
+
+
+function diag(vec){return sqrt(sqr(vec[0]) + sqr(vec[1]));}
+function dotcross(vec1,vec2) {
+	d1 = diag(vec1);
+	d2 = diag(vec2);
+	if (d1*d2==0)return [0,0];
+	
+
+    vec1 = [vec1[0]/d1, vec1[1]/d1];
+    vec2 = [vec2[0]/d2, vec2[1]/d2];
+    dot = (vec1[0] * vec2[0] ) + (vec1[1]  * vec2[1] );
+    cross = (vec1[0] * vec2[1] ) - (vec2[0]  * vec1[1] );
+	return [dot,cross];
+}
+	
 function segmentation(path,rev){
 	ctx.beginPath();
-	var x1,y1,x2,y2;
+	var x1,y1,x2,y2,vx1,vy1,vx2,vy2;
 	PL=path.length/2;
+	vx1=-1000;
 	for (var p=0;p<PL;p++){
 		i=p;
 		ii=p+1;
@@ -46,24 +63,42 @@ function segmentation(path,rev){
 			if (L>0){
 				ctx.moveTo(x1,y1);
 				ctx.lineTo(x2,y2);
-				vx=(x2-x1)/L;
-				vy=(y2-y1)/L;
+				vx2=(x2-x1)/L;
+				vy2=(y2-y1)/L;
 				L=Math.floor(L/step)+1;
 				dx=(x2-x1)/L;
 				dy=(y2-y1)/L;
-				
+				// check if the corner is sharp then repeat last and interpolate to new vx,vy
+				if (vx1>-1000){
+					dc=dotcross([vx1,vy1],[vx2,vy2]);
+					if (dc[0]<-0.3){
+						//segs.push([x1,y1,-1,x1,y1,0,0,0,0,0,0]); // last 3 is to store data
+						dvx=(vx2+vy1);
+						dvy=(vy2-vx1);
+						dv=diag([dvx,dvy]);
+						//segs.push([x1,y1,s,0,0,0,0,dvx/dv,dvy/dv,0,0]);
+						dvx=(-vx2+vy1);
+						dvy=(-vy2-vx1);
+						dv=diag([dvx,dvy]);
+						//segs.push([x1,y1,s,0,0,0,0,dvx/dv,dvy/dv,0,0]);
+						s++;
+					}
+				}
 				for (var j=0;j<L;j++){
-					px=x1+(j+.5)*dx;
-					py=y1+(j+.5)*dy;
+					px=x1+(j+.25)*dx;
+					py=y1+(j+.25)*dy;
 					//ctx.beginPath();
 					//ctx.moveTo(px,py);
 					//ctx.arc(px,py,1,0,2*Math.PI);
 					//ctx.stroke();
-					segs.push([px,py,s,0,0,0,0,vx,vy,0,0]); // last 3 is to store data
+					segs.push([px,py,s,0,0,0,0,vx2,vy2,0,0]); // last 3 is to store data
 				}
 				s++;
+				
 				x1=x2;
 				y1=y2;
+				vx1=vx2;
+				vy1=vy2;
 			}
 		} else { 
 			x1=x2;
@@ -173,29 +208,42 @@ ms = performance.now() - ms;
 mss = "Real time:" + mround(ms);
 console.log(mss);
 
-ctx.beginPath();
 scale=10;
+function gcolor(n){
+    var letters = '0123456789ABCDEF';
+    var color = '#0000';
+	n=n&255;
+	color += letters[n & 15];
+	color += letters[n >> 4];
+	return color;
+}
 for (var i=0;i<segs.length;i++){
 	seg1=segs[i];
 	cx=seg1[3]*scale;
 	cy=seg1[4]*scale;
 	r=seg1[6]*scale;
 	if (seg1[2]==-1){
-		ctx.moveTo(cx,cy);
+		ctx.beginPath();
+		ctx.strokeStyle = "#FF0000";
+		ctx.moveTo(cx+10,cy);
+		ctx.arc(cx,cy,10,0,2*Math.PI);
+		ctx.stroke();
 		continue;
 	}
 	//ctx.lineTo(cx,cy);
+	ctx.beginPath();
+	//ctx.strokeStyle = gcolor(i);
 	ctx.strokeStyle = "#cccccc";
 	//r=1;
 	ctx.moveTo(cx+r,cy);
 	ctx.arc(cx,cy,r,0,2*Math.PI);
 	ctx.moveTo(cx,cy);
+	ctx.stroke();
 }
 ctx.stroke();
 
-ctx.beginPath();
 var cx0,cy0;
-for (var i=0;i<segs.length;i++){
+for (var i=0;i<segs.length;i++){//segs.length*0.36
 	seg1=segs[i];
 	lx0=cx0;
 	ly0=cy0;
@@ -212,12 +260,22 @@ for (var i=0;i<segs.length;i++){
 		gc+="G0 Z0\nG1 F1000\n";
 		continue;
 	}
+	ctx.beginPath();
+	ctx.strokeStyle = gcolor(i);
 	ctx.moveTo(lx,ly);
 	ctx.lineTo(cx,cy);
+	
 	ctx.moveTo(lx0,ly0);
 	ctx.lineTo(cx0,cy0);
+	ctx.lineTo(cx0-seg1[8]*5,cy0+seg1[7]*5);
+	ctx.stroke();
+	ctx.beginPath();
+	ctx.strokeStyle = gcolor(i);
+	ctx.moveTo(cx0,cy0);
+	ctx.lineTo(cx,cy);
+	
 	if (r>dstep)gc+="G1 F"+mround(seg1[10])+" X"+mround(seg1[3])+" Y"+mround(-seg1[4])+" Z"+mround(seg1[5])+" N"+i+"\n";
-	ctx.strokeStyle = "#ff0000";
+	ctx.stroke();
 	//r=1;
 	//ctx.moveTo(cx+r,cy);
 	//ctx.arc(cx,cy,r,0,2*Math.PI);
