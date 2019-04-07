@@ -336,6 +336,12 @@ function urlopen(s) {
 function startprint() {
     urlopen("startprint");
 }
+function pauseprint() {
+    urlopen("pauseprint");
+}
+function resumeprint() {
+    urlopen("resumeprint");
+}
 
 function stopprint() {
     urlopen("stopprint");
@@ -394,6 +400,8 @@ setclick("btjob5", function() {
 
 setclick("btuploadstart",startprint);
 setclick("btuploadstop",stopprint);
+setclick("btuploadpause",pauseprint);
+setclick("btuploadresume",resumeprint);
 
 
 
@@ -456,7 +464,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 	// create toolpath
 	// s= number of line
 	var n=0;
-	var gc="G0 F6000 Z2\nG1 F2000\n";
+	var gc="M3\nG0 F6000 Z4\nG1 F2000\n";
 	ve=1/Math.tan(angle*Math.PI/360);
 	var jj,seg2,seg1,mr2;
 	var maxz=-maxr*ve;
@@ -550,7 +558,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		ly=seg1[4];
 		r=seg1[6]*dpm;
 		if (seg1[2]==-1){
-			gc+="G0 Z2\n";
+			gc+="G0 Z4\n";
 			gc+="G0 F"+ftrav+" X"+mround(seg1[3])+" Y"+mround(seg1[4])+"\n";
 			gc+="G0 Z0\n";
 			continue;
@@ -565,8 +573,8 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		//ctx.moveTo(cx+r,cy);
 		//ctx.arc(cx,cy,r,0,2*Math.PI);
 	}
-	gc+="G0 Z2\nG0 X0 Y0\ng0 Z0\nm3 s0\nm5";
-	$("engcode").value=gc;
+	gc+="G0 Z4\nG0 X0 Y0\ng0 Z0\nm3 s0\nm5";
+	setvalue("engcode",gc);
 	gcode_verify();
 }
 

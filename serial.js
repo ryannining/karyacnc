@@ -877,12 +877,12 @@ window.onresize = function() {
 	var sc=parseFloat(getvalue("zoom1"));
     var nw = Math.max(100, window.innerWidth - 765);
     var v = $('myCanvas1');
-    v.width = nw*sc;
+    v.width = nw;
 	nh=Math.max(300, 500 * nw / 600);
     v.height = nh;
-	$('myCanvas1td').width=nw+50;
-	$('myCanvas1div').style.width=nw+50;
-	$('myCanvas1div').style.height=nh;
+	$('myCanvas1td').width=nw*sc+50;
+	$('myCanvas1div').style.width=nw*sc+50;
+	$('myCanvas1div').style.height=nh*sc;
     gcode_verify();
 }
 
@@ -905,7 +905,7 @@ setclick("btzoom", window.onresize);
 
 setclick("btvcarve", function() {
 	var r=Math.max(sxmax,symax)/getvalue("vres");
-    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.0001*getvalue("vdia"),0.01*getvalue("vdia"));
+    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.00002*getvalue("vdia"),0.01*getvalue("vdia"));
 });
 var jobcnt=0;
 var jobs=[];

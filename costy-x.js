@@ -285,7 +285,7 @@ function prepare_line2(lenmm,lines) {
 		doengrave = (sty["stroke"]=="#0000ff") || (sty["fill"]=="#0000ff");
 		dovcarve = (sty["stroke"]=="#00ffff") || (sty["fill"]=="#00ffff");
 	}
-	if (dovcarve)ofs=0.01;
+	if (dovcarve)ofs=0.5;
 	ofs*=0.5;
 	maxofs=Math.max(ofs,maxofs);
 	collapsepoint=getvalue("drill")*1;
@@ -332,7 +332,7 @@ function prepare_line2(lenmm,lines) {
 			
 			co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
 			co.MiterLimit = 2;
-			co.ArcTolerance = 0.02*scale;
+			co.ArcTolerance = (dovcarve?0.01:0.02)*scale;
 			var delta=ofs*scale;
 			if (!clk)delta=-delta;
 			co.Execute(offsetted_paths, delta);
@@ -668,7 +668,7 @@ function doengrave(){
 	}
 	gc+="G0 Z2\n";
 	gc+="G0 X0 Y0\ng0 z0\nm3 s0\nm5";
-	$("engcode").value=gc;
+	setvalue("engcode",gc);
 }
 
 function addengrave(cx,cy){
@@ -1792,7 +1792,7 @@ function preparestyle(){
 	if (as==2)sty.fill="#00ffff";
 	sty.stroke=sty.fill;
 	gcstyle=[];
-	for (var i=0;i<50;i++) {gcstyle.push(sty);}	
+	for (var i=0;i<350;i++) {gcstyle.push(sty);}	
 }
 var gc="g0 x100 y0\ng1 x200\ng1 y100\ng1 x100\ng1 y0\n";
 function gcodetoText1(gx){

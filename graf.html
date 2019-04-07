@@ -507,12 +507,12 @@ function savesetting(){
 		if (a[i].type=='select-one')sett[a[i].id] = a[i].value;
 		if (a[i].type=='checkbox')sett[a[i].id] = a[i].checked;
    }
-   text1=document.getElementById("gcode").innerHTML;
+   //text1=document.getElementById("gcode").innerHTML;
    if (stotype==1){
      storage.setItem("settings",JSON.stringify(sett));
-     storage.setItem("text1",text1);
+     //storage.setItem("text1",text1);
    } else {
-     storage.set({"settings":sett,"text1":text1});
+     //storage.set({"settings":sett,"text1":text1});
    }
 }
 //setclick("btsaveset",savesetting);
@@ -520,7 +520,7 @@ function savesetting(){
 
 if (stotype==0){
 	try {
-	   storage.get("text1",function(r){document.getElementById("gcode").innerHTML=r.text1;})
+	   //storage.get("text1",function(r){document.getElementById("gcode").innerHTML=r.text1;})
 	   storage.get("settings",function(r){
 		  sett=r.settings;
 		  for (var k in sett){
@@ -531,15 +531,15 @@ if (stotype==0){
 	} catch (e) {
 	}
 } else {
-   text1=storage.text1;
-   if (text1==undefined)text1="";
+   //text1=storage.text1;
+   //if (text1==undefined)text1="";
    if (storage.settings!=undefined){
 	   sett=JSON.parse(storage.settings);
 	   for (var k in sett){
 			setvalue(k,sett[k]);
 	   }
    }
-   document.getElementById("gcode").innerHTML=text1;
+   //document.getElementById("gcode").innerHTML=text1;
 }	
 
 // websocket

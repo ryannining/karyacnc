@@ -3,7 +3,9 @@
 		<title>CostyKarya CNC gcode tracer</title>
 	</head>
 	<style>
-	
+	.smallwindow {
+	font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px;z-index:1000;
+	}
 #editorgcode,#editorengcode { 
         position: absolute;
         top: 0;
@@ -68,7 +70,7 @@
 				<table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;">
 					<tr>
 						<td colspan=3 align=left><button id=bthidden>Path Option</button><button id=btengrave>Bitmap Engrave</button>
-						<table id=vars style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+						<table id=vars class=smallwindow>
 							<tr><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="0.7" class=saveit></td></tr>
 							<tr><td colspan=3>As </td><td colspan=1>
 							<select id=pasteas value="0" class=saveit>
@@ -101,7 +103,7 @@
 							<tr><td colspan=2><button id=btrecode2 >Re-gcode</button></td><td colspan=2></td></tr>
 						</table>
 						<br><button id=bthidden5>Inkscape Option</button><button id=bthidden3>Show Gcode</button>
-						<table id=vars3 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+						<table id=vars3 class=smallwindow>
 							<tr><td colspan=4 align=left><b>INKSCAPE COLORING</b><br>RED:Outline BLUE:Engrave GREEN:Disable</td></tr>
 							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
 							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
@@ -168,6 +170,14 @@
 				<tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
 					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
 				<tr><td colspan=3>Cut CCW <input id=cutccw type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
+				<tr><td colspan=3 align=left>
+					<hr><b>V CARVING</b><br>
+					<b>Endmill:</b>&nbsp;
+					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
+					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
+					<button id=btvcarve>VCarve</button><br>
+
+				</td></tr>
 		</table>
 		<div id=gcodeinit>
 			<br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
@@ -200,7 +210,7 @@
 		<td width=300px bgcolor=lightblue style="padding:5px">
 			<b>Machine Control <span id=portnum></span></b><br>
 			<button id=bthidden2>Connection Settings</button>
-			<table id=vars2 style="font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px">
+			<table id=vars2 class=smallwindow>
 				<tr><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
 				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
 				<tr><td colspan=4><hr></td></tr>
@@ -262,7 +272,7 @@
 			Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
 			<b>MACHINE FLASH</b><br>
-			<button id=btupload>Upload</button><button id=btuploadstart>Start</button><button id=btuploadstop>Stop</button>
+			<button id=btupload>Upload</button><button id=btuploadstart>Start</button><button id=btuploadstop>Stop</button><button id=btuploadpause>Pause</button><button id=btuploadresume>Resume</button>
 			<hr>
 			<div id=machine_3d style="display:none">
 				<b>3D printer</b><br>
@@ -288,10 +298,6 @@
 			<button id=btjob3>Clear Jobs</button>
 			<button id=btjob4>Run Jobs</button>
 			<button id=btjob5>Upload Jobs</button>
-			<hr><b>CARVING</b><br>
-			Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
-			<button id=btvcarve>VCarve</button><br>
-			Gcode is in Engrave box
 			<hr><b>OTHER</b><br>
 			<button id=btzero>Grbl Zero</button><br>
 			
