@@ -14,6 +14,7 @@ var etime = new Date();
 var checktemp = 1;
 var isgrbl = 0;
 var gcstyle = [];
+var preview=0;
 
 function comconnect() {
     var bt = document.getElementById('btconnect');
@@ -202,6 +203,7 @@ function execute(gcodes) {
 function executegcodes(gcodes) {
     var bt = document.getElementById('btexecute');
     if (bt.innerHTML == "Execute") {
+		preview=0;
         execute(gcodes);
         bt.innerHTML = "Stop";
     } else {
@@ -213,6 +215,7 @@ function executegcodes(gcodes) {
 function executegcodes2() {
     var bt = document.getElementById('btexecute2');
     if (bt.innerHTML == "Engrave") {
+		preview=0;
         if ($("engravecut").checked)
             execute(getvalue('engcode') + "\n" + getvalue('gcode'));
         else
@@ -224,8 +227,8 @@ function executegcodes2() {
         sendgcode("M2");
     }
 }
-
 function executepgcodes() {
+	preview=1;
     execute(document.getElementById('pgcode').value);
 //    pz = 2;
 }
@@ -267,6 +270,7 @@ function handleuserkey(n){
 }
 var onReadCallback = function(s) {
     resp1 += s;
+	var estr="";
     for (var i = 0; i < s.length; i++) {
         if (s[i] == "\n") {
 
@@ -286,19 +290,22 @@ var onReadCallback = function(s) {
         } else
             ss += s[i];
         if ((s[i] == "\n") || (s[i] == " ") || (s[i] == "*")) {
-            if (ineeprom > 0) {
-                if (ineeprom == 3)
-                    eppos = lastw;
-                if (ineeprom == 2)
-                    eeprom[eppos] = lastw;
-                if (ineeprom == 1) {
-                    var sel = document.getElementById("eepromid");
-                    sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + lastw + "</option>";
-                }
+            if (ineeprom > 0) { //EPR:3 145 0.000 X Home Pos
+                if (ineeprom == 20) eppos = lastw;
+                else if (ineeprom == 19) eeprom[eppos] = lastw;
+                else  {
+					estr+=lastw+" ";
+					if (s[i]=="\n"){
+						var sel = document.getElementById("eepromid");
+						sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + estr + "</option>";
+						ineeprom=1;
+					};
+				}
                 ineeprom--;
             }
             if (lastw.toUpperCase().indexOf("EPR:") >= 0) {
-                ineeprom = 3;
+                ineeprom = 20;
+				estr="";
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;
@@ -319,9 +326,11 @@ var onReadCallback = function(s) {
 						console.log("Stop " + etime);
 						ms = etime.getTime() - ms;
 						mss = "Real time:" + mround(ms / 60000.0);
-						setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
 						console.log(mss);
-						$("infolain").innerHTML = mss;
+						if (!preview){
+							setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
+							$("infolain").innerHTML = mss;
+						}
 						stopinfo = 0;
 					} else sendgcode("M114");
                 }

@@ -79,7 +79,7 @@ function execute(gcodes) {
 function idleloop(){
 	
 	if (wsconnected && checktemp) {
-        if (!running)sendgcode("M105");
+        //if (!running)sendgcode("M105");
 		checktemp=0;
     }
 	setTimeout(idleloop,3000);
@@ -93,6 +93,7 @@ var resp1="";
 
 var onReadCallback = function(s) {
 	resp1+=s;
+	var estr="";
     for (var i = 0; i < s.length; i++) {
         if (s[i] == "\n") {
 			
@@ -106,17 +107,22 @@ var onReadCallback = function(s) {
             ss = "";
         } else ss += s[i];
         if ((s[i] == "\n") || (s[i] == " ") || (s[i] == "*")) {
-            if (ineeprom > 0) {
-                if (ineeprom == 3) eppos = lastw;
-                if (ineeprom == 2) eeprom[eppos] = lastw;
-                if (ineeprom == 1) {
-                    var sel = document.getElementById("eepromid");
-                    sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + lastw + "</option>";
-                }
+            if (ineeprom > 0) { //EPR:3 145 0.000 X Home Pos
+                if (ineeprom == 20) eppos = lastw;
+                else if (ineeprom == 19) eeprom[eppos] = lastw;
+                else  {
+					estr+=lastw+" ";
+					if (s[i]=="\n"){
+						var sel = document.getElementById("eepromid");
+						sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + estr + "</option>";
+						ineeprom=1;
+					};
+				}
                 ineeprom--;
             }
             if (lastw.toUpperCase().indexOf("EPR:") >= 0) {
-                ineeprom = 3;
+                ineeprom = 20;
+				estr="";
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;

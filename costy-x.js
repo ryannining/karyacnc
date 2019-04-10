@@ -532,10 +532,13 @@ function doengrave(){
     var ctx = c.getContext("2d");
     var ofs = getvalue('offset')*1;
 	carvedeep=getvalue('carved')*1;
-    var f1 = getvalue('trav')*60;
     var f2 = getvalue('rasterfeed')*60;
-    if (cmd==CMD_CNC)f2 = getvalue('feed')*60;
-    var pup = "G0 Z"+getvalue('safez')+"\n";
+    var f1 = f2;
+    if (cmd==CMD_CNC){
+		f2 = getvalue('feed')*60;
+		var f1 = getvalue('trav')*60;
+	}
+	var pup = "G0 Z"+getvalue('safez')+"\n";
     var pdn = getvalue('pdn');
 	var overs=10;
 	if (cmd==CMD_CNC)overs=0;
@@ -557,11 +560,17 @@ function doengrave(){
 	var gc="M3 S255\nG0 F"+f1+"\nG1 F"+f2+"\n";
 	gc+=pup;
 	var ry=Object.keys(engrave).sort(nsort);
+	if (ry.length==0){
+		//return;
+	}
 	var lry=-10000;
 	ri=-1;
 	var engr;
 	var lengr;
+	
+	drwR=0.2;
 	var c1=$("rasteroutline").checked;
+	
 	for (var i=0;i<ry.length;i++){
         var _rz=rz;
 		var _re=re;
@@ -629,7 +638,7 @@ function doengrave(){
 			dx=0;
 			gc+="G0 Y"+mround(gy)+" X"+mround(ox)+"\n";
 			var drw=1;
-			if (cmd==CMD_LASER)drw=gy-lry>6;
+			//if (cmd==CMD_LASER)drw=Math.abs(gy-lry)>drwR;
 			if (drw)lry=gy;
 			xmin = Math.min(xmin, pdata[0]);
 			xmax = Math.max(xmax, pdata[0]);
@@ -641,8 +650,8 @@ function doengrave(){
 				ox=pdata[j*2+1]*1+dx;
 				fx=pdata[j*2]*1-dx;
 				if (cmd==CMD_LASER){
-					gc+="G0 X"+mround(fx)+" F"+f1+"\n";
-					gc+="G1 X"+mround(ox)+" F"+f2+"\n";
+					gc+="G0 X"+mround(fx)+" F"+f1+" S0\n";
+					gc+="G1 X"+mround(ox)+" F"+f2+" S255\n";
 				} else {
 					// repeat until deep satisfied
 					if (Math.abs(ox-fx)>=ofs){
@@ -1419,7 +1428,7 @@ function sortedgcode() {
 		_spiraldown=0;
 		cuttab=cncdeep;
 	}
-	
+	var empty=1;
 	for (var j = 0; j < sgcodes.length; j++) {
 		//cncz = cncdeep / re;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
@@ -1498,6 +1507,7 @@ function sortedgcode() {
 			
 			// do pen up
 			s+=pup1+"\n";
+			if (_re>0)empty=0;
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
@@ -1525,7 +1535,8 @@ function sortedgcode() {
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
 	s+="\nM5\nM3 S0\n";
-    setvalue("gcode", s);
+    //if (!empty)
+	setvalue("gcode", s);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
