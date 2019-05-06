@@ -54,7 +54,8 @@ opacity: 0.8;
 <tr><td>Pass<td><input id=repeat2 value=2 size=1 class=saveit>x
 <tr><td colspan=2><button id=regcode>Finishing GCODE </button>
 
-<tr><td colspan=2><br><b>Roughing using Flat Nose</b>
+<tr><td colspan=2><br><b>Optional Roughing Flat Nose</b>
+<tr><td>Feed <td><input id=speed2 size=3 value="100" class=saveit>mm/s 
 <tr><td>Flat Dia <td><input id=dia2 value=6 size=2 class=saveit>
 <tr><td>First Pass<td><input id=repeat3 value=3 size=3 class=saveit>x
 <tr><td>Pass<td><input id=repeat4 value=3 size=3 class=saveit>x
@@ -135,9 +136,13 @@ function getvalue(el) {
 }
 
 function setvalue(el, val) {
-	if ($(el)==undefined)return;
+	var e=$(el);
+	if (e==undefined)return;
 	if (el=="gcode")editorgcode.setValue(val,-1);
-    else $(el).value = val;
+    else {
+		if (e.type=='checkbox')e.checked=val;
+		else e.value = val;
+	}
 }
 function setevent(ev,bt,act){
 	if ($(bt)==undefined)return;
@@ -215,24 +220,25 @@ var gcodes=[];
 
 function generategcode2(){
 	var stepy=mh/bmh;
-	var r=getvalue("dia2")*0.4;
+	var r=getvalue("dia2")*0.5+0.5;
 	var feedmethod=getvalue("feedmethod");
-	var step=(r/stepy);
-	generategcode0(r,feedmethod,2,step,getvalue("repeat3"),getvalue("repeat4"));
+	var step=Math.ceil(r/stepy);
+	var feed=getvalue("speed2")*60;
+	generategcode0(r,feedmethod,2,step,getvalue("repeat3"),getvalue("repeat4"),feed);
 }
 function generategcode(){
 	var feedmethod=getvalue("feedmethod");
 	var endmill=getvalue("endmill")*1;
 	var r=getvalue("dia")*0.5;
-	generategcode0(r,feedmethod,endmill,1,getvalue("repeat1"),getvalue("repeat2"));
+	var feed=getvalue("speed")*60;
+	generategcode0(r,feedmethod,endmill,1,getvalue("repeat1"),getvalue("repeat2"),feed);
 }
-function generategcode0(r,feedmethod,endmill,skip,rep1,rep2){
+function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 	prepareimage();
 	var c = document.getElementById("myCanvas");
 	var ctx = c.getContext("2d");
 	var scale = 25.4 / getvalue('mdpi');
 	var zdown=getvalue("zdown");
-	var feed=getvalue("speed")*60;
 	var waktu=0;
 	var w0=0;
 	var w1=0;
@@ -322,7 +328,7 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2){
 			var rep=rep2;
 			var  zsc,a;
 			if (j==0)rep=Math.max(rep1,rep2);
-			gcodes.push(";Line "+j+"\nG1 Z-"+mround(zm)+" Y"+mround(j*stepy));
+			gcodes.push(";Line "+j+"\nG1 Z"+mround(-zm)+" Y"+mround(j*stepy));
 			for (var r=0;r<rep;r++){
 				n=!n;
 				var lz=-1000;
@@ -340,8 +346,8 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2){
 					//if (zm==undefined)zm=0;
 					//if (zm==NaN)zm=0;
 					if ((lz!=zm) || (ni==0) || (ni==bmw-1)){
-						if (ni>0)gcodes.push("G1 X"+mround(lx)+" Z-"+mround(lz));
-						gcodes.push("G1 X"+mround(xp)+" Z-"+mround(zm));
+						if (ni>0)gcodes.push("G1 X"+mround(lx)+" Z"+mround(-lz));
+						gcodes.push("G1 X"+mround(xp)+" Z"+mround(-zm));
 						lz=zm;
 					}
 					lx=xp;
@@ -379,11 +385,11 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2){
 			//if (zm==NaN)zm=0;
 			var g1;
 			if (m)g1="G1 Y"+mround(yp); else g1="G1 X"+mround(xp);
-			//gcodes.push(g1+" Z-"+mround(zm));return;
+			//gcodes.push(g1+" Z"+mround(-zm));return;
 
 			if ((lz!=zm) || fp){
-				if (lx)gcodes.push(lx+" Z-"+mround(lz));
-				gcodes.push(g1+" Z-"+mround(zm));
+				if (lx)gcodes.push(lx+" Z"+mround(-lz));
+				gcodes.push(g1+" Z"+mround(-zm));
 				lz=zm;
 			}
 			lx=g1;

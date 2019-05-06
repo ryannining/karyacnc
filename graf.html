@@ -33,11 +33,15 @@
 <option value=0 selected>CNC</option>
 <option value=1>Laser</option>
 </select><br>
-DPI <input id=mdpi value=72 size=3 class=saveit>
+DPI <input id=usedpi type=checkbox size=3 class=saveit><input id=mdpi value=72 size=3 class=saveit>
 <br>Width <input id=mwidth value=100 size=11 class=saveit>mm
 <td>
 <b>Gcode</b>
+ 
 <hr><b>LASER</b>
+<br>Over <input id=over size=3 value="5" class=saveit>
+<br>OfsX <input id=ofsX size=3 value="0" class=saveit>
+<br>OfsY <input id=ofsY size=3 value="0" class=saveit>
 <br>Speed <input id=speed1 size=3 value="100" class=saveit>mm/s 
 <br>Pixel shift <input id=shf size=1 value="1" class=saveit> 
 <br>Tools on <input id=tool2 size=6 value="M3 S255" class=saveit> off <input id=tool1 size=6 value="M3 S0" class=saveit>
@@ -68,7 +72,6 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 
 <script>
 var ws =0;
-var overshot=15;
 function $(id) {
   return document.getElementById(id);
 }
@@ -80,12 +83,22 @@ function mround(x) {
     return Math.round(x * 1000.0) / 1000.0;
 }
 
-function getvalue(el){
-	return document.getElementById(el).value;
+function getvalue(el) {
+	if ($(el)==undefined)return "";
+	if (el=="gcode")return editorgcode.getValue();
+    else return $(el).value;
 }
-function setvalue(el,val){
-	document.getElementById(el).value=val;
+
+function setvalue(el, val) {
+	var e=$(el);
+	if (e==undefined)return;
+	if (el=="gcode")editorgcode.setValue(val,-1);
+    else {
+		if (e.type=='checkbox')e.checked=val;
+		else e.value = val;
+	}
 }
+
 function setevent(ev,bt,act){
 	document.getElementById(bt).addEventListener(ev, act,false);
 }
@@ -147,16 +160,32 @@ sierra2=[5, 3, 2, 4, 5, 4, 2, 2, 3, 2];
 
 var floyd1=[7, 4,4,1];
 var memlimit=8000;
+var overshot=5;
+
 ditherit = function() {
     var c = document.getElementById("myCanvas");
     var img = document.getElementById("thepic");
+	udpi=$("usedpi").checked;
     var scale = 25.4 / getvalue('mdpi');
+	overshot=getvalue("over")*1;
 	rwidth=scale*img.naturalWidth;
 	rheight=scale*img.naturalHeight;
+	if (!udpi){
+		ww=getvalue("mwidth").split("x");
+		rwidth=ww[0]*1;
+		if (ww[1]==undefined)
+			rheight=ww[0]*img.naturalHeight/img.naturalWidth;
+		else
+			rheight=ww[1]*1;
+		scale=rwidth/img.naturalWidth;
+		setvalue('mdpi',mround(25.4/scale));
+	}
 	img.width=getvalue("width")*1;
 	
     c.width=img.width;
     c.height=getvalue("height");
+    ofx=getvalue("ofsX")*1;
+    ofy=getvalue("ofsY")*1;
     var ctx = c.getContext("2d");
 	var flip=$("flip").checked;
     ctx.drawImage(img, 0, 0,c.width,c.height);
@@ -196,6 +225,7 @@ ditherit = function() {
 	var gamma=getvalue("gamma")*1.0;
 	var mw=rwidth*1.0;
 	var mh=rheight*1.0;
+	//if (udpi)
 	setvalue("mwidth",mround(mw)+"x"+mround(mh));
 	//var mh=mw*c.height/c.width;
 	var dotscale=mw/c.width;
@@ -357,8 +387,8 @@ ditherit = function() {
 				//pxstop=Math.min(c.width-dx,pxstop+2);
 				//pxstart=0;
 				//pxstop=c.width-dx;
-				px1=mround(dotscale*pxstart);
-				px2=mround(dotscale*pxstop);
+				px1=mround(dotscale*pxstart+ofx);
+				px2=mround(dotscale*pxstop+ofx);
 				if (mtype==1){
 					//gcode+=";"+pxstart+","+pxstop+"\n";
 					pxstop=bp+(pxstop-pxstart);
@@ -377,7 +407,7 @@ ditherit = function() {
 					if (jk%2==1){
 						gcode+=";>>\n";
 						gcode+="G0 F"+speed+" E"+pxstart+" X"+mround(px1-ccc)+"\n";
-						gcode+="G0 S0 X"+mround(px1)+" Y"+mround((j)*ystep)+"\n";
+						gcode+="G0 S0 X"+mround(px1)+" Y"+mround((j)*ystep+ofy)+"\n";
 						gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\n"
 						//gcode+="G0 S0 X"+mround(px2+ccc)+"\n";
 						farx=px2+overshot*3;
@@ -385,7 +415,7 @@ ditherit = function() {
 						// next y
 						gcode+=";<<\n";
 						gcode+="G0 F"+speed+" E"+(pxstop+shf)+" X"+mround(px2+ccc)+"\n";
-						gcode+="G0 S0 X"+mround(px2)+" Y"+mround((j)*ystep)+"\n";
+						gcode+="G0 S0 X"+mround(px2)+" Y"+mround((j)*ystep+ofy)+"\n";
 						gcode+="G1 S255 F"+speed+" X"+(px1)+" E"+(pxstart+shf)+"\n";
 						//gcode+="G0 S0 X"+mround(px1-ccc)+"\n";
 						farx=px1-overshot*3;
@@ -404,11 +434,11 @@ ditherit = function() {
 					xstep=mw/gc.length;
 					zstep=zdown/25;
 					lv=" ";
-					x=xstep*idx;
-					gcode+=tool1+"\nG0 F"+speed+" X"+mround(x)+" Y"+mround((j)*ystep)+"\n";
+					x=xstep*idx+ofx;
+					gcode+=tool1+"\nG0 F"+speed+" X"+mround(x)+" Y"+mround((j)*ystep+ofy)+"\n";
 					for (var i=0;i<gc.length;i++){
 						v=gc[idx];
-						x=xstep*idx;
+						x=xstep*idx+ofx;
 						if (v!='z'){
 							gcode+="G0 F"+speed+" X"+mround(x)+"\n";
 							z=25-(gc.charCodeAt(idx)-97);

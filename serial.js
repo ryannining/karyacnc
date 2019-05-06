@@ -224,7 +224,7 @@ function executegcodes2() {
     } else {
         bt.innerHTML = "Engrave";
         stopit();
-        sendgcode("M2");
+        //sendgcode("M2");
     }
 }
 function executepgcodes() {
@@ -886,12 +886,12 @@ window.onresize = function() {
 	var sc=parseFloat(getvalue("zoom1"));
     var nw = Math.max(100, window.innerWidth - 765);
     var v = $('myCanvas1');
-    v.width = nw;
+    v.width = nw*sc;
 	nh=Math.max(300, 500 * nw / 600);
-    v.height = nh;
-	$('myCanvas1td').width=nw*sc+50;
-	$('myCanvas1div').style.width=nw*sc+50;
-	$('myCanvas1div').style.height=nh*sc;
+    v.height = nh*sc;
+	$('myCanvas1td').width=nw+50;
+	$('myCanvas1div').style.width=nw+50;
+	$('myCanvas1div').style.height=nh;
     gcode_verify();
 }
 

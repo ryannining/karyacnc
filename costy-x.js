@@ -435,7 +435,7 @@ function prepare_line2(lenmm,lines) {
 		return newlines;
 	}
 }
-function gcodepush(lenmm,  X1, Y1, lenmm,line,closed){
+function gcodepush(lenmm,  X1, Y1, lenmm1,line,closed){
 	var area;
 	if (closed)area=xarea();else area=1;
 	var lines;
@@ -540,7 +540,7 @@ function doengrave(){
 	}
 	var pup = "G0 Z"+getvalue('safez')+"\n";
     var pdn = getvalue('pdn');
-	var overs=10;
+	var overs=getvalue('overshoot')*1;
 	if (cmd==CMD_CNC)overs=0;
 	nsortx=function (a,b) {
         return (a[0]*1 - b[0]*1);

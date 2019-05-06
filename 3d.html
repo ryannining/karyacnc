@@ -36,15 +36,14 @@ View angle<input id=angle value="65,35" size=5><button onclick="init2d(0);render
 <button id=btclick onclick="heating()">Heating</button><br>
 <button id=btclick onclick="cooling()">Cooling</button><br>
 <td>
-<div>GCODE SENDER</div>
+<div>WEBSOCKET GCODE SENDER</div>
 <hr>
-<br>WebSocket <input id=wsip size=10 class=saveit value="">
+Machine IP <input id=wsip size=10 class=saveit value="">
 <div id=status>Status:not connected </div><button id=wsconnect onclick="connectwebsock()">Connect</button>
 
-<hr>
-<b>EEPROM</b><br>
-<button  id=bt3eeprom>Read EEPROM</button><br>
-<select id=eepromid>
+<br>
+EEPROM<br>
+<button  id=bt3eeprom>Read</button><select id=eepromid>
 	
 </select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
 <hr>
@@ -70,7 +69,7 @@ var wsconnected=0;
 <script src="ace.js" type="text/javascript" charset="utf-8"></script>
 <script>
     var editor = ace.edit("decode");
-	editor.setReadOnly(true);
+//	editor.setReadOnly(true);
 //    editor.session.setMode("ace/mode/gcode");
 
 
@@ -210,9 +209,15 @@ function init2d(v){
   cosx=Math.cos(xdeg*0.0174533);
 }
 init2d(0);
-var eMul=50;
-var eBound=127;
-var eSize=1;
+var eSize=2;
+var eMul=500;
+var xyMul=100;
+var eBound=10000;
+
+if (eSize==1){
+	eMul=50;
+	eBound=127;
+}
 function transform(v3d){
 	var x2=v3d[0]*cosz-v3d[1]*sinz;
 	var y1=v3d[0]*sinz+v3d[1]*cosz;
@@ -314,19 +319,19 @@ function addgcode(g){
 		if (G==1)F1=lf;else F0=lf; 
 	}
 	if (isX) {
-		X = gd['X']*100;
+		X = gd['X']*xyMul;
 		if (isRel)X+=lx;
 		dx=X-lx;
 		if (X!=lx)lx=X; else isX=0;
 	}
 	if (isY) {
-		Y = gd['Y']*100;
+		Y = gd['Y']*xyMul;
 		if (isRel)Y+=ly;
 		dy=Y-ly;
 		if (Y!=ly)ly=Y; else isY=0;
 	}
 	if (isZ) {
-		Z = gd['Z']*100;
+		Z = gd['Z']*xyMul;
 		if (isRel)Z+=lz;
 		dz=Z-lz;
 		if (Z!=lz)lz=Z;// else isZ=0;
@@ -462,19 +467,19 @@ function decodealine(){
 		if (h & (1 << 4)) {
 		  x=read(2);
 		  isX = 1;
-		  X = x / 100.0 - 300;
+		  X = x / xyMul - 300;
 		  decodes+=" X"+mround(X);
 		}
 		if (h & (1 << 5)) {
 		  x=read(2);
 		  isY = 1;
-		  Y = x / 100.0 - 300;
+		  Y = x / xyMul - 300;
 		  decodes+=" Y"+mround(Y);
 		}
 		if (h & (1 << 6)) {
 		  x=read(2);
 		  isZ = 1;
-		  Z = x / 100.0 - 50;
+		  Z = x / xyMul - 50;
 		  decodes+=" Z"+mround(Z);
 		}
 		if (h & (1 << 7)) {
@@ -875,10 +880,10 @@ setevent("change", "eepromid", function() {
 
 
 
-var cs="\u0004JBd\u0019\u000b´pãqu¦\u0013º2áqÎu²Ûq\u0007v²ÊqTv²°qv²qÒv²uqÿv²Kq.w²ýpjw²Çpw²pw²Jp¬w²*p²w²ðo¸w²\u001an¹w°k¢÷shn¢©rtl²jeuPi²og©rád¢÷sÄg¢¹wc²8cµw²èb¨w²¢bw²bw²Qbnw²#bPw²ùa,w²Ðaþv²a¨v²~aYv²na\rv²gaÒu²faTs¢\u0007q²gaÒp²nap²~aMp²a\u0003p²´aÐo²Óa£o²øayo²\"bTo²Pb6o²b\u001co²¶b\bo²ýb÷n²\u001dcñn²Vcën²£eênÀg²\bhín²Thún²h\u0010o²ãh/o²$iYo²^io²iÂo²ºiýo²÷i^p²4jþo²_jÄo²jo²ÏjZo²\u0010k1o²Vk\u0011o²kún²ëkín²3lên¾o²õoën²?põn²_pún²p\no²òp2o²%qTo²Oqxo²tq¢o²qÏo²¯q\u0003p²ÊqLp²Ûqp²áqÕp²ãqPs¢u0»qu²¹qËu²³q\u0001v²¤qIv²qv²rq½v²Uqæv²0q\u0010w²çpHw²¶paw²ptw²Apw²$pw²îow²\u001anwØk¢\u001ftn¢r_l²j=uei²gr¹d¢\u001ftg¢wc²=cw²ñbw²¯bmw²bbw²ebLw²<b0w²\u0015b\u000fw²ðaæv²¿av²¥aNv²a\u0007v²aÏu²aTs¢\u0007q²aÕp²a p²¥aXp²½a\u0013p²Öaåo²óa»o²\u0014bo²;bto²dbXo²bAo²Âb.o²\u0005c\u001eo²\"c\u0018o²Xc\u0013o²£e\u0012o¿g²\u0004h\u0015o²Kh!o²h5o²ÐhSo²\fiyo²Bi§o²riÛo²i\u0013p²öi¨p²Uj\u0015p²~jÝo²¯j¨o²æjzo²#kTo²dk6o²¨k!o²ðk\u0015o²4l\u0012o½o²òo\u0013o²8p\u001co²Vp\"o²p0o²ßpUo²\fqto²3qo²Uq»o²rqäo²q\u0013p²£qWp²³qp²¹q×p²»qPs¢u0qu²qÉu²qûu²}q>v²fq~v²Pq¨v²6qÎv²\u0015qóv²Òp&w²¦p=w²ypNw²9p]w²\u001epbw²ìohw²\u001aniw\u0000l¢Gt¸n¢YrJl²pj\u0015uzi²gYrd¢Gttg¢iwc²Acew²ùbZw²¼bGw²¢b>w²zb)w²Tb\u0010w²1bòv²\u0010bÎv²ãav²ËaCv²½a\u0000v²·aÍu²¶aTs¢\bq²·aØp²½a¦p²Ëacp²âa$p²øaúo²\u0012bÔo²1b²o²Sbo²yb{o²¢bfo²ÎbTo²\u000ecEo²(c@o²Zc;o²£e:o¾g²ÿg=o²AhHo²h[o²½hvo²ôho²&iÄo²Riõo²wi)p²õióp²vj,p²j÷o²ËjÅo²þjo²6kwo²rk\\o²²kHo²ôk=o²5l:o½o²ïo;o²2pDo²MpIo²}pVo²Ìpyo²ôpo²\u0017q²o²6qÔo²Pqùo²fq#p²}qcp²q¦p²qÚp²qPs¢u0sÇu¢ïr²sèr²s¡r²sJr²¢sçq²«s¡q¢ qs¢löv¢j²otèi²ãqj¢½nfaè¢ei¡²ia\u0007i²ta©h²aMh²¡aõg²Ãa¡g²îaRg²!b\bg²\\bÂf²bf²èbNf²7c!f²cüe²âcàe²>dÌe²dÁe²úd½eInº²§nÁe²\u0006oÌe²aoàe²¹oüe²\rp!f²\\pNf²¥pf²çpÂf²#q\u0006g²WqPg²q g²q¼g²_vf \u001av\bu²Çtf²tnf²8tMf²øs\u001bf²ÇsÛe²§se²sLe²s\u0006e²s¯d²¢sKd²«s\u0006d¢\u0005ds¢4axy¤²ºy9a²\u0002zJa²Ezha²pza² z¸a²¾zãa²Ûz%b²ízsb²ðzÑc¢ód²ìz6e²ãz]e²ðzZe¢Vh²Vzuh²ðzh¢jk²òzrk²öz¸k²òz\u0010l²æzkl²ázlðz¢oo³z²¾zo²ÛzÀo²íz\u000fp²ðzlq¢r²ìzÑr²Ûz\u001as²¼zas²z¢s²KzÖs²\u0003z÷s²µy\nt²èx\rt¤w²gw\u001ct²\u000fw\u001dt²\u0006yút²\u001c}:s\u001d~¢\u0001v²¬}.v\u001d~¢\u0015ysÃ¢.vt²sÇu0Ás­u¢êr²¿sâr²ºs¡r²¿sNr²Êsìq²Òs§q²ÙsxqÁs¢¸l\u001ew¢nj²nt¾i²»qj¢naç¢fi ²a\ni²a¯h²­aWh²Æa\u0003h²ça²g²\u0010bgg²@b g²ybÞf²¸b£f²þbpf²IcDf²c!f²ìc\u0006f²Ddóe²dèe²ûdåeInº²¤nèe²ÿnóe²Wo\u0006f²«o!f²ûoDf²Fppf²p£f²ÊpÝf²\u0003q\u001eg²5qeg²_q±g²q\u0001h²qVh²¤qh¢ßg²âwJf¨¼w¢?f²©wGf²cwXf²\u001av[f\nu²ÍtWf²tHf²Mt+f²\u0015tÿe²êsÆe²Îse²¿sFe²ºs\u0006e²¿s²d²ÊsPd²Òs\u000bd²ÙsÝcÁs¢\\avy¤²´y`a²õypa²1za²Vz¥a²zÑa²z÷a²µz2b²Åzxb²ÈzÑc¢òd²Äz0e²µzre²¥ze²Èze¢5h²yuh²Èz´h¢^k²Äz]k²Êzwk²Îz¸k²Êz\fl²¿zel²¶z£l²²z¸lÈz¢Go\\z²zlo²zo²µzÍo²Åz\u0013p²Èzlq¢r²ÄzËr²µz\rs²zMs²nzs²6z´s²öyÑs²°yâs²èxås¼w¢Ús²©wãs²cwôs²Tvös²\u0005y&u²$}bsõ}¢æu²Ø|Vvõ}¢íxÁsÀ¢VvNu²Ás­u0ésu¢\u0011s²ôs\u0016s²æsÜr²ãs¡r²æsQr²ñsðq²ús¬q²\btPqés¢\u001fouy¢²®y#o²èy1o²\u001dzIo²<z_o²bzo²xz¦o²zÚo²z\u0018p² zlq¢r²zÆr²z\u0001s²vz9s²Qzjs² zs²éy«s²«yºs²èx½säw¢s²Ðw¥s²w½s²^wÌs²\u001avÏsu²\u0005yQu²,}sÍ}¢Ëu²\u0005|~vÍ}¢Åxés½¢~v\u0013v²ésu \u001fo¢àlx²xÇlFw¢j-x²nti²ÌqQj¢ÿg²&y!f¯²èx\"fäw¢ûe²Ðw\tf²w\"f²^w0f²\u001av3f\u000bu²Ót0f²t\"f²bt\tf²2tâe²\ft²e²ôs{e²æsAe²ãs\u0005e²æsµd²ñsUd²ús\u0011d²\btµcés¢auy¢²®ya²èya²\u001dz®a²<zÄa²bzëa²xz\nb²z>b²z|b² zÑc¢ñd²z*e²zee²vze²QzÏe²FzØe² zÁe¢\u0014h²¾xuh² zÕh¢*k²z$k²zCk²¢z}k²¦z¸k²¢z\tl²z`l²zl²zÒl²zàl z¢\u001foésª0qmn¶aå¢gi²¹a\ri²Ãaµh²Ôaah²ìa\u0010h²\u000bbÄg²2b{g²`b8g²búf²ÒbÂf²\u0014cf²[chf²§cGf²÷c-f²Kd\u001bf²£d\u0010f²üd\rfHn»²¡n\u0010f²ùn\u001bf²Mo-f²oGf²éohf²0pf²rpÂf²­pùf²äp7g²\u0013qzg²;qÃg²[q\u000fh²tq`h²qµh²q\ri²qfi¢mn(\u00000ßp¹mþ2jbÛ¢ki²mb\u001ai²ubÑh²bh²bKh²®b\u0010h²ÌbÙg²ïb¦g²\u0018cwg²EcLg²wc(g²¬c\tg²çcïf²$dÛf²hdÍf²±dÄf²\u0000eÁfCn»²nÄf²ÛnÍf²\u001eoÛf²^oïf²o\tg²Ío(g²þoLg²,pwg²Up¦g²zpÚg²p\u0011h²±pLh²Åph²ÓpÒh²Üp\u001ai²ßpki¢¹m0loök¢\u0010j²ioÐi²_oi²Uoki²7o'i²\roîh²ñnÔh²Ón¿h²±n¬h²lnh²1nh²\u001anh²\\eh·²2eh²\u0007eh²Ðdh²¹d h²xdÀh²Yd×h²>dñh²%d\u000fi²\nd=i²\u0001dPi²ócvi²æc±i²Þcòi²Ýcíj¢ökloÉ0DoÎk¢\u0011j²AoÔi²8oi²/oxi²\u0014o;i²ïn\ti²×nóh²¾náh²¡nÑh²bn»h²,n²h²\u0018n°h²]e¯h·²5e°h²\u000ee´h²ÚdÀh²ÈdÆh²dãh²rdöh²[d\fi²Fd&i²&d`i²\u001adi²\rd¸i²\u0006dôi²\u0004dÎkDoÇ ìk0épÌm0\u0007qámBbÝ¢ii²Eb\u0018i²NbÊh²\\bh²qb>h²bÿg²ªbÄg²Ðbg²ûb[g²,c.g²ac\u0006g²cåf²ÙcÉf²\u001adµf²bd¥f²®df²ÿdfEnº²nf²ân¥f²)o´f²loÊf²ªoåf²ão\u0006g²\u0019p.g²Ip[g²upg²pÅg²¼p\u0000h²×p>h²ìph²ûpËh²\u0004q\u0018i²\u0007qii¢ám0Õp m²4o\u0000l\u0010ün²«p¯m\u0010rp²Ãn\u0000l\u0010n²:p¯m\u0010\u0001p²Rn\u0000l\u0010\u0019n²Éo¯m\u0010o²ám\u0000l\u0010¨m²Xo¯m\u0010\u001fo²pm\u0000l\u0010mo²Õphm0æn¯m²7m\u0000l\u0010ÿl²®n¯m\u0010un²Æl\u0000l\u0010l²=n¯m\u0010\u0004n²Ul\u0000l\u0010\u001cl²Ìm¯m\u0010m²äk\u0000l\u0010«k²Zm¯m\u0010\"m²sk\u0000l\u0010:k²él¯m\u0010±l²\u0001k\u0000l\u0010Éj²xl¯m\u0010@l²j\u0000l\u0010Xj²\u0007l¯m\u0010Îk²\u001fj\u0000l\u0010çi²k¯m\u0010]k²®i\u0000l\u0010vi²%k¯m\u0010ìj²=i\u0000l\u0010\u0004i²´j¯m\u0010{j²Ìh\u0000l\u0010h²Bj¯m\u0010\nj²[h\u0000l\u0010\"h²Ñi¯m\u0010i²êg\u0000l\u0010±g²`i¯m\u0010(i²xg\u0000l\u0010@g²ïh¯m\u0010¶h²\u0007g\u0000l\u0010Ïf²~h¯m\u0010Eh²f\u0000l\u0010^f²\rh¯m\u0010Ôg²%f\u0000l\u0010ìe²g¯m\u0010cg²´e\u0000l0foðk0Uoki0Ón¿h0\u001anh0ºe}h²#dæf0øcôf²e}h\u0010Ie²Ðc\u0004g0©c\u0016g²\u0014eh0ådh²c+g0dcBg²¸dh0d©h²Dc[g0'cvg²md¼h0MdÕh²\fcg0ób³g²1dñh0\u0018d\u0011i²ÜbÔg0Çbøg²\u0004d5i0òc\\i²´b\u001eh0£bFh²åci0Ûc¶i²bqh0bh²Õcèi0Ôc j²bÌh0zbÿh²ÔcXj j²vb3i0tbji²ÓcÉj \u0002k²tb¢i Ûi²Óc:k sk²tb\u0014j Lj²Óc«k ãk²tbj ½j²fe¯m\u0010-e²tböj .k²õd¯m\u0010¼d²tbgk  k²d¯m\u0010Kd²tbØk \u0011l²\u0013d¯m\u0010Úc²tbIl l²¡c¯m\u0010ic²tbºl ól²0c¯m\u0010øb²tb,m0ïc\u0000l²e¯m\u0010×e²(d\u0000l\u0010`d²\u0010f¯m\u0010Hf²d\u0000l\u0010Òd²f¯m\u0010¹f²\ne\u0000l\u0010Ce²òf¯m\u0010*g²{e\u0000l0foðk0Uoki0Ón¿h0\u001anh0òe}h²QdÜf0dÔf²+f}h\u0010cf²µdÎf0ëdÌf²f}h\u0010Õf²#eËf\u0010[e²\rg}h\u0010Fg²eËf\u0010Íe²~g}h\u0010·g²\u0005fËf\u0010>f²ðg}h\u0010(h²vfËf\u0010¯f²ah}h\u0010h²çfËf\u0010 g²Òh}h\u0010\u000bi²YgËf\u0010g²Ci}h\u0010|i²ÊgËf\u0010\u0002h²´i}h\u0010íi²;hËf\u0010sh²&j}h\u0010^j²¬hËf\u0010äh²j}h\u0010Ïj²\u001diËf\u0010Vi²\bk~h\u0010Ak²iËf\u0010Çi²yk~h\u0010²k²ÿiËf\u00108j²êk~h\u0010#l²pjËf\u0010©j²\\l~h\u0010l²âjËf\u0010\u001ak²Íl~h\u0010\u0005m²SkËf\u0010k²>m~h\u0010wm²ÄkËf\u0010ük²¯m~h\u0010èm²5lËf\u0010nl²!nh0dnh²¦lËf\u0010ßl²¹n¥h0Ho4i²ÕpÁj j²\u0017mËf \u0010Pm²ÕpPj  \u0017j²mËf\u0010Ám²Õpßi ¦i²úmËf\u00102n²Õpni0Óp3i²lnÍf0©nÑf²Ípõh0Âp²h²ënÛf07oîf²®peh0p\u0003h²o\u0013g0hoi²Õpúj 2k²soÐi0vo\fj²Õpkk £k²voDj }j²ÕpÜk \u0014l²vo¶j îj²ÕpMl l²vo'k _k²Õp¾l ÷l²vok Ðk²Õp/m0¿b¯m²tbdm m²b¯m(\u00000\u0004c\u0000pþº2Acòo²dcïo²£eîoºg²ëgðo²\u0019høo²Bh\u0004p²gh\u0015p²h*p²©hEp²Æhep²óiBr²\nkp²(kjp²GkHp²hk-p²k\u0016p²²k\u0005p²Ükøo²\blðo²:lîo¹o²áoïo²\u0017pöo²$pøo²Ap\u0000p²tp\u0017p²p#p²p3p²¨pCp²¶pXp²Ápmp²Ðpp²ÚpÂp²Ýpäp²ßpPs¢u²ÚpÞu²Ðp\fv²Áp5v²¶pJv²¨p^v²pnv²qpv²\\pv²Cp¢v²\u0005p°v²âo´v²\u0019nµv´l¢ûtlo¢¥qêk²\u0011jatÙi²øg¥qÝc¢ûtÀf¢µvc²Sc²v²\"cªv²ìbv²Ôbv²Àbv²¯bqv²¡bav²b6v²xb\u0010v²obãu²kbÃu²jbTs¢\fq²obÂp²ybp²bmp²bWp² bCp²¯b2p²Õb\u0016p²ëb\np²\u0004c\u0000p0*cÎo²<cËo²bcÇo²ºgÆo²ñgÈo²!hÑo²Phßo²zhño²¡h\np²Åh)p²ähLp²\u0002ivp²ói÷q²êj{p²\tkPp²,k+p²Pk\fp²ykóo²¤kßo²ÒkÑo²\u0003lÉo²:lÆoºo²åoÇo²\u001cpÎo².pÑo²NpÚo²pôo²p\u0003p²µp\u0016p²Èp+p²ØpCp²æp\\p²öpp²\u0001q¼p²\u0005qáp²\u0007qu²\u0005q¿u²\u0001qåu²öp\u0018v²æpDv²Øp_v²Çpwv²µpv²p¯v²lp½v²NpÈv²\u001cpÔv²åoÜv²lÝv¢ÓtDo¢Íq\u0000l²&jtÃi²ãgÍq\u0005d¢Ótèf¢Ývc²OcÚv²\u0018cÑv²Ûb½v²Àb°v²¨b v²bv²bzv²bbHv²Rb\u001cv²Gbêu²CbÅu²Bb\nq²Cbáp²Gb¼p²Rbp²bb]p²pbCp²b*p²b\u0016p²¨b\u0004p²Àbóo²Ûbåo²ùbÚo²*cÎo0Gcüo²ædq\u0010\u001fe²}cùo\u0010µc²Weq\u0010e²îcùo\u0010&d²Èeq\u0010\u0001f²_dùo\u0010d²9fq\u0010rf²Ðdùo0\beøo²«fq\u0010ãf²Aeøo\u0010ye²\u001cgq\u0010Tg²²eøo\u0010êe²gq\u0010Åg²#føo\u0010[f²Rjïs£0ijÍs²føo¢\u0010Ìf²j«s 0js²\u0005gøo\u0010=g²­jhs0ÄjFs²vgøo\u0010®g²Éi\u0012r0üiEr²Ûj$s0òj\u0003s²\u0012j#r0)j\u0001r²\tkár0 k¿r²?jßq0Uj¼q²6kr0Mk|r²kjq0jxq²dkZr0{k8r²jUq0®j3q²k\u0016r0¨kõq²Äj\u0011q0Ûjîp²¿kÓq0Ök±q²ñjÌp0\u0007kªp²økq\u00101l²\u001ekp07khp²ilq\u0010¢l²SkLp0rk2p²Úlq\u0010\u0013m²k\u001dp0½k\fp²Lmq\u0010m²ék\u0000p0\u001blùo²½mq\u0010õm²Rløo\u0010l².nq\u0010fn²Ãløo\u0010ül²nq\u0010Øn²4møo0ói0r0hiyq²égúo02h\np²\u0007ißp0whLr²;j\u0011t0%j2t²óh\u0001s0oiµs²\u000ejTt0ìk§q0fo«q öt0¾l\bu²anªv\u0010n²õl\u0006u\u0010-m²Ònªv\u0010\no²fm\u0006u\u0010m²Coªv\u0010{o²×m\u0006u\u0010\u0010n²´oªv0ëo©v²Hn\u0006u\u0010n²\u001cp¡v0Ipv²¹n\u0006u\u0010òn²opv0pjv²*o\u0006u\u0010co²©pKv0¼p&v²voàt §t²Êpûu0ÑpÊu²voot 6t²Õpu \\u²voþs Ås²Õp$u ët²vos Ts²Õp³t0Ôpzt²vo\u001bs ãr²ÔpAt \tt²voªr rr²ÔpÐs s²vo9r \u0001r²Ôp_s &s²voÈq0Ioq²¦møo\u0010Þm²Ôpír µr²\u0017nøo\u0010On²Ôp|r Cr²nøo\u0010Àn²Ôp\u000br Òq²ùnøo\u00102o²Ôpq aq²joøo\u0010£o²Ôp(q0Ópðp²Üoùo0\u001dp\u0001p²Ëp¯p0£pNp²p*p0\u0010oq²mmøo0fo«q öt0¾l@u²(nªv\u0010ðm²¾lyu ±u²¸mªv0m«v²¾lêu \"v²Gm«v\u0010\u000em²¾l[v v²Öl«v0foöt «q0ìk§q0×idt0ög§q0âc«q öt0¶fv²9e\u0006u\u0010\u0000e²¦f«v\u0010mf²Èd\u0006u\u0010d²5f«v\u0010üe²Wd\u0006u\u0010\u001ed²Ãe«v0¶fJv²qe\u0006u\u0010åc²e«v\u0010Re²ubÍs \u0006t²\u001ae«v\u0010ád²ub?t wt²©d«v\u0010pd²ub°t èt²7d«v\u0010ÿc²ub!u Zu²Æc«v\u0010c²ubu0vbÌu²Rc¨v0\ncv²b\u0012v0Ócót²ubs \\s²Ócºt t²tb#s ër²ÓcIt \u0010t²tb²r zr²ÓcØs s²tbAr \br²Ócgs .s²tbÐq q²Ócör ½r²tb^q &q²Ócr Lr²vbïp0{b»p²Óc\u0013r Ûq²bp0bfp²Óc¢q0\u0004dq²­bDp0Ëb*p²<dq\u0010ud²îb\u0014p0\u0019c\u0006p²­dq0âc«q öt0ªe\u0006u²¶f\u0012v Ùu²ãe\u0006u\u0010\u001bf²¶f¡u hu²Tf\u0006u\u0010f²¶f0u(\u00000rdiþª2h²ìy¨f°¢g²\u001fvDh¢¦h²ìyii¢Cj²ltÛh£²rdi0Xri¢kh²\u0014zuf²¢¢g²Gvdh¢h²\u0014zHi¢vj²lt\u0004i¤²Xri0°rLi²r&i íh²Ür@i0\ts3i²rµh0rh²5s'i0as\u001bi²Érh0örwh²s\u000ei0ºs\u0002i²#slh0Ps`h²æsöh0\u0012téh²~sUh0«sIh²>tÝh0ktÑh²Øs>h0\u0005t2h²¶tãh0\u0002u÷h²2t'h0_t\u001ch²Nu\ni0u\u001ei²t\u0010h0¹t\u0005h²æu1i02vEi²ætùg0\u0014uîg²~vXi0Êvki²Auâg0nu×g²\u0015v~h Fh²uËg0ÈuÀg²<v4h0kv*h²õu´g0\"v©g²v!h0Év\u0017h²Ovg0|vg²øv\u000eh0'w\u0005h²©vg0×v{g²Wwûg0wòg²\u0004wpg01wdg²µwèg0äwßg²^wYg0wMg²\u0013xÕg0BxÌg²¸wBg0åw6g²qxÂg0 x¹g²\u0012x+g0?x g²Ðx°g0ÿx¦g²mx\u0014g0x\tg².yg0]yg²Çxýf0ôxòf²yg0»yg²!yæf0NyÛf²âyog 6g²{yÏf0¨yÄf²âyýf Åf²Õy¸f0$vGh ¢h0[yVi²âyÝi ¤i²¢ydi0\u0014yHi²ây\u0015j0Áy-j²Îx:i0x,i²vy\u001aj0*y\u0007j²@x\u001di0ùw\u000fi²Þxói0xài²³w\u0001i0lwóh²FxÌi0úw¹i²%wåh0ßv×h²®w¦i0bwi²vÈh0Qvºh²\u0016wi(\u00000úw>kþ2wy²yAk²µyGk²ÈyOk²ÖyZk²áyhk²êy|k²ïyk²òyºk²ïyùk²åyHl²Ýyl²Ày\u0019m²ªymìy¢knt¡¢mEy²Ny\u0013lúw¢>k0Òw\u0016kxy²¡y\u0019k²Ây!k²Ýy-k²òy>k²\u0003zTk²\u0010zpk²\u0017zk²\u001az¹k²\u0016zýk²\fzMl²\u0004zl²Úylm\u0014z¢nut£¢lm\u001ey²%y;lÒw¢\u0016k0\u0004xOk²½x\tl\u0010x²\u0004xk Àk²Lx\tl\u0010\u0014x²\u0004xùk05xHk²öx\tl\u0010.y²nxHk\u0010¦x²Ôyvl0Ìy¦l²Wy1l0Vyhl²ÃyÖl0ºy\u0005m²Ty l0Sy×l²±y5m0¨yem²Ry\u000em0QyFm² ym0©ym²ây×m \u0010n²Oy}m08ym²âyHn0Âyan²ÿxm\u0010Æx²yan\u0010Qy²xm\u0010Ux²\u0019yan\u0010àx²\u001dxm\u0010äw²¨xan\u0010ox²¬wm\u0010sw²6xan\u0010þw²:wm\u0010\u0002w²Åwan\u0010w²Évm\u0010v²Twan\u0010\u001cw²Xvm\u0010 v²ãvan\u0010«v²çum\u0010®u²rvan\u00109v²vum\u0010=u²\u0001van\u0010Èu²\u0005um\u0010Ìt²uan\u0010Wu²§t±m ém²\u001fuan\u0010æt²§t\"n [n²­tan0?ym0Gy\u0019l0ßxHk²ÛyDl0áy\u0012l²\u0018yHk\u0010Py²æyÞk ¦k²yJk(\u00000nyÓoþº2yÖo²­yÜo²Âyæo²Çyéo²Öyøo²Úyýo²ãy\u0013p²éy-p²ìymq¢r²êy­r²ãyÈr²ÚyÝr²Îyìr²Áy÷r²­y\u0000s²y\u0006s²æx\tsx¢Rrky¢pw¢r²w¾r²wÚr²wîr²wÿr²{w\u0004s²vw\bs²`w\u0012s²Gw\u0018s²\u0019v\u001bs\u0011u²ít\u0018s²Ôt\u0012s²Át\ns²³tÿr²¨tñr²tÝr²tÂr²tr²t_r²¤t\u0006r²¬tÆq²Útpt¢Óony04wp1u²!uRr4w¢p0\fwÁpXu²Ku*r\fw¢Áp £p\u0010Çw Áp¢r²ÄwÄr²½wær²°w\u0003s²w\u001bs²w#s²w+s²nw8s²Lw@s²\u0019vCs\u0010u²èt@s²Çt8s²¬t,s²t\u001bs²t\u0005s²ytér²qtÈr²otr²rt]r²|t\u0001r²tÀq²«tÄput¢«opy²y®o²ºy¶o²×yÃo²áyËo²õyßo²ýyêo²\nz\u0007p²\u0011z(p²\u0014zmq¢r²\u0011z²r²\tzÕr²ýyñr²ìy\bs²Öy\u001as²»y&s²y.s²æx1spx¢*rCy¢ÁpÇw0¾wp²\fwÞo\u0010Óv²wp Øp²vÞo\u0010bv²\u0014wp\u0010Ûv²*vÞo\u0010ñu²£vp\u0010jv²¹uÞo\u0010u²2vp\u0010ùu²GuÞo\u0010\u000fu²Áup\u0010u²ÖtÞo0§tæo²Oup0'up²§t\u001fp Xp²átp0åtp²%uÖp0#u\rq²ÝtÇp0Ötøp²!uCq0\u001fuzq²Ît)q0ÇtZq²\u001du°q0\u001buçq²¿tq0¸t¼q²\u0019u\u001er0\u0017uTr²±tîq0«t r²u\u0010s0bu\u0011s²¥tSr0¢tr²*u\u0011s0ït\u000fs²¤tÃr0\u001fu\\r²Óu\u0010s\u0010\u000bv²Xu\\r\u0010u²Dv\u000fs\u0010|v²Éu\\r\u0010\u0002v²´v\u000fs\u0010ìv²:v\\r\u0010sv²%w\u000es0Yw\ns²«v\\r\u0010äv²|wõr0wÏr²\u001cw\\r0>wEr²wr dr²>w\rr Ôq²w+r óq²>wq cq²wºq q²>w+q òp²wIq \u0010q²>w¹p0öwp²EwÞo\u0010}w²/xp\u0010gx²¶wÞo\u0010îw² xp\u0010Ùx²'xÞo\u0010_x²\u0011yp\u0010Jy²xÞo\u0010Ðx²àyíp ´p²\tyÞo\u0010By²ày|p0ßyCp²{yßo0uy»p²ày&q0áy_q²uyóp ,q²áyq Ñq²uydq q²áy\tr0âyBr²uyÕq \u000er²ây{r0Þy°r²uyGr0Ry\\r²ÐyÚr0±yôr²\u0019y\\r\u0010áx²yýr0Jyþr²¨x\\r0¢xr²\u0012yÿr\u0010Úx²¢xÇr(\u00000\u0004y\u0015vþº2\u0019}Vt¢Pu²GyÐv²Zy2w\u0019}¢\u0011xtµ¢2wx²¤xÒv²t\u001bu¢%t²\u0004y\u0015v êu²A}\u001at¢lu²uyév²{y\nwA}¢9xut·¢\nwox²vxêv²ut6u¢ès²\u0004yêu0\u0015y\u0019v²y£v0Çyv²<y\bv0dy÷u²ðyv0\u0019zsv²yæu0³yÕu²Azcv0jzSv²ÛyÄu0\u0002z³u²zCv0»z3v²*z¢u0Rzu²äz#v0\f{\u0014v²yzu0¡zpu²5{\u0004v0^{ôu²Éz_u0ðzNu²{äu0¯{Ôu²\u0018{=u0?{,u²×{Äu0\u0000|´u²g{\u001bu0{\nu²)|¤u0Q|u²¶{ùt0Þ{èt²z|u0¢|tu²\u0006|×t0-|Æt²Ë|du0ô|Tu²U|µt0||¤t²\u000f}7u þt²¤|t0Ì|t²\u000f}Æt t²ó|qt0LyÓv0]y-w0ß|<w²\u000f}lw ¥w²¦|<w\u0010m|²\u000f}Þw0ÿ|\u0007x²5|<w\u0010ü{²Ç|\u0007x\u0010|²Ä{<w\u0010{²V|\u0007x\u0010\u001d|²S{<w\u0010\u001a{²å{\u0007x\u0010¬{²áz<w\u0010©z²t{\u0007x\u0010;{²pz<w\u00108z²\u0002{\u0007x\u0010Êz²ÿy<w\u0010Çy²z\u0007x\u0010Yz²y<w\u0010Uy² z\u0007x\u0010èy²®xÎv0«xÊv²6wUu0Ñv(u²Ix v0æwvv²lvüt0\u0007vÐt²wMv0!w#v²¢u£t0=uwt²¿vùu0\\vÏu²ØtJt0§tRt²úu¥u0u{u²§tt Ãt²5uQu0Òt'u²§tüt0xÕv0x-w0²t<w²|u\u0007x\u0010µu²êt<w\u0010#u²íu\u0007x\u0010&v²[u<w\u0010u²^v\u0007x\u0010v²Ìu<w\u0010\u0005v²Ðv\u0007x\u0010\bw²=v<w\u0010vv²Aw\u0007x\u0010yw²¯v<w\u0010çv²²w\u0007x\u0010êw² w<w\u0010Xw²#x\u0007x\u0010\\x²w<w\u0010Éw²x\u0007x\u0010Íx²\u0002x<w\u0010;x²\u0005y\u0007x\u0010>y²sx<w0x,w²vy\u0007x\u0010¯y²¥xýv0Cyñv²\u0000x®u0exÚu²NyÃv0vy³v²Êx\u0006v0wu²Py7w0Du\u0007x²§tjw ¢w²\u000bu\u0007x\u0010Ót²§tÛw(\u00000\u0011ueþº2ít}e²Ôtwe²Átne²³tce²¨tUe²tAe²t'e²t\u0003e²tÄd²¤tkd²¬t*d²Út\u0001ct¢8bny²y;b²­yAb²ÂyJb²ÇyNb²Öy]b²Úybb²ãyxb²éyb²ìyÑc¢ëd²êy\u0011e²ãy-e²ÚyAe²ÎyQe²Áy\\e²­yee²yke²æxnex¢·dky¢þbw¢üd²w#e²w>e²wSe²wde²{wie²vwme²`wwe²Gw}e²\u0019ve\u0011u0!u·d4w¢þb1u²!u·d0Kud\fw¢&cXu²Kud ­d0tjd0|ted²t$d²«t)cut¢\u0010bpy²y\u0013b²ºy\u001bb²×y(b²áy/b²õyCb²ýyNb²\nzkb²\u0011zb²\u0014zÑc¢ìd²\u0011z\u0017e²\tz9e²ýyVe²ìyme²Öy~e²»ye²ye²æxepx¢dCy¢&cÇw¢ýd²Äw(e²½wKe²°wge²we²we²we²nwe²Lw¥e²\u0019v§e\u0010u²èt¥e²Çte²¬te²te²tje²ytNe²qt-e²ot\u0004e²rtÁd²|ted0­tpd²²uue\u0010zu²¨t£d0£tÖd²Buue\u0010\tu²¢t\u000ee0\u0018u¢d²´t=d0»t\fd²\u001aukd0\u001cu5d²ÂtÛc0Êtªc²\u001euþc0 uÇc²Òtyc0ÙtHc²\"uc0$uZc²át\u0017c0Át÷b²§tÝb ¤b²&u$c0/uôb²§tlb0¶tBb²guôb\u0010 u²îtBb\u0010'u²Øuôb\u0010\u0011v²_uBb\u0010u²Jvôb\u0010v²ÐuBb\u0010\tv²»vôb\u0010óv²BvBb\u0010zv²,wôb0>w\u0006c²w]c c²>w?c wc²wÎc \u0007d²>w°c èc²w?d xd²>w!d Zd²w±d éd²>wd04wÁd²w\u001fe0wKe²üvÁd\u0010Ãv²jwge0<wse²vÁd\u0010Rv²\u0004wse\u0010Ìv²\u0019vÁd\u0010áu²vte\u0010[v²¨uÁd\u0010pu²#vte\u0010ëu²7uÁd0.w±d0w%c²³vBb\u0010ëv²wôb\u0010Öw²$wBb\u0010\\w²\u000exôb\u0010Gx²wBb\u0010Îw²xôb\u0010¸x²\u0006xBb\u0010?x²ðxôb\u0010)y²wxBb\u0010°x²byôb0uy\u0007c²àysc :c²èxBb\u0010!y²ày\u0001c0ßyÈb²ZyBb0yEb²Þyb0uy@c²áy«c äc²uyxc ±c²áy\u001dd Vd²uyêc \"d²âyd Èd²uy[d d²áyÿd0Øy/e²jyÁd\u00101y²ÀyPe0y`e²ùxÁd\u0010Àx²aybe0*yce²¢xÛd \u0014e²òxde\u0010ºx²¢xLe(\u0000@\u00156\u0004\u0005";
+var cs="";
 compress=[];
-for (var i=0;i<cs.length;i++){compress.push(cs.charCodeAt(i));}
-decode();begincompress(editor.getValue());
+//for (var i=0;i<cs.length;i++){compress.push(cs.charCodeAt(i));}
+//decode();begincompress(editor.getValue());
 
 </script>
 

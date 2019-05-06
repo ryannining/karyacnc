@@ -766,7 +766,7 @@ class laser_gcode(inkex.Effect):
 
         
         if self.selected_paths == {} :
-            paths=self.paths
+            paths=[]
             self.error(_("No paths are selected! Trying to work on all available paths."),"warning")
         else :
             paths = self.selected_paths
