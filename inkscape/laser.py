@@ -293,6 +293,7 @@ class laser_gcode(inkex.Effect):
 
     def __init__(self):
         inkex.Effect.__init__(self)
+        self.karyacnc=""
         self.OptionParser.add_option("-d", "--directory",                       action="store", type="string",          dest="directory",                           default="",                             help="Output directory")
         self.OptionParser.add_option("-f", "--filename",                        action="store", type="string",          dest="file",                                default="output.gcode",                 help="File name")
         self.OptionParser.add_option("", "--karyaws",                         action="store", type="string",          dest="karyaws",                             default="localhost",                 help="File name")
@@ -315,7 +316,6 @@ class laser_gcode(inkex.Effect):
         self.OptionParser.add_option("",   "--port",                            action="store", type="string",          dest="port",                                default="8888",        help="Websocket port")
         self.OptionParser.add_option("",   "--active-tab",                      action="store", type="string",          dest="active_tab",                          default="",                             help="Defines which tab is active")
         self.OptionParser.add_option("",   "--biarc-max-split-depth",           action="store", type="int",             dest="biarc_max_split_depth",               default="4",                            help="Defines maximum depth of splitting while approximating using biarcs.")
-
     def parse_curve(self, p, layer, flips,pc,w = None, f = None):
             def isClockwise(poly):
                 sum = 0;
@@ -667,6 +667,11 @@ class laser_gcode(inkex.Effect):
                         print_("Found orientation points in '%s' layer: %s" % (layer.get(inkex.addNS('label','inkscape')), points))
                     else :
                         self.error(_("Warning! Found bad orientation points in '%s' layer. Resulting Gcode could be corrupt!") % layer.get(inkex.addNS('label','inkscape')), "bad_orientation_points_in_some_layers")
+                elif i.get("karyacnc") == "1":
+                    #
+                    if i.get("id") in self.selected :
+                        if i.text:self.karyacnc=i.text
+                        else:self.karyacnc=i.getchildren()[0].text
                 elif i.tag == inkex.addNS('path','svg'):
                     # ryan if "gcodetools"  not in i.keys() :
                     self.paths[layer] = self.paths[layer] + [i] if layer in self.paths else [i]
@@ -700,13 +705,14 @@ class laser_gcode(inkex.Effect):
             for  node in i :
                 if node.get('gcodetools') == "Gcodetools orientation point arrow":
                     point[0] = self.apply_transforms(node,cubicsuperpath.parsePath(node.get("d")))[0][0][1]
-                if node.get('gcodetools') == "Gcodetools orientation point text":
+                elif node.get('gcodetools') == "Gcodetools orientation point text":
                     r = re.match(r'(?i)\s*\(\s*(-?\s*\d*(?:,|\.)*\d*)\s*;\s*(-?\s*\d*(?:,|\.)*\d*)\s*;\s*(-?\s*\d*(?:,|\.)*\d*)\s*\)\s*',node.text)
                     point[1] = [float(r.group(1)),float(r.group(2)),float(r.group(3))]
+                else:
+                    ttt=1
             if point[0]!=[] and point[1]!=[]:    points += [point]
         if len(points)==len(p2)==2 or len(points)==len(p3)==3 : return points
         else : return None
-
 ################################################################################
 ###
 ###        Laser
@@ -743,8 +749,8 @@ class laser_gcode(inkex.Effect):
                     out[3]=[p]
             return out
 
-
-        gcode = ""
+        gcode=""
+        if (self.karyacnc):gcode = ";KARYACNC,"+self.karyacnc+"\n"
         
         getstyles=('fill:','stroke:','stroke-width:')
         def getStyles(node):
@@ -910,7 +916,17 @@ class laser_gcode(inkex.Effect):
                     'gcodetools': "Gcodetools orientation point text"
                 })
             t.text = "(%s; %s; %s)" % (i[0],i[1],i[2])
-
+        #add karyaCNC settings
+        t = inkex.etree.SubElement(    layer, inkex.addNS('text','svg'),
+            {
+                'style':    "font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;",
+                inkex.addNS("space","xml"):"preserve",
+                'x':    "0",
+                'y':    str(20+doc_height),
+                'karyacnc': "1"
+            })
+        t.text = "feed:100,trav:100,repe:2,mode:laser"
+        
 
 ################################################################################
 ###

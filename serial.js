@@ -298,6 +298,7 @@ var onReadCallback = function(s) {
 					if (s[i]=="\n"){
 						var sel = document.getElementById("eepromid");
 						sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + estr + "</option>";
+						if (estr=="XYscale ")xyscale=100.0/(eeprom[eppos]*1);
 						ineeprom=1;
 					};
 				}
@@ -320,6 +321,8 @@ var onReadCallback = function(s) {
             if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
                 okwait = 0;
                 if ((lastw.toUpperCase().indexOf('WAIT') >= 0)) {
+					$("alert1").innerHTML="IDLE";
+					resetflashbutton();
 					if (stopinfo) {
 						var ms = etime.getTime();
 						etime = new Date();
@@ -724,7 +727,7 @@ try {
 var websockOK=0;
 function reconnectwebsock(){
 	if (websockOK){
-		setTimeout(connectwebsock, 2000);
+		//setTimeout(connectwebsock, 2000);
 	}
 }
 
@@ -756,6 +759,7 @@ function connectwebsock() {
             ws.close();
             wsconnected = 0;
 			reconnectwebsock();
+			hideId("machine_ws");
 
         }
         // back to serial if error.
@@ -768,7 +772,7 @@ function connectwebsock() {
             //nextgcode(); // 
 			sendgcode("M114");
 			websockOK=1;
-			
+			showId("machine_ws");
         }
         ;
 
@@ -779,6 +783,7 @@ function connectwebsock() {
             $("wsconnect").innerHTML = 'Connect';
             wsconnected = 0;
 			reconnectwebsock();
+			hideId("machine_ws");
         }
         ;
         idleloop();

@@ -56,10 +56,12 @@ var filament = 0;
 var printtime = 0;
 
 var eMul = 50;
+var xyscale=100;
 var eBound = 127;
 var eSize = 1;
 
 var ln=0;
+var warnoverflow=0;
 function addgcode(g) {
     // read gcode
 	ln++;
@@ -170,18 +172,20 @@ function addgcode(g) {
             else F0 = lf;
         }
         if (isX) {
-            X = gd['X'] * 100;
+            X = gd['X'] * xyscale;
             if (isRel) X += lx;
             dx = X - lx;
             if (X != lx) lx = X;
             else isX = 0;
+			if (Math.abs(X)>31000)warnoverflow=1;
         }
         if (isY) {
-            Y = gd['Y'] * 100;
+            Y = gd['Y'] * xyscale;
             if (isRel) Y += ly;
             dy = Y - ly;
             if (Y != ly) ly = Y;
             else isY = 0;
+			if (Math.abs(Y)>31000)warnoverflow=1;
         }
         if (isZ) {
             Z = gd['Z'] * 100;
@@ -315,6 +319,7 @@ function begincompress(paste) {
     else texts = getvalue("gcode").split("\n");
     cntg28 = 2;
 	ln=0;
+	warnoverflow=0;
     for (var i = 0; i < texts.length; i++) {
         addgcode(texts[i]);
         if (i & 31 == 0) pv = i * 100.0 / texts.length;
@@ -322,6 +327,9 @@ function begincompress(paste) {
     h = 1;
     h |= 2 << 1;
     write(h, 1);
+	var w="";
+	if (warnoverflow) w="Overflow";
+	$("alert1").innerHTML=w;
 }
 
 function urlopen(s) {
@@ -335,14 +343,27 @@ function urlopen(s) {
 
 function startprint() {
     urlopen("startprint");
+	hideId("btuploadstart");
+	hideId("btuploadresume");
+	showId2("btuploadstop");
+	showId2("btuploadpause");
 }
 function pauseprint() {
     urlopen("pauseprint");
+	hideId("btuploadpause");
+	showId2("btuploadresume");
 }
 function resumeprint() {
     urlopen("resumeprint");
+	hideId("btuploadresume");
+	showId2("btuploadpause");
 }
-
+function resetflashbutton(){
+	hideId("btuploadstop");
+	hideId("btuploadpause");
+	hideId("btuploadresume");
+	showId2("btuploadstart");
+}
 function stopprint() {
     urlopen("stopprint");
 }
@@ -391,11 +412,11 @@ function realupload(gcode) {
 
 setclick("btupload", function() {
     begincompress(getvalue("engcode")+"\n"+getvalue("gcode"));
-	upload();
+	if(!warnoverflow)upload();
 });
 setclick("btjob5", function() {
     begincompress(jobs.join("\n"));
-	upload();
+	if(!warnoverflow)upload();
 });
 
 setclick("btuploadstart",startprint);
