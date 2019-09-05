@@ -1,4 +1,5 @@
 //console.log("App Running");
+// 
 var wsconnected = 0;
 var lastw = "";
 var oktosend = 1;
@@ -924,20 +925,28 @@ setclick("btvcarve", function() {
 var jobcnt=0;
 var jobs=[];
 
+function updatedownload(){
+	var element = $("download");
+	element.setAttribute('download', "gcode.nc");
+	element.href = window.URL.createObjectURL(new Blob([";JOB\n"+jobs.join("\n;JOB\n")], {type: 'text/csv'}));
+}
 setclick("btjob1", function() {
 	jobcnt++;
 	jobs.push(getvalue("gcode"));
 	$("jobinfo").innerHTML=jobcnt+" JOBS";
+	updatedownload();
 });
 setclick("btjob2", function() {
 	jobcnt++;
 	jobs.push(getvalue("engcode"));
 	$("jobinfo").innerHTML=jobcnt+" JOBS";
+	updatedownload();
 });
 setclick("btjob3", function() {
 	jobcnt=0;
 	jobs=[];
 	$("jobinfo").innerHTML=jobcnt+" JOBS";
+	updatedownload();
 });
 setclick("btjob4", function() {
 	executegcodes(jobs.join("\n"));

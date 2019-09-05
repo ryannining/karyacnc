@@ -78,9 +78,9 @@
 								<option value=1>Engrave</option>
 								<option value=2>Vcarve</option>
 							
-							</select></td></tr>
-							<tr><td colspan=3>Tool &#248 (laser is 0.2) </td><td colspan=1><input id=offset class=saveit size=5 value=0></td></tr>
+							</select></td></tr>							
 							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
+							<tr><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=5 value="0,0"> <input size=1 type=checkbox id=usestart checked class=saveit></td></tr>
 							<tr><td colspan=2>Marking Cut </td><td colspan=2><input id=markingcut class=saveit size=15></td></tr>
 							<tr><td colspan=2>Disable Cut </td><td colspan=2><input id=disablecut class=saveit size=15></td></tr>
 							<tr><td colspan=2>Disable Tab </td><td colspan=2><input id=disabletab class=saveit size=15></td></tr>
@@ -153,6 +153,7 @@
 					<option value="30,5,20,1500,5.5">CNC PVC 5mm</option>
 					<option value="30,11,32,1500,9.5">CNC PVC 9mm</option>
 				</select></td></tr>
+				<tr><td>Tool &#248 <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td><td colspan=2>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit></td></tr>				
 				<tr><td>Mat Price/cm2</td><td colspan=2><input id=matprice class=saveit size=4></td></tr>
 				<tr><td>Cut Price/min</td><td colspan=2><input id=cutprice class=saveit size=4></td></tr>
 
@@ -174,12 +175,20 @@
 					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
 				<tr><td colspan=1>Cut CCW <input id=cutccw type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
 				<tr><td colspan=3 align=left>
-					<hr><b>V CARVING</b><br>
+					<hr><b>V CARVING (<font color=#FF00FF>Line is Fuchsia</font>)</b><br>
 					<b>Endmill:</b>&nbsp;
 					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
-					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit><br>
+					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit>&nbsp;&nbsp;
 					<button id=btvcarve>VCarve</button><br>
-
+<hr>
+			<b>Waktu Kerja</b><br>
+			<div id=infolain></div><br>Akumulasi<input id=totaltime value=0 size=10 class=saveit><br>
+			<i>Kosongkan box diatas untuk reset</i>
+			<br><hr>
+			<input id=zoom1 value=1 size=2 class=saveit><button id=btzoom>Scale</button>&nbsp;&nbsp;&nbsp;&nbsp;
+			<button id=btcopycanvas>Copy Canvas</button><br>
+			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
+			
 				</td></tr>
 		</table>
 		<div id=gcodeinit>
@@ -206,13 +215,16 @@
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
 			</div>
 			<p style="background:yellow" id="area_dimension2"></p>
-			<input id=zoom1 value=1 size=2 class=saveit><button id=btzoom>Scale</button><br>
-			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
 			<br><button id=btsaveset style="display:none">Save Config</button>
 		</td>
 		<td width=300px bgcolor=lightblue style="padding:5px">
 			<b>Machine Control <span id=portnum></span></b>&nbsp;|<b id=alert1 style='color:red'>IDLE</b><br>
 			<button id=bthidden2>Connection Settings</button>
+			<br>LASER POWER SCALE<select id=powerscale>&nbsp;
+				<option value=1>1X</option>
+				<option value=2>2X</option>
+				<option value=3>3X</option>
+			</select>
 			<table id=vars2 class=smallwindow>
 				<tr><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
 				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
@@ -302,6 +314,7 @@
 			<button id=btjob3>Clear Jobs</button>
 			<button id=btjob4>Run Jobs</button>
 			<button id=btjob5>Upload Jobs</button>
+			<a id=download href="javascript:" ><button>Download</button></a>
 			<hr><b>OTHER</b><br>
 			<button id=btzero>Grbl Zero</button><br>
 			
@@ -310,10 +323,7 @@
 			
 			<button id=btresume>Resume</button>
 			<button id=btresume2>Resume from</button>
-			</div><br>
-			TOTALTIME<br>
-			<input id=totaltime value=0 size=10 class=saveit><br>
-			<div id=infolain></div>
+			</div>
 		</td></tr>
 		</table>
 		<center></center>

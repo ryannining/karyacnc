@@ -204,6 +204,8 @@ len is total length until this point
 
 */
 
+
+
 function isClockwise(poly, px = 1, py = 2) {
     var sum = 0;
     for (var i = 0; i < poly.length; i++) {
@@ -275,9 +277,13 @@ var shapenum=0;
 var maxofs=0;
 var combinedpath=[];
 var oshapenum=-1;
+function getoffset(){
+	if ($("pltmode").checked) return 0;
+	return getvalue('offset')*1;
+}
 function prepare_line2(lenmm,lines) {
     var f2 = "F"+(getvalue('feed') * 60)+" ";
-    var ofs = getvalue('offset')*1;
+    var ofs = getoffset();
 	var sty=gcstyle[shapenum];
 	oshapenum=shapenum;
 	if (sty==undefined)sty=defaultsty;
@@ -396,14 +402,16 @@ function prepare_line2(lenmm,lines) {
 		cxt=0;
 		cyt=0;
 		cnt=0;
+		var tl=0;
 		console.log(">>"+glines.length);
 		for (var j = 0; j < glines.length; j++) {
 			var gline=glines[j];
 			var newline=[];
 			for (var i = 0; i < gline.length; i++) {
 				
-				tl = gline[i][3];
 				tl2 = gline[i][4];
+				if (i<gline.length-1)
+					tl += tl2;//gline[i][3];
 				x = gline[i][1];
 				y = gline[i][2];
 				cxt+=x;
@@ -533,7 +541,7 @@ function doengrave(){
 	if (!$("enableraster").checked)return;
 	var c = $("myCanvas1");
     var ctx = c.getContext("2d");
-    var ofs = getvalue('offset')*1;
+    var ofs = getoffset();
 	carvedeep=getvalue('carved')*1;
     var f2 = getvalue('rasterfeed')*60;
     var f1 = f2;
@@ -724,6 +732,8 @@ var carvesty={"stroke":"#0000ff","fill":"#ff00ff","stroke-width":0,"deep":undefi
 
 
 var veeline;
+var oyct=0;
+
 function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
     //if (sxmax < sxmin);
 	cuttabz=1;
@@ -744,7 +754,7 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 	lc = len / dv;
     slc = lc / 2+cutofs;
 
-    var ofs = getvalue('offset')*1;
+    var ofs = getoffset();
 	var cw=$("myCanvas1").width-70;
 	var ch=$("myCanvas1").height-70;
     dpm = cw / (sxmax+maxofs*2);
@@ -948,15 +958,16 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
     //ctx.lineTo(X1, Y1);
     ctx.stroke();
     //ctx.endPath();
-    srl.push([X1, Y1, 0, tl + d1, 0,[0,0],0]);
+    //srl.push([X1, Y1, 0, tl + d1, 0,[0,0],0]);
     //if (seg) {
-        ctx.font = "10px Arial";
+		var fs=(13*$("zoom1").value);
+        ctx.font = fs+"px Arial";
         sg = "[#" + num + "] ";
-        for (i = 0; i < srl.length - 1; i++) {
+        for (i = 0; i < srl.length; i++) {
             if (i) sg += ",";
 
-            ctx.beginPath();
             ctx.strokeStyle = "red";
+            ctx.beginPath();
 			oc=srl[i][5];
 			sx=srl[i][0];
 			sy=srl[i][1];
@@ -982,11 +993,41 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 				ctx.fillStyle = ctx.strokeStyle;
 				ni = i + 1;
 				if (ni >= srl.length) ni = 0;
-				xt=srl[ni][7]*dpm;
-				yt=srl[ni][8]*dpm;
-				l = mround(srl[ni][3] - srl[i][3]);
+				xt=srl[ni][0]*dpm;
+				yt=srl[ni][1]*dpm;
+				xt2=srl[i][0]*dpm;
+				yt2=srl[i][1]*dpm;
+				l = Math.round(10*(srl[ni][3] - srl[i][3]))/10.0;
 				sg += l;
-				if (l>0)ctx.fillText(l, xt+5, yt+10 );
+				if (l>0.5){
+					//l=Math.round(l);
+					ctx.beginPath();
+					ctx.strokeStyle = "lime";
+					ctx.fillStyle = ctx.strokeStyle;
+					var xct=(xt+xt2)/2+Math.random()*40;
+					var yct=0;
+					var tt=20;
+					while (--tt>0){
+						yct=(yt+yt2)/2+Math.random()*40;
+						if (Math.abs(yct-oyct)>(fs*2))break;
+					}
+					if (yct<20)yct=20;
+					oyct=yct+fs;
+
+					ctx.fillText(l, xct, yct );
+					ctx.moveTo(xt, yt);
+					ctx.lineTo(xct, yct);
+					ctx.lineTo(xt2, yt2);
+					ctx.stroke();
+					ctx.beginPath();
+					
+					ctx.strokeStyle="#000000";
+					ctx.fillStyle = ctx.strokeStyle;
+					ctx.fillText(l, xct-1, yct-1 );
+					
+					ctx.stroke();
+
+				}
 			}
 		}
         if (seg)$("segm").value += sg + "\n";
@@ -1317,7 +1358,8 @@ function gcode_verify(en=0) {
     var ctx = c.getContext("2d");
     var sfinal = 0;
     $("segm").value = "";
-    ctx.clearRect(0, 0, c.width, c.height);
+	ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, c.width, c.height);
 	engravetime=0;
 	if (en){
 		if (ENGRAVE==0) engrave={};
@@ -1375,7 +1417,8 @@ function gcode_verify(en=0) {
 	} else {
 		area_dimension.innerHTML = 'Total Length =' + mround(sfinal) + "mm Time:" + mround(menit) + " menit <br>Jasa CNC:" + Math.round(menit * hargacut) + " | bahan (" + mat + "):" + mround(w * h * harga) + " | TOTAL:" + mround(menit * hargacut + w * h * harga)+" |";
 	}
-	area_dimension.innerHTML += "<br><b>Tool offset : "+getvalue("offset")+"mm"; 
+	area_dimension.innerHTML += "<br><b>Tool offset : "+getoffset()+"mm"; 
+	area_dimension.innerHTML += " &nbsp; Start : "+getvalue("startat"); 
     sc = 1;
     if ($("flipx").checked) sc = -1;
 	var f1 = getvalue('trav') * 60;
@@ -1546,7 +1589,7 @@ function sortedgcode() {
 			
 			// do burn cutting
 			if ((_re*iscut>0)&& (cmd == CMD_LASER) && $("burn1").checked) {
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0,snum,40*60);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0,snum,60*60);
 			}
 			// do pen up
 			s+=pup1+"\n";
@@ -1566,9 +1609,12 @@ function sortedgcode() {
 			//s+=pup1+"\n\n";
 		}
     }
+	xystart=[0,0];
+	if ($("usestart").checked)xystart=getvalue("startat").split(",");
+	s="G92 X"+xystart[0]+" Y"+xystart[1]+"\n"+s;
     s = s + getvalue("pup");
 	var f1 = getvalue('trav') * 60;
-    s = s + '\nG0 F'+f1+' Y0 \n G0 X0\n';
+    s = s + '\nG0 F'+f1+' Y'+xystart[1]+' \n G0 X'+xystart[1]+'\n';
 	if (cmd==CMD_CNC)s+="G0 Z0 F350\n";
     sc = 1;
     if ($("flipx").checked) sc = -1;
@@ -1577,7 +1623,8 @@ function sortedgcode() {
         s = "g28\ng0 z0 f350\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
-	s+="\nM5\nM3 S0\n";
+	s+="\nM5\nM3 S0\nG92";
+	
     //if (!empty)
 	setvalue("gcode", s);
 }
@@ -2097,5 +2144,7 @@ function copy_to_clipboard(id) {
     $(id).select();
     document.execCommand('copy');
 }
+
+
 
 // Web socket server to allow other karyacnc apps send gcode and task to this software

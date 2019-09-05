@@ -336,7 +336,8 @@ function urlopen(s) {
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "http://"+getvalue("wsip")+"/" + s, true);
     xhr.onload = function(e) {
-        alert(xhr.response);
+        //alert(xhr.response);
+		$("alert1").innerHTML=w;
     };
     xhr.send();
 }
@@ -424,6 +425,15 @@ setclick("btuploadstop",stopprint);
 setclick("btuploadpause",pauseprint);
 setclick("btuploadresume",resumeprint);
 
+function Canvas2Clipboard(cid){
+    var canvas = $(cid);
+    //alert(c);
+	canvas.toBlob(function(blob) { 
+		const item = new ClipboardItem({ "image/png": blob });
+		navigator.clipboard.write([item]); 
+	})
+}
+setclick("btcopycanvas",function(){Canvas2Clipboard("myCanvas1");});
 
 
 var segs=[];
@@ -649,3 +659,4 @@ function drawvcarve(){
 	}
 	ctx.stroke();
 }
+

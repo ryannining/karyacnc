@@ -334,7 +334,8 @@ class laser_gcode(inkex.Effect):
                 subpath = p[k]
                 cw=isClockwise(subpath)
                 flip=cw>0
-                if flips[k]:flip=not flip
+                #if flips[k]:flip=not flip
+                flip=flips[k]
                 if (flip):subpath.reverse()
                 c += [ [    [subpath[0][1][0],subpath[0][1][1]]   , 'move', 0, 0,k] ]
                 for ii in range(1,len(subpath)):
@@ -415,7 +416,7 @@ class laser_gcode(inkex.Effect):
 ###        Crve defenitnion [start point, type = {'arc','line','move','end'}, arc center, arc angle, end point, [zstart, zend]]
 ###
 ################################################################################
-    def generate_gcode(self, curve, layer, depth,pc):
+    def generate_gcode(self, curve, layer, depth,pc,flips):
         tool = self.tools
         print_("Tool in g-code generator: " + str(tool))
         def c(c):
@@ -455,6 +456,7 @@ class laser_gcode(inkex.Effect):
                     if pp["repeat:"]>0:g+= ";@repeat:"+pp["repeat:"]+"\n";
                 except:
                     pass
+                g += ";@inner:"+str(flips[s[4]])+"\n";
                 g += ";@fill:"+pp["fill:"]+"\n";
                 g += ";@stroke:"+pp["stroke:"]+"\n";
                 g += ";@stroke-width:"+pp["stroke-width:"]+"\n";
@@ -802,6 +804,7 @@ class laser_gcode(inkex.Effect):
                     np = []
                     # need to check if its clockwise
                     yellow=col=="#ffff00"
+                    dyellow=col=="#808000"
                     outer=not yellow
                     def isClockwise(poly):
                         sum = 0;
@@ -810,10 +813,10 @@ class laser_gcode(inkex.Effect):
                             ii=i + 1
                             if ii==len(poly):ii=0;
                             next = poly[ii][1]
-                            sum += (next[1] * cur[0]) - (next[0] * cur[1])
+                            #sum += (next[1] * cur[0]) - (next[0] * cur[1])
+                            sum += (next[0] - cur[0]) * (next[1] + cur[1])
                         return sum;
-                    
-                    
+                    clockw=[]
                     for sp in csp1:
                         first = True
                         num=len(sp)
@@ -831,17 +834,64 @@ class laser_gcode(inkex.Effect):
                                 cmd = 'M'
                             first = False
                             np.append([cmd,[csp[1][0],csp[1][1]]])
-                            sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
+                            #          y2      *   x1       -   x2        *   y1   
+                            #sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
+                            #          x2      -   x1       *   x2        *   y1   
+                            sum += (csp2[1][0] - csp[1][0]) * (csp2[1][1] + csp[1][1])
                             ln = ln + vector_from_to_length(csp2[1],csp[1])
                             #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
                         
-                        flip=sum>0
+                        flip=sum<=0
+                        clockw.append(flip)
                         if yellow:flip=False
-                        if outer:flip=True
                         if ln<4:flip=False
-                        flips.append(flip)
+                        if outer:flip=False
+                        if yellow or dyellow:flips.append(flip)
                         pc.append(pstyle)    
                         outer=False
+                       
+                    # check inner or outside here
+                    def isInside(point, vs):
+                        # ray-casting algorithm based on
+                        # http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+
+                        x = point[0]
+                        y = point[1]
+
+                        inside = False
+                        j=len(vs)-1
+                        for i in range(len(vs)):
+                            xi = vs[i][1][0]
+                            yi = vs[i][1][1]
+                            xj = vs[j][1][0]
+                            yj = vs[j][1][1]
+
+                            intersect = ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
+                            if intersect: inside = not inside
+                            j=i
+                        return inside
+                    if not (yellow or dyellow):
+                        for i in range(len(csp1)):
+                            cflip=True
+                            for j in range(len(csp1)):
+                                if (i!=j):
+                                    spi=csp1[i]
+                                    spj=csp1[j]
+                                    # check every point in spj is inside spi
+                                    flip=False
+                                    for k in range(len(spi)):
+                                        csp=spi[k]
+                                        if isInside([csp[1][0],csp[1][1]],spj):
+                                            flip=not flip
+                                            break
+                                    if flip:cflip=not cflip
+                            if not clockw[i]:cflip=not cflip
+                            flips.append(cflip)
+                        
+                    
+
+
+                    #flips[len(flips)-1]=not outer
                     #node.set('d',simplepath.formatPath(np))
                     #print(simplepath.formatPath(np))
                     #gcode+=";"+simplepath.formatPath(np)
@@ -849,7 +899,7 @@ class laser_gcode(inkex.Effect):
                     # ================
                     p+=csp
                 curve = self.parse_curve(p, layer,flips,pc)
-                gcode += self.generate_gcode(curve, layer, 0,pc)
+                gcode += self.generate_gcode(curve, layer, 0,pc,flips)
 
         self.export_gcode(gcode)
 
