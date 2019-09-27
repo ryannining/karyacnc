@@ -348,6 +348,11 @@ function startprint() {
 	hideId("btuploadresume");
 	showId2("btuploadstop");
 	showId2("btuploadpause");
+    stopinfo = 1;
+    etime = new Date();
+    console.log("Start " + etime);
+	setvalue("applog",getvalue("applog")+"Start "+etime+"\n");
+	
 }
 function pauseprint() {
     urlopen("pauseprint");
@@ -399,6 +404,7 @@ function realupload(gcode) {
     xhr.onload = function(e) {
         progressBar.value = 0;
         if (!wemosd1) alert(xhr.response);
+		resetflashbutton();
     };
     // Listen to the upload progress.
     xhr.upload.onprogress = function(e) {

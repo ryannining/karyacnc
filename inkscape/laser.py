@@ -278,9 +278,10 @@ class laser_gcode(inkex.Effect):
         gcode_pass = gcode
         for x in range(1,self.options.passes):
             gcode += "G91\nG1 Z-" + self.options.pass_depth + "\nG90\n" + gcode_pass
-        f = open(self.options.directory+self.options.file, "w")
-        f.write(self.options.laser_off_command + " S0" + "\n" + self.header + "G1 F" + self.options.travel_speed + "\n" + gcode + self.footer)
-        f.close()
+        if 0:
+            f = open(self.options.directory+self.options.file, "w")
+            f.write(self.options.laser_off_command + " S0" + "\n" + self.header + "G1 F" + self.options.travel_speed + "\n" + gcode + self.footer)
+            f.close()
         if self.options.karyacnc:
             from websocket import create_connection
             ws = create_connection("ws://"+self.options.karyaws+":"+self.options.port+"/")
@@ -800,7 +801,9 @@ class laser_gcode(inkex.Effect):
                     csp1 = cubicsuperpath.parsePath(d)#new.get('d'))		
                     csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
-                    cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
+                    # flatten if contain BICUBIC or ARC
+                    if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0):
+                        cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
                     np = []
                     # need to check if its clockwise
                     yellow=col=="#ffff00"
@@ -842,10 +845,10 @@ class laser_gcode(inkex.Effect):
                             #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
                         
                         flip=sum<=0
+                        if yellow:flip=not flip
                         clockw.append(flip)
-                        if yellow:flip=False
                         if ln<4:flip=False
-                        if outer:flip=False
+                        #if outer:flip=flip
                         if yellow or dyellow:flips.append(flip)
                         pc.append(pstyle)    
                         outer=False

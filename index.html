@@ -91,8 +91,10 @@
 							<tr><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
 							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
 							<tr><td colspan=2>To Overcut </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
+							<tr><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=1 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
 							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
+							<tr><td colspan=2>Small first </td><td colspan=2><input size=1 type=checkbox id=smallfirst checked class=saveit></td></tr>
 							
 							<tr><td>Overcut </td>
 								<td><input id=overcut value=1 size=2 class=saveit></td>
@@ -147,11 +149,11 @@
 					<option value="6,2,9,1500">Laser Triplek 9mm</option>
 					<option value="6,3,15,1500">Laser Triplek 15mm</option>
 					<option value="6,1,3,1500">MDF Hijau 3mm</option>
-					<option value="30,11,9,1500,10.5">CNC MDF-H 9.5mm</option>
-					<option value="40,6,20,1500,3.5">CNC ACP 3mm</option>
-					<option value="40,8,27,1500,4.5">CNC ACP 4mm</option>
-					<option value="30,5,20,1500,5.5">CNC PVC 5mm</option>
-					<option value="30,11,32,1500,9.5">CNC PVC 9mm</option>
+					<option value="40,9,9,1500,10.5">CNC MDF-H 9.5mm</option>
+					<option value="40,2,20,1500,3.5">CNC ACP 3mm</option>
+					<option value="40,3,27,1500,4.5">CNC ACP 4mm</option>
+					<option value="40,2,20,1500,5.5">CNC PVC 5mm</option>
+					<option value="40,4,32,1500,9.5">CNC PVC 9mm</option>
 				</select></td></tr>
 				<tr><td>Tool &#248 <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td><td colspan=2>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit></td></tr>				
 				<tr><td>Mat Price/cm2</td><td colspan=2><input id=matprice class=saveit size=4></td></tr>
@@ -182,12 +184,13 @@
 					<button id=btvcarve>VCarve</button><br>
 <hr>
 			<b>Waktu Kerja</b><br>
-			<div id=infolain></div><br>Akumulasi<input id=totaltime value=0 size=10 class=saveit><br>
+			<div id=infolain></div><br>Akumulasi<input id=totaltime value=0 size=5 class=saveit><br>
 			<i>Kosongkan box diatas untuk reset</i>
 			<br><hr>
 			<input id=zoom1 value=1 size=2 class=saveit><button id=btzoom>Scale</button>&nbsp;&nbsp;&nbsp;&nbsp;
 			<button id=btcopycanvas>Copy Canvas</button><br>
-			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.
+			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.<br>
+			<textarea style="font-size: 10;width:100%;height:50px" id="applog"></textarea>
 			
 				</td></tr>
 		</table>
@@ -316,7 +319,6 @@
 			<button id=btjob5>Upload Jobs</button>
 			<a id=download href="javascript:" ><button>Download</button></a>
 			<hr><b>OTHER</b><br>
-			<button id=btzero>Grbl Zero</button><br>
 			
 			<div style='display:none'>
 			<input id=shapes size=10 class=saveit> -&gt; <button id=btsetcut>Disable</button><br>

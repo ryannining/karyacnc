@@ -279,11 +279,12 @@ var combinedpath=[];
 var oshapenum=-1;
 function getoffset(){
 	if ($("pltmode").checked) return 0;
-	return getvalue('offset')*1;
+	var ofs=getvalue('offset')*1;
+	return ofs;
 }
-function prepare_line2(lenmm,lines) {
+function prepare_line2(lenmm,lines,ofs1) {
     var f2 = "F"+(getvalue('feed') * 60)+" ";
-    var ofs = getoffset();
+    var ofs = getoffset()+ofs1;
 	var sty=gcstyle[shapenum];
 	oshapenum=shapenum;
 	if (sty==undefined)sty=defaultsty;
@@ -316,7 +317,7 @@ function prepare_line2(lenmm,lines) {
 		sx/=lines.length;
 		sy/=lines.length;
 		newlines.push([[lines[0][0],sx,sy,0,0]]);
-		return newlines;
+		return [newlines,false];
 	} else {
 		var glines=[];
 		var clk=isClockwise(lines);
@@ -393,9 +394,9 @@ function prepare_line2(lenmm,lines) {
 		}
 		if (sty["fill"]=="#ff00ff"){
 			// temporary save to combined and return empty			
-			return newlines;
+			return [newlines,clk];
 		}
-		if ((disable_ovc.indexOf(shapectr+"")>=0)||(lenmm<noprocess))return glines;
+		if ((disable_ovc.indexOf(shapectr+"")>=0)||(lenmm<noprocess))return [glines,clk];
 		sharpv = $("sharp").value;
 		ov=0.01;
 		if (cmd == CMD_CNC) ov+=$("overcut").value/10.0;
@@ -443,7 +444,7 @@ function prepare_line2(lenmm,lines) {
 			}
 			newlines.push(newline);
 		}
-		return newlines;
+		return [newlines,clk];
 	}
 }
 function gcodepush(lenmm,  X1, Y1, lenmm1,line,closed){
@@ -451,10 +452,26 @@ function gcodepush(lenmm,  X1, Y1, lenmm1,line,closed){
 	if (closed)area=xarea();else area=1;
 	var lines;
 	if (closed) {
-		lines=prepare_line2(lenmm,line);
+		var ofs1=0;
+		if ($("usefinish").checked)ofs1=getvalue('finishline')*1;
+		lines2=prepare_line2(lenmm,line,ofs1);
+		var lines=lines2[0];
+		var clk=lines2[1];
+		if (!$("smallfirst").checked){
+			area=1;
+			if (clk) area=1000; // the outer still need to be the last
+		}
 		for (var i=0;i<lines.length;i++){
 			var line1=lines[i];
 			gcodes.push([lenmm, "", X1, Y1,lines[i],srl,area,closed,shapenum]);
+		}
+		if (ofs1){
+			// if do finish line 
+			lines=prepare_line2(lenmm,line,0)[0];
+			for (var i=0;i<lines.length;i++){
+				var line1=lines[i];
+				gcodes.push([lenmm, "F", X1, Y1,lines[i],srl,area+1000,closed,shapenum]);
+			}
 		}
 	} else gcodes.push([lenmm, "", X1, Y1,line,srl,area,closed,shapenum]);
 	shapenum++;
@@ -1079,7 +1096,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
     if ($("cutccw").checked) ccw = 1;
 
     dv=Math.round(len/cutevery)*2;
-	if (dv>4)dv=4;
+	//if (dv>4)dv=4;
 	lc = len / dv;
     slc = lc / 2+cutofs;
 
@@ -1165,6 +1182,10 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
 
     // activate tools and prepare the speed
     if (pw2) div = div + "M106 S" + pw2 + "\n";
+    if (cmd == CMD_LASER){
+		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
+		//div = div + pdn.replace("=cncz", mround(z)) + '\n';
+	} else
     if (cmd != CMD_3D){
 		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
 		div = div + pdn.replace("=cncz", mround(z)) + '\n';
@@ -1454,7 +1475,9 @@ function sortedgcode() {
 
 				var dx = gcodes[i][2] - lx;
 				var dy = gcodes[i][3] - ly;
-				var dis = sqrt(dx * dx + dy * dy) + (gcodes[i][6]-1);
+				var dis = sqrt(dx * dx + dy * dy) + (gcodes[i][6]-1); // distance + area size
+				//var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
+				
 				if ((gcodes[i][6] > 0) && (dis < bg)) {
 					cs = i;
 					bg = dis;
@@ -1479,11 +1502,13 @@ function sortedgcode() {
     var re = getvalue("repeat");
     var ov = getvalue("overcut")*1.0;
 	
-    if (cmd == CMD_LASER) {
-		s = "G92 Z0\nG0 F3000\nG1 F3000\nG0 X1\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
-	} else
-		s="G0 Z2 F3000\nM3\nG1 F3000\n";
     pup1=getvalue("pup");
+    if (cmd == CMD_LASER) {
+		pup1="";
+		s = "M3 S255\nG0 F3000\nG1 F3000\nG0 X4\nG0 X2\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+	} else
+		s="G0 Z2 F3000\nM3 S255\nG1 F3000\n";
+	
 	
 	cncdeep0 = -getvalue("zdown");
 	skipz = -getvalue("zdown0");
@@ -1498,7 +1523,7 @@ function sortedgcode() {
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
-        s += "g0 f350 z" + mround(lastz);
+        s += "g0 f350 z" + mround(lastz)+"\n";
 		cuttab = cncdeep + getvalue("tabc") * 1;
 		_spiraldown=$("spiraldown").checked;
     } else {
@@ -1506,14 +1531,19 @@ function sortedgcode() {
 		cuttab=cncdeep;
 	}
 	var empty=1;
+	cuttabinside=!$("smallfirst").checked;
 	for (var j = 0; j < sgcodes.length; j++) {
 		//cncz = cncdeep / re;
+		vcuttab=cuttab;
 		if (pause_at.indexOf(sgcodes[j][1]+"")>=0){
 			s+="\nG0 Z3 F350\n;PAUSE\nG0 Y-100 F500\n";
 		}
 		if (disable_cut.indexOf(sgcodes[j][1]+"")<0) {
 			srl=sgcodes[j][0][5];
+			if ((Math.abs(sgcodes[j][0][6])<2) && (cuttabinside))vcuttab=cncdeep;
+			
 			snum=sgcodes[j][0][8];
+			fnl=sgcodes[j][0][1]=="F"; // "F" = finish line
 			sty=gcstyle[snum];
 			var f2 = getvalue('feed') * 60;
 			if (sty==undefined)sty=defaultsty;
@@ -1577,6 +1607,11 @@ function sortedgcode() {
 					docarve=1;
 					iscut=0;
 				}
+			}			
+			if (fnl){
+				_re=1;
+				var zdown=cncdeep;
+				f2 *= 0.3;
 			}				
 			cncz = zdown;
 			var cncz2=0;
@@ -1589,7 +1624,7 @@ function sortedgcode() {
 			
 			// do burn cutting
 			if ((_re*iscut>0)&& (cmd == CMD_LASER) && $("burn1").checked) {
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0,snum,60*60);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, vcuttab,sgcodes[j][0][5],1,0,snum,60*60);
 			}
 			// do pen up
 			s+=pup1+"\n";
@@ -1597,25 +1632,27 @@ function sortedgcode() {
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
-				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, cuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2);
+				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, vcuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2);
 				if(!docarve)s+=sr;
 				cncz+=zdown;
 				cncz2+=zdown;
 			}
 			// do last cutting
 			if (_re && spiraldown && !ismark){
-				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, cuttab,sgcodes[j][0][5],1,0,snum,f2);
+				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, vcuttab,sgcodes[j][0][5],1,0,snum,f2);
 			}
 			//s+=pup1+"\n\n";
 		}
     }
 	xystart=[0,0];
 	if ($("usestart").checked)xystart=getvalue("startat").split(",");
-	s="G92 X"+xystart[0]+" Y"+xystart[1]+"\n"+s;
+	var mz="G92 Z0 X"+xystart[0]+" Y"+xystart[1]+"\n";
+	if (isgrbl)mz=machinezero;
+	s=mz+s;
     s = s + getvalue("pup");
 	var f1 = getvalue('trav') * 60;
     s = s + '\nG0 F'+f1+' Y'+xystart[1]+' \n G0 X'+xystart[1]+'\n';
-	if (cmd==CMD_CNC)s+="G0 Z0 F350\n";
+	if (cmd==CMD_CNC)s+="G0 Z1\n";
     sc = 1;
     if ($("flipx").checked) sc = -1;
     if (cmd == CMD_3D) {
@@ -1623,7 +1660,8 @@ function sortedgcode() {
         s = "g28\ng0 z0 f350\nm109 s"+filamentTemp+"\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
-	s+="\nM5\nM3 S0\nG92";
+	s+="\nM5\nM3 S0\n";
+	s+=machinezero;
 	
     //if (!empty)
 	setvalue("gcode", s);

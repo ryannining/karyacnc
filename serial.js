@@ -1,5 +1,6 @@
 //console.log("App Running");
 // 
+var machinezero="G92";
 var wsconnected = 0;
 var lastw = "";
 var oktosend = 1;
@@ -73,12 +74,8 @@ function homing() {
     pz = 0;
     pe = 0;
 }
-
 function setashome2() {
-    if (isgrbl)
-        sendgcode("g10 p0 l20 x0 y0 z0");
-    else
-        sendgcode("G92");
+	sendgcode(machinezero);
     px = 0;
     py = 0;
     pz = 0;
@@ -108,7 +105,7 @@ function hardstop() {
 var comtype = 0;
 // 0 serial, 1 websocket
 var egcodes = [];
-var debugs = 2;
+var debugs = 3;
 function sendgcode(g) {
     if (debugs & 1)
         console.log(g);
@@ -191,6 +188,7 @@ function execute(gcodes) {
     currentshape = 0;
     etime = new Date();
     console.log("Start " + etime);
+	setvalue("applog",getvalue("applog")+"Start "+etime+"\n");
     var bt = document.getElementById('btpause');
     bt.innerHTML = "PAUSE";
     egcodes = gcodes.split("\n");
@@ -316,8 +314,11 @@ var onReadCallback = function(s) {
             if (lastw.toUpperCase().indexOf("MESH") >= 0) {
                 checktemp = 1;
             }
-            if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0))
+            if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0)) {
                 isgrbl = 1;
+				machinezero="g10 p0 l20 x0 y0 z0";
+				sendgcode(machinezero);
+			}
             isok = (lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
             if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
                 okwait = 0;
@@ -330,6 +331,7 @@ var onReadCallback = function(s) {
 						console.log("Stop " + etime);
 						ms = etime.getTime() - ms;
 						mss = "Real time:" + mround(ms / 60000.0);
+						setvalue("applog",getvalue("applog")+mss+"\n");
 						console.log(mss);
 						if (!preview){
 							setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
@@ -454,8 +456,8 @@ function modechange() {
         setvalue("pdn", "M3 S255");
     }
     if (val == 3) {
-        setvalue("pup", "G0 F350 Z2");
-        setvalue("pdn", "G0 F240 Z=cncz");
+        setvalue("pup", "G0 F850 Z2");
+        setvalue("pdn", "G0 F440 Z=cncz");
         //setvalue("feed", "3");
         //setvalue("zdown", "10");
     }
@@ -480,7 +482,9 @@ function initserial() {
 function gcodefunc(s){return function(){sendgcode(s);};}
 
 setclick("btcekpos", function() {
-    sendgcode("m114");
+    if (isgrbl)
+		sendgcode("?"); else
+		sendgcode("m114");
 });
 setclick("btinitser", initserial);
 setclick("btconnect", comconnect);
@@ -545,9 +549,6 @@ setclick("btresume2", function() {
 setclick("bt3home", function() {
     sendgcode("g28");
     pe = 0
-});
-setclick("btzero", function() {
-    sendgcode("g10 p0 l20 x0 y0 z0");
 });
 setclick("bt3pla", function() {
     sendgcode("m104 s180");
@@ -774,6 +775,7 @@ function connectwebsock() {
 			sendgcode("M114");
 			websockOK=1;
 			showId("machine_ws");
+			resetflashbutton();
         }
         ;
 
