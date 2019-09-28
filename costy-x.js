@@ -1276,7 +1276,7 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
                 // move up fast
 				zz=cuttabz;
 				
-                div = div + pdn.replace("=cncz", mround(cuttabz)) + ' F350\nG1 F'+f2+"\n";
+                div = div + pdn.replace("=cncz", mround(cuttabz)) + '\nG1 F'+f2+"\n";
             } else {
                 // move back down
                 //div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \nG1 F'+f2+"\n";
@@ -1648,7 +1648,7 @@ function sortedgcode() {
 	if ($("usestart").checked)xystart=getvalue("startat").split(",");
 	var mz="G92 Z0 X"+xystart[0]+" Y"+xystart[1]+"\n";
 	if (isgrbl)mz=machinezero;
-	s=mz+s;
+	s=mz+"\n"+s;
     s = s + getvalue("pup");
 	var f1 = getvalue('trav') * 60;
     s = s + '\nG0 F'+f1+' Y'+xystart[1]+' \n G0 X'+xystart[1]+'\n';

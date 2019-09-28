@@ -1,6 +1,7 @@
 //console.log("App Running");
 // 
 var machinezero="G92";
+var machinepos="M114";
 var wsconnected = 0;
 var lastw = "";
 var oktosend = 1;
@@ -17,7 +18,12 @@ var checktemp = 1;
 var isgrbl = 0;
 var gcstyle = [];
 var preview=0;
-
+var waitok=0;
+var waitokH=0;
+function millis(){
+	var date = new Date(); 
+	return date.getTime();
+}
 function comconnect() {
     var bt = document.getElementById('btconnect');
     if (bt.innerHTML == "Connect") {
@@ -106,6 +112,9 @@ var comtype = 0;
 // 0 serial, 1 websocket
 var egcodes = [];
 var debugs = 3;
+function checkwaitok(){
+	if (millis()-waitok>700)sendgcode(machinepos);
+}
 function sendgcode(g) {
     if (debugs & 1)
         console.log(g);
@@ -114,6 +123,10 @@ function sendgcode(g) {
             writeSerial(g + "\n");
         if (comtype == 1)
             ws.send(g + "\n");
+		//waitok=millis();
+		//if (waitokH)clearTimeout(waitokH);
+        //waitokH=setTimeout(checkwaitok,1000);
+		
     } catch (e) {}
 }
 
@@ -154,7 +167,7 @@ function nextgcode() {
         }
     }
     //sendgcode("G4");
-    sendgcode("M114");
+    sendgcode(machinepos);
     stopit();
     var bt = document.getElementById('btexecute');
     bt.innerHTML = "Execute";
@@ -168,6 +181,7 @@ function idleloop() {
             sendgcode("M105");
         checktemp = 0;
     }
+	if (isgrbl)sendgcode(machinepos);
     setTimeout(idleloop, 3000);
 }
 
@@ -317,6 +331,7 @@ var onReadCallback = function(s) {
             if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0)) {
                 isgrbl = 1;
 				machinezero="g10 p0 l20 x0 y0 z0";
+				machinepos="?";
 				sendgcode(machinezero);
 			}
             isok = (lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
@@ -338,7 +353,7 @@ var onReadCallback = function(s) {
 							$("infolain").innerHTML = mss;
 						}
 						stopinfo = 0;
-					} else sendgcode("M114");
+					} else sendgcode(machinepos);
                 }
                 nextgcode();
             }
@@ -482,9 +497,7 @@ function initserial() {
 function gcodefunc(s){return function(){sendgcode(s);};}
 
 setclick("btcekpos", function() {
-    if (isgrbl)
-		sendgcode("?"); else
-		sendgcode("m114");
+	sendgcode(machinepos);
 });
 setclick("btinitser", initserial);
 setclick("btconnect", comconnect);
@@ -772,7 +785,7 @@ function connectwebsock() {
             $("wsconnect").innerHTML = 'Close';
             wsconnected = 1;
             //nextgcode(); // 
-			sendgcode("M114");
+			sendgcode(machinepos);
 			websockOK=1;
 			showId("machine_ws");
 			resetflashbutton();
