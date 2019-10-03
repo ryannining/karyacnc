@@ -463,14 +463,23 @@ function gcodepush(lenmm,  X1, Y1, lenmm1,line,closed){
 		}
 		for (var i=0;i<lines.length;i++){
 			var line1=lines[i];
-			gcodes.push([lenmm, "", X1, Y1,lines[i],srl,area,closed,shapenum]);
+			var ar=area;
+			if (i>0)ar=1;
+			var x1=line1[0][1];
+			var y1=line1[0][2];
+			
+			gcodes.push([lenmm, "", x1, y1,lines[i],srl,ar,closed,shapenum]);
 		}
 		if (ofs1){
 			// if do finish line 
 			lines=prepare_line2(lenmm,line,0)[0];
 			for (var i=0;i<lines.length;i++){
 				var line1=lines[i];
-				gcodes.push([lenmm, "F", X1, Y1,lines[i],srl,area+1000,closed,shapenum]);
+				var ar=area;
+				if (i>0)ar=1;
+				var x1=line1[0][1];
+				var y1=line1[0][2];
+				gcodes.push([lenmm, "F", x1, y1,lines[i],srl,ar+1000,closed,shapenum]);
 			}
 		}
 	} else gcodes.push([lenmm, "", X1, Y1,line,srl,area,closed,shapenum]);
