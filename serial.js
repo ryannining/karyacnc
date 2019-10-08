@@ -181,7 +181,7 @@ function idleloop() {
             sendgcode("M105");
         checktemp = 0;
     }
-	if (isgrbl)sendgcode(machinepos);
+	//if (isgrbl && running)sendgcode(machinepos);
     setTimeout(idleloop, 3000);
 }
 
@@ -332,9 +332,9 @@ var onReadCallback = function(s) {
                 isgrbl = 1;
 				machinezero="g10 p0 l20 x0 y0 z0";
 				machinepos="?";
-				sendgcode(machinezero);
+				setashome2();
 			}
-            isok = (lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
+            isok = 0;//(lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
             if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
                 okwait = 0;
                 if ((lastw.toUpperCase().indexOf('WAIT') >= 0)) {
@@ -519,7 +519,7 @@ setclick("btzup", gcodezup);
 setclick("btzdn", gcodezdown);
 setclick("btrecode", refreshgcode);
 setclick("btrecode2", refreshgcode);
-setclick("btm3", gcodefunc("m3"));
+setclick("btm3", gcodefunc("m3 s255"));
 setclick("btm5", gcodefunc("m5"));
 
 setclick("btsend", function() {
@@ -976,3 +976,4 @@ var editorengcode = ace.edit("engcode");
 //editorengcode.setReadOnly(true);
 editorengcode.session.setMode("ace/mode/gcode");
 editorengcode.renderer.setShowGutter(false);
+//idleloop();

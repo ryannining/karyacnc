@@ -32,6 +32,10 @@ function log(text) {
     $('log').value += text + '\n';
 }
 
+function getchecked(el) {
+	return $(el).checked;
+}
+
 function getvalue(el) {
 	if (el=="gcode")return editorgcode.getValue();
 	else if (el=="engcode")return editorengcode.getValue();
@@ -105,11 +109,17 @@ var extrudeMul=1;
 var extrude = (layerheight * layerheight) / (filamentD * filamentD);
 
 var fm=0;
+var gcntr=0;
 function gcoden(g, f, x2, y2, z2 = 10000, e2 = 1000000) {
     var xs = 1;
 	if (z1==z2)z2=10000;
 	g=g*1;
 	f=mround(f);
+	gcntr+=1;
+	if (gcntr>30){
+		gcntr=0;
+		fm=0;
+	}
 	if (fm!=f){
 		fm=f;
 		f=" F"+f;
@@ -399,7 +409,11 @@ function prepare_line2(lenmm,lines,ofs1) {
 		if ((disable_ovc.indexOf(shapectr+"")>=0)||(lenmm<noprocess))return [glines,clk];
 		sharpv = $("sharp").value;
 		ov=0.01;
-		if (cmd == CMD_CNC) ov+=$("overcut").value/10.0;
+		if ((cmd == CMD_CNC) && getchecked("overcut")) {
+			//ov+=$("overcut").value/10.0;
+			var ro=$("offset").value/2;
+			ov+=sqrt(2*sqr(ro))-ro;
+		}
 		cxt=0;
 		cyt=0;
 		cnt=0;
@@ -717,7 +731,8 @@ function doengrave(){
 		if (slowdown)gc+="G1 F"+(f2)+"\n";
 	}
 	gc+="G0 Z2\n";
-	if (ENGRAVE==1)gc=getvalue("engcode")+gc;
+	//if (ENGRAVE==1)
+	gc=getvalue("engcode")+gc;
 	setvalue("engcode",gc);
 }
 
@@ -812,7 +827,12 @@ function draw_line(num, lcol, lines,srl,dash,len,closed,snum) {
 
     start = 0;
     sharpv = $("sharp").value;
-    ov = $("overcut").value/10.0;
+    //ov = $("overcut").value/10.0;
+	ov=0;
+	if ((cmd == CMD_CNC) && getchecked("overcut")) {
+		var rr=$("offset").value/2;
+		ov=sqrt(2*sqr(rr))-rr;
+	}
     lsx = -10;
     lsy = 0;
 	var i=0;
@@ -1361,6 +1381,8 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
     }
     //gcode0(f1,X1,Y1);
     lastz = z;
+	if ((lines[0][1]!=lines[lines.length-1][1]) || 
+	    (lines[0][2]!=lines[lines.length-1][2])) div+=pup+"\n"; 
 
     return div;
 }
@@ -1395,7 +1417,7 @@ function gcode_verify(en=0) {
 		if (ENGRAVE==0) engrave={};
 		else {
 			engrave1=[];
-			setvalue("engcode","");	
+			//setvalue("engcode","");	
 		}
 	}
 
@@ -1453,7 +1475,7 @@ function gcode_verify(en=0) {
     if ($("flipx").checked) sc = -1;
 	var f1 = getvalue('trav') * 60;
 	pdn1 = getvalue("pdn").replace("=cncz", "0") + '\n';
-    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\n"+pdn1+"\n");
+    setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\nG0 X0 Y0 Z0\n"+pdn1+"\n");
     autoprobe="G30 S"+getvalue("alres")+" X" + mround(w*10) + " Y" + mround(h*10) ;
 	drawengrave();	
 	drawvcarve();
@@ -1509,15 +1531,18 @@ function sortedgcode() {
     }
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
-    var ov = getvalue("overcut")*1.0;
+    var ov = getchecked("overcut");
+	
 	
     pup1=getvalue("pup");
     if (cmd == CMD_LASER) {
 		pup1="";
 		s = "M3 S255\nG0 F3000\nG1 F3000\nG0 X4\nG0 X2\nG0 X0\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
-	} else
+		se="M3 S255\n";
+	} else {
 		s="G0 Z2 F3000\nM3 S255\nG1 F3000\n";
-	
+		se="";
+	}
 	
 	cncdeep0 = -getvalue("zdown");
 	skipz = -getvalue("zdown0");
@@ -1582,6 +1607,7 @@ function sortedgcode() {
 			spiraldown=_spiraldown;
 			var docarve=0;
 			var iscut=1;
+			var iseng=0;
 			if ($("enablecolor").checked) {
 				if (sty["stroke"]=="#ff0000"){
 					spiraldown=0;
@@ -1591,6 +1617,7 @@ function sortedgcode() {
 					zdown = (sty["deep"]!=undefined)?sty["deep"]:getvalue("carved");
 					zdown*=-1 / _re;
 					iscut=0;
+					iseng=1;
 				}				
 				if ((sty["stroke"]=="#0000ff")||(sty["fill"]=="#0000ff")||(sty["fill"]=="#ff00ff")){
 					if ($("rasteroutline").checked){
@@ -1606,6 +1633,7 @@ function sortedgcode() {
 					} else _re=0;
 					f2 = getvalue('rasteroutfeed') * 60;
 					iscut=0;
+					iseng=1;
 				}
 				if ((sty["stroke"]=="#00ff00")||(sty["fill"]=="#00ff00")){
 					_re=0;
@@ -1636,13 +1664,18 @@ function sortedgcode() {
 				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2,cncz2, vcuttab,sgcodes[j][0][5],1,0,snum,60*60);
 			}
 			// do pen up
-			s+=pup1+"\n";
+			var ps=pup1+"\n";
+			se+=ps; 
+			s+=ps;
 			if (_re>0)empty=0;
 			for (var i = 0; i < _re; i++) {
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
 				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, vcuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2);
-				if(!docarve)s+=sr;
+				if(docarve)sr='';
+				if (iseng){
+				  se+=sr;	
+				} else s+=sr;
 				cncz+=zdown;
 				cncz2+=zdown;
 			}
@@ -1661,7 +1694,7 @@ function sortedgcode() {
     s = s + getvalue("pup");
 	var f1 = getvalue('trav') * 60;
     s = s + '\nG0 F'+f1+' Y'+xystart[1]+' \n G0 X'+xystart[1]+'\n';
-	if (cmd==CMD_CNC)s+="G0 Z1\n";
+	if (cmd==CMD_CNC)s+="G0 Z"+getvalue("finalz")+"\n";
     sc = 1;
     if ($("flipx").checked) sc = -1;
     if (cmd == CMD_3D) {
@@ -1674,6 +1707,7 @@ function sortedgcode() {
 	
     //if (!empty)
 	setvalue("gcode", s);
+	setvalue("engcode", se);
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -1773,7 +1807,7 @@ function myFunction(scale1) {
 	scaley=scale;
 	
     cmd = getvalue('cmode');
-	cuttablen=getvalue("tablen")*1;
+	cuttablen=getvalue("tablen")*1+getvalue("offset")*1;
 	cutevery=getvalue("tabevery")*1;
 	cutofs=getvalue("tabofs")*1;
 	detail=getvalue("curveseg")*1;

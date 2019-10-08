@@ -90,14 +90,15 @@
 							<tr><td colspan=2>Tab len </td><td colspan=2><input id=tablen class=saveit value='5' size=5></td></tr>
 							<tr><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
 							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
-							<tr><td colspan=2>To Overcut </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
+							<tr><td colspan=2>To DogBone </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
 							<tr><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=1 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
 							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
 							<tr><td colspan=2>Small first </td><td colspan=2><input size=1 type=checkbox id=smallfirst checked class=saveit></td></tr>
+							<tr><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="3"></td></tr>
 							
-							<tr><td>Overcut </td>
-								<td><input id=overcut value=1 size=2 class=saveit></td>
+							<tr><td>DogBone </td>
+								<td><input id=overcut type=checkbox checked size=2 class=saveit></td>
 								<td>Cos(angle) <input id=sharp value=0.9 size=2 class=saveit></td>
 								<td><input id=segment type=checkbox class=saveit></td>
 							</tr>
@@ -165,9 +166,9 @@
 					<td><input id=feed size=2 value=6 class=saveit></td>
 					<td><input id=repeat class=saveit size=1 value=1></td>
 				</tr>
-				<tr style="background:lime"><td>Tools Off</td><td colspan=2 >Tools On</td></tr>
+				<tr class=tonoff style="background:lime"><td>Tools Off</td><td colspan=2 >Tools On</td></tr>
 
-				<tr><td><input id=pup size=8 value="m3 s0" class=saveit></td>
+				<tr class=tonoff ><td><input id=pup size=8 value="m3 s0" class=saveit></td>
 					<td colspan=2><input id=pdn size=12 value="m3 s255" class="saveit"></td>
 				</tr>
 				<tr style="background:lime"><td>CNC Zdown</td><td colspan=2>CNC Tab Cutout</td></tr>
