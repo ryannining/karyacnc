@@ -860,7 +860,7 @@ function upload(){
 	c=$("myCanvas");
 	c.toBlob(function(blob){
 		realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),blob);
-		},"image/jpg",0.15);
+		},"image/jpeg",0.15);
 }
 
 function printhub(){

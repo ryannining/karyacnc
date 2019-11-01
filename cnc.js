@@ -343,7 +343,8 @@ function urlopen(s) {
 }
 
 function startprint() {
-    urlopen("startprint");
+    //urlopen("startprint");
+    urlopen("startjob?jobname="+getvalue("jobname")+".gcode");
 	hideId("btuploadstart");
 	hideId("btuploadresume");
 	showId2("btuploadstop");
@@ -378,16 +379,22 @@ var mbody = document.getElementById("body");
 var gcode = "";
 
 var wemosd1 = 1;
-
-
-function upload(){
-	realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}));
+var uploadimage=1;
+function upload(fn){
+	function uploadjpg(){
+		if (!uploadimage)return;
+		c=$("myCanvas1");
+		c.toBlob(function(blob){
+			realupload(blob,fn+".jpg",0);
+			},"image/jpeg",0.2);
+	}
+	realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),fn,uploadjpg);
 }
 
-function realupload(gcode) {
+function realupload(gcode,fname,callback) {
     var xhr = new XMLHttpRequest();
     form = new FormData();
-    form.append("file1", gcode, "gcode");
+    form.append("file1", gcode, fname);
 
 
     xhr.open(
@@ -405,6 +412,7 @@ function realupload(gcode) {
         progressBar.value = 0;
         if (!wemosd1) alert(xhr.response);
 		resetflashbutton();
+		if (callback)callback();
     };
     // Listen to the upload progress.
     xhr.upload.onprogress = function(e) {
@@ -419,11 +427,11 @@ function realupload(gcode) {
 
 setclick("btupload", function() {
     begincompress(getvalue("engcode")+"\n"+getvalue("gcode"));
-	if(!warnoverflow)upload();
+	if(!warnoverflow)upload(getvalue("jobname")+".gcode");
 });
 setclick("btjob5", function() {
     begincompress(jobs.join("\n"));
-	if(!warnoverflow)upload();
+	if(!warnoverflow)upload("jobs");
 });
 
 setclick("btuploadstart",startprint);
@@ -442,16 +450,18 @@ function Canvas2Clipboard(cid){
 setclick("btcopycanvas",function(){Canvas2Clipboard("myCanvas1");});
 
 
-var segs=[];
+var segsv=[];
 var carvetime=0;
+var gcodecarve="";
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
 function vcarve(maxr,angle,step,path,dstep,dstep2){
 	sqrt=Math.sqrt;
 	sqr=function(x){return x*x;}
 	// segmentation
-	segs=[];
+	segsv=[];
 	var s=0;
 	carvetime=0;
+	gcodecarve="";
 	segmentation=function (path,rev){
 		PL=path.length/2;
 		var x1,y1,x2,y2,i,dx,dy,L,vx,vy,px,py;
@@ -478,7 +488,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 					for (var j=0;j<L;j++){
 						px=x1+(j+.5)*dx;
 						py=y1+(j+.5)*dy;
-						segs.push([px,py,s,0,0,0,0,vx,vy,0,0]); // last 3 is to store data
+						segsv.push([px,py,s,0,0,0,0,vx,vy,0,0]); // last 3 is to store data
 					}
 					s++;
 					x1=x2;
@@ -487,7 +497,7 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 			} else { 
 				x1=x2;
 				y1=y2;
-				segs.push([x1,y1,-1,x1,y1,0,0,0,0,0,0]); // last 3 is to store data
+				segsv.push([x1,y1,-1,x1,y1,0,0,0,0,0,0]); // last 3 is to store data
 			}
 		}
 	}
@@ -507,17 +517,17 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 	var maxz=-maxr*ve;
 	var ftrav=getvalue("trav")*60;
 	var ffeed=getvalue("feed")*60;
-	for (var i=0;i<segs.length;i++){
+	for (var i=0;i<segsv.length;i++){
 		mr2=0; // d squared
-		seg1=segs[i];
+		seg1=segsv[i];
 		if (seg1[2]==-1){
 			// move
 			continue;
 		}
 		if (seg1[6]>0)continue;
 		var cx,cy,cz,ox,oy;
-		for (var j=0;j<segs.length;j++){
-			seg2=segs[j];
+		for (var j=0;j<segsv.length;j++){
+			seg2=segsv[j];
 			if (seg1[2]==seg2[2])continue; // if on same line dont do it
 			seg2[9]=sqr(seg1[0]-seg2[0])+sqr(seg1[1]-seg2[1]);
 		}
@@ -527,8 +537,8 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 			cy=seg1[1]+r*seg1[7];
 			k2=sqr(r);
 			k3=sqr(r*2);
-			for (var j=0;j<segs.length;j++){
-				seg2=segs[j];
+			for (var j=0;j<segsv.length;j++){
+				seg2=segsv[j];
 				if ((seg1[2]==-1) || (seg1[2]==seg2[2]) ||  (seg2[9]>k3))continue; // if on same line dont do it
 				n++;
 				r3=sqr(cx-seg2[0])+sqr(cy-seg2[1]);
@@ -586,8 +596,8 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 	var rdis;
 	var lx=0;
 	var ly=0;
-	for (var i=0;i<segs.length;i++){
-		seg1=segs[i];
+	for (var i=0;i<segsv.length;i++){
+		seg1=segsv[i];
 		rdis=sqrt(sqr(lx-seg1[3])+sqr(ly-seg1[4]));
 		cx=(seg1[3]+maxofs)*dpm;
 		cy=(seg1[4]+maxofs)*dpm;
@@ -610,8 +620,8 @@ function vcarve(maxr,angle,step,path,dstep,dstep2){
 		//ctx.moveTo(cx+r,cy);
 		//ctx.arc(cx,cy,r,0,2*Math.PI);
 	}
-	gc+="G0 Z4\nG0 X0 Y0\ng0 Z0\nm3 s0\nm5";
-	setvalue("engcode",gc);
+	gc+="G0 Z4\n";
+	gcodecarve=gc;
 	gcode_verify();
 }
 
@@ -622,8 +632,8 @@ function drawvcarve(){
 	ctx.setLineDash([]);
 	ctx.beginPath();
 	ctx.strokeStyle = "#aaaaaa";
-	for (var i=0;i<segs.length;i++){
-		var seg1=segs[i];
+	for (var i=0;i<segsv.length;i++){
+		var seg1=segsv[i];
 		cx=(seg1[3]+maxofs)*dpm;
 		cy=(seg1[4]+maxofs)*dpm;
 		r=seg1[6]*dpm;
@@ -637,8 +647,8 @@ function drawvcarve(){
 	ctx.stroke();
 	ctx.beginPath();
 	ctx.strokeStyle = "#ff0000";
-	for (var i=0;i<segs.length;i++){
-		var seg1=segs[i];
+	for (var i=0;i<segsv.length;i++){
+		var seg1=segsv[i];
 		cx=(seg1[3]+maxofs)*dpm;
 		cy=(seg1[4]+maxofs)*dpm;
 		r=seg1[6]*dpm;
@@ -652,8 +662,8 @@ function drawvcarve(){
 	ctx.stroke();
 	ctx.beginPath();
 	ctx.strokeStyle = "#00ffff";
-	for (var i=0;i<segs.length;i++){
-		var seg1=segs[i];
+	for (var i=0;i<segsv.length;i++){
+		var seg1=segsv[i];
 		cx=(seg1[0]+maxofs)*dpm;
 		cy=(seg1[1]+maxofs)*dpm;
 		r=seg1[6]*dpm;
@@ -665,4 +675,213 @@ function drawvcarve(){
 	}
 	ctx.stroke();
 }
+var cglines=[];
 
+function clcarve(tofs,ofs1,clines){
+	var detail=1.0;
+    if (cmd==CMD_CNC)tofs=tofs*0.8;
+	if (tofs<0.2)tofs=0.2;
+	if (ofs1<0.2)ofs1=0.2;
+	var paths=[];
+	cglines=[];
+	var scale = 1000;
+	for (var ci in clines){
+		var path=[];
+		var lines=clines[ci];
+		
+		for (var i = 0; i < lines.length/2; i++) {
+			x = lines[i*2]*scale;
+			y = lines[i*2+1]*scale;
+			path.push({X:x,Y:y});
+		}
+		var clk=isClockwise(path,"X","Y");
+		paths.push(path);
+	}
+			//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
+			
+		var glines=[];
+		var ofs=0;
+		var maxx=100;
+		while (maxx-->0)
+		{
+			// increase tool offset
+			ofs+=tofs;
+			var co = new ClipperLib.ClipperOffset(); // constructor
+			var offsetted_paths = new ClipperLib.Paths(); // empty solution		
+			co.Clear();
+			
+			co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
+			co.MiterLimit = 2;
+			co.ArcTolerance = 20;
+			var delta=ofs*scale;
+			//if (!clk)delta=-delta;
+			co.Execute(offsetted_paths, -Math.abs(delta));
+			// if no more then break
+			if (offsetted_paths.length<=0)break;
+			
+			var ox=0;
+			var oy=0;
+			for (var i = 0; i < offsetted_paths.length; i++) {
+				var newline=[];
+				var path=offsetted_paths[i];
+				var path=ClipperLib.JS.Lighten(path,50);
+				var s=0;
+				var ds=0;
+				var cx=0;
+				var cy=0;
+				if (path.length){
+					for (var j = 0; j < path.length; j++) {			
+						var jj=j;
+						if (clk)jj=path.length-1-j;
+						var l= path[jj];
+						x = l.X*1.0/scale;
+						y = l.Y*1.0/scale;
+						if (j>0){
+							ds=sqrt(sqr(x-ox)+sqr(y-oy));
+						}
+						s+=ds;
+						cx+=x;
+						cy+=y;
+						ox=x;
+						oy=y;
+						newline.push([x,y,ds]);
+					}
+					///*
+					
+					var l= path[0];
+					if (clk)l= path[path.length-1];
+					x = l.X*1.0/scale;
+					y = l.Y*1.0/scale;
+					newline.push([x,y,ds]);
+					//*/
+					glines.push([newline,s*0.02,cx/path.length,cy/path.length]);
+				}
+			}
+		}
+		cglines=glines;
+
+		
+}
+
+// draw and together convert to gcode
+var concentrictime=0;
+function concentricgcode(){
+	concentrictime=0;
+	if (cglines.length==0) return;
+	var carvedeep=getvalue('carved')*1;
+    var f2 = getvalue('rasterfeed')*60;
+    var f1 = f2;
+    if (cmd==CMD_CNC){
+		f2 = getvalue('feed')*60;
+		var f1 = getvalue('trav')*60;
+	}
+	var pup = "G0 Z"+getvalue('safez')+"\n";
+    var pdn = getvalue('pdn')+"\n";
+	var overs=getvalue('overshoot')*1;
+	if (cmd==CMD_CNC)overs=0;
+
+	var re=(carvesty["repeat"]!=undefined)?carvesty["repeat"]:getvalue("carverep");
+	re=(re*1);
+	carvedeep = (carvesty["deep"]!=undefined)?carvesty["deep"]:getvalue("carved");
+	carvedeep*=1;
+	var rz=  carvedeep/re;
+	
+	var gc="M3 S255\nG0 F"+f1+"\nG1 F"+f2+"\n";
+	gc+=pup;
+
+    e1 = 0;
+	var sortit=1;
+	var lx=0;
+	var ly=0;
+	var sglines=[];
+    for (var j = 0; j < cglines.length; j++) {
+		var cs = -1;
+		var bg = 10000000;
+		for (var i = 0; i < cglines.length; i++) {
+
+			var dx = cglines[i][2] - lx;
+			var dy = cglines[i][3] - ly;
+			var dis = sqrt(dx * dx + dy * dy)+cglines[i][1]; // distance + area size
+			//var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
+			
+			if ((cglines[i][1]>0) && (dis < bg)) {
+				cs = i;
+				bg = dis;
+			}
+		}
+        // smalles in cs
+        if (cs >= 0) {
+            sglines.push([cglines[cs][0],cs+1]);
+            cglines[cs][1] = -cglines[cs][1];
+			lx = cglines[cs][2];
+			ly = cglines[cs][3];
+        }
+    }
+	
+	
+	for (var j=0;j<sglines.length;j++){
+		gline=sglines[j][0];
+		for (var r=0;r<re;r++){
+			gc+=pup;
+			var zz=-(r+1)*rz;
+			for (var ni=0;ni<=gline.length;ni++){
+				var i=ni;
+				if (i==gline.length)i=0;
+				var seg1=gline[i];
+				cx=seg1[0];
+				cy=seg1[1];
+				if (ni==0){
+					gc+="G0 F"+f1+" X"+mround(cx)+" Y"+mround(cy)+"\n"+pdn.replace("=cncz", mround(zz));
+				} else {
+					gc+="G1 F"+f2+" X"+mround(cx)+" Y"+mround(cy)+"\n";
+				}
+			}
+		}
+	}
+
+	
+
+	gc+=pup+"G0 Y0\nG0 X0\n";
+	//if (ENGRAVE==1)
+	gc=getvalue("engcode")+gc;
+	setvalue("engcode",gc);
+
+}
+function drawconcentric(){
+    var fs = getvalue('rasterfeed')*1;
+	var c = $("myCanvas1");
+	var ctx = c.getContext("2d");
+	ctx.strokeStyle = "#800080";
+	for (var j=0;j<cglines.length;j++){
+		gline=cglines[j][0];
+		ctx.beginPath();
+		ctx.setLineDash([]);
+		var ox,oy;
+		for (var ni=-1;ni<gline.length;ni++){
+			var i=ni;
+			if (i<0)i=gline.length-1;
+			var seg1=gline[i];
+			cx=(seg1[0]+maxofs)*dpm;
+			cy=(seg1[1]+maxofs)*dpm;
+			if (ni>=0){
+				ctx.moveTo(ox,oy);
+				ctx.lineTo(cx,cy);
+				concentrictime+=Math.sqrt(sqr(cx-ox)+sqr(cy-oy))/fs;
+			}
+			ox=cx;
+			oy=cy;
+		}
+		ctx.stroke();
+	}
+}
+
+setclick("btvcarve", function() {
+	var r=Math.max(sxmax,symax)/getvalue("vres");
+    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.00002*getvalue("vdia"),0.01*getvalue("vdia"));
+});
+function doconcentricengrave(){
+   clcarve(getoffset(),0,conline);
+   concentricgcode();
+   drawconcentric();
+}
+setclick("btconengrave", doconcentricengrave);

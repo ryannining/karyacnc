@@ -643,6 +643,7 @@ class laser_gcode(inkex.Effect):
     def get_info(self):
         self.selected_paths = {}
         self.paths = {}
+        self.images= {}
         self.orientation_points = {}
         self.layers = [self.document.getroot()]
         self.Zcoordinates = {}
@@ -675,6 +676,10 @@ class laser_gcode(inkex.Effect):
                     if i.get("id") in self.selected :
                         if i.text:self.karyacnc=i.text
                         else:self.karyacnc=i.getchildren()[0].text
+                elif i.tag == inkex.addNS('image','svg'):
+                    # ryan if "gcodetools"  not in i.keys() :
+                    if i.get("id") in self.selected :
+                        self.images += [i];
                 elif i.tag == inkex.addNS('path','svg'):
                     # ryan if "gcodetools"  not in i.keys() :
                     self.paths[layer] = self.paths[layer] + [i] if layer in self.paths else [i]

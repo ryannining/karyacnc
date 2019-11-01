@@ -933,10 +933,6 @@ setTimeout(function() {
 
 setclick("btzoom", window.onresize);
 
-setclick("btvcarve", function() {
-	var r=Math.max(sxmax,symax)/getvalue("vres");
-    vcarve(getvalue("vdia")/2,getvalue("vangle")*1,r,veeline,0.00002*getvalue("vdia"),0.01*getvalue("vdia"));
-});
 var jobcnt=0;
 var jobs=[];
 

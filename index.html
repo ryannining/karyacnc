@@ -77,6 +77,7 @@
 								<option value=0>Cutting</option>
 								<option value=1>Engrave</option>
 								<option value=2>Vcarve</option>
+								<option value=3>Concentric Engrave</option>
 							
 							</select></td></tr>							
 							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
@@ -95,6 +96,7 @@
 							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
 							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
 							<tr><td colspan=2>Small first </td><td colspan=2><input size=1 type=checkbox id=smallfirst checked class=saveit></td></tr>
+							<tr><td colspan=2>Acp Drill first</td><td colspan=2><input size=1 type=checkbox id=acpmode checked class=saveit></td></tr>
 							<tr><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="3"></td></tr>
 							
 							<tr><td>DogBone </td>
@@ -150,7 +152,8 @@
 					<option value="6,2,9,1500">Laser Triplek 9mm</option>
 					<option value="6,3,15,1500">Laser Triplek 15mm</option>
 					<option value="6,1,3,1500">MDF Hijau 3mm</option>
-					<option value="40,9,9,1500,10.5">CNC MDF-H 9.5mm</option>
+					<option value="40,6,8,1500,6.5">CNC MDF-H 6mm</option>
+					<option value="40,9,11,1500,10">CNC MDF-H 9.5mm</option>
 					<option value="40,2,20,1500,3.5">CNC ACP 3mm</option>
 					<option value="40,3,27,1500,4.5">CNC ACP 4mm</option>
 					<option value="40,2,20,1500,5.5">CNC PVC 5mm</option>
@@ -178,7 +181,9 @@
 					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
 				<tr><td colspan=1>Cut CCW <input id=cutccw type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
 				<tr><td colspan=3 align=left>
-					<hr><b>V CARVING (<font color=#FF00FF>Line is Fuchsia</font>)</b><br>
+					<hr><b>Conc. Engrave (<font color=#800080>Line is Purple</font>)</b><br>
+					<button id=btconengrave>Concentric Engrave</button><br>
+					<hr><b>V CARVING (<font color=#00FFFF>Line is Aqua</font>)</b><br>
 					<b>Endmill:</b>&nbsp;
 					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
 					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit>&nbsp;&nbsp;
@@ -205,10 +210,10 @@
 			<div  id=gcodepreview style="width:220px">
 			<button id=tracingbt>GCODE SENDER</button><B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
 			  Cutting code
-			  <div style="font-size: 10;width:100%;height:300" id="gcode" class=saveit>
+			  <div style="font-size: 10;width:100%;height:300" id="gcode">
 			  </div>
 			  Engrave code
-			  <div style="font-size: 10;width:100%;height:200" id="engcode" class=saveit>
+			  <div style="font-size: 10;width:100%;height:200" id="engcode">
 			  </div><button id=btgcode2vec>ReVector Gcode</button>
 			</div>
 		</td>
@@ -224,11 +229,11 @@
 		<td width=300px bgcolor=lightblue style="padding:5px">
 			<b>Machine Control <span id=portnum></span></b>&nbsp;|<b id=alert1 style='color:red'>IDLE</b><br>
 			<button id=bthidden2>Connection Settings</button>
-			<br>LASER POWER SCALE<select id=powerscale>&nbsp;
+			<div style="display:none"><br>LASER POWER SCALE<select id=powerscale>&nbsp;
 				<option value=1>1X</option>
 				<option value=2>2X</option>
 				<option value=3>3X</option>
-			</select>
+			</select></div>
 			<table id=vars2 class=smallwindow>
 				<tr><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="115200" class=saveit></td></tr>
 				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=10 class=saveit value="192.168.0.123"></td></tr>
@@ -291,6 +296,8 @@
 			<div id=machine_ws style="display:none">Progress/Finished Object<br>
 			<progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
 			<b>MACHINE FLASH</b><br>
+			Jobs <select id=jobs class=saveit><option value="gcode">gcode</option></select><br>
+			New name <input id=jobname size=10 class=saveit value='gcode'><br>
 			<button id=btupload>Upload</button><button id=btuploadstart>Start</button><button id=btuploadstop>Stop</button><button id=btuploadpause>Pause</button><button id=btuploadresume>Resume</button>
 			<hr>
 			</div>
