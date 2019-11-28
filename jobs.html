@@ -34,14 +34,15 @@
 	<div class=j1 style="width:80%">
 	<b>JOG MACHINE</b><hr>
 	<table width=100%>
-		<tr align=center><td></td><td><button class=jog onclick="jogup()">Up</button></td><td></td><td width=60%><button class=jog onclick="jogpause()">Pause Job</button></td></tr>
+		<tr align=center><td><button class=jog onclick="speed1()">1x</button></td><td><button class=jog onclick="jogup()">Up</button></td><td><button class=jog onclick="zup()">Z 15</button></td><td width=60%><button class=jog onclick="jogpause()">Pause Job</button></td></tr>
 		<tr align=center><td><button class=jog onclick="jogleft()">Left</button></td>
-			<td>Step : <Select id=step><option value=1>1</option><option value=5>5</option><option value=10>10</option></select> mm</td>
+			<td>Step : <Select id=step><option value=1>1</option><option value=5>5</option><option value=10>10</option><option value=25>25</option><option value=50>50</option></select> mm</td>
 			<td><button class=jog onclick="jogright()">Right</button></td><td><button class=jog onclick="jogstop()">Stop Job</button></td></tr>
-		<tr align=center><td></td><td><button class=jog onclick="jogdown()">Down</button></td><td></td><td><button class=jog onclick="joghome()">HOME</button><button class=jog onclick="jogzero()">ZERO</button></td></tr>
+		<tr align=center><td><button class=jog onclick="speed2()">1.3x</button></td><td><button class=jog onclick="jogdown()">Down</button></td><td><button class=jog onclick="z0()">Z 0</button></td><td><button class=jog onclick="joghome()">HOME</button><button class=jog onclick="jogzero()">ZERO</button></td></tr>
 	</table>
-	</div>
-	<div id=jobs>
+	</div><br>
+	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">
+	<hr><div id=jobs>
 	</div>
 
 	</body>
@@ -75,6 +76,18 @@ function urlopen(s,callback) {
 function jogup(){
 	urlopen("jogmove?x=0&y=-"+getvalue("step"));	
 }
+function speed1(){
+	urlopen("gcode?t=m220 s100");	
+}
+function speed2(){
+	urlopen("gcode?t=m220 s130");	
+}
+function zup(){
+	urlopen("gcode?t=G0 Z15 F800");	
+}
+function z0(){
+	urlopen("gcode?t=G0 Z0 F800");	
+}
 function jogleft(){
 	urlopen("jogmove?y=0&x=-"+getvalue("step"));	
 }
@@ -103,19 +116,23 @@ function runjob(i){
 	if (confirm("Start job "+jobs[i][0]+" ?"))	urlopen("startjob?jobname="+jobs[i][0],alert);
 }
 function alert2(x){
-	alert(x);
+	//alert(x);
 	urlopen("getjobs",joblist);
 }
 function deljob(i){
 	if (confirm("Remove job "+jobs[i][0]+" ?"))	urlopen("removejob?jobname="+jobs[i][0],alert2);
 }
-
+var lastres="";
 function joblist(res){
 	var j="";
+	lastres=res;
 	jobs=eval(res).sort();
+	var ipre=$("preview").checked;
 	for (i in jobs){
-		var sz=" "+mround(jobs[i][1]/1000)+"Kb"
-		j+="<div class=j1><b>"+jobs[i][0]+"</b><br>Size:"+sz+"<hr><img width=100% src='http://"+wsip+jobs[i][0]+".jpg'><br><button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
+		var sz=" "+mround(jobs[i][1]/1000)+"Kb";
+		var img="<a href='http://"+wsip+jobs[i][0]+".jpg' target=preview ><button>Preview</button></a>";
+		if (ipre)img="<img width=100% src='http://"+wsip+jobs[i][0]+".jpg'><br>";
+		j+="<div class=j1><b>"+jobs[i][0]+"</b><br>Size:"+sz+"<hr>"+img+"<button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
 	}
 	$("jobs").innerHTML=j;
 }

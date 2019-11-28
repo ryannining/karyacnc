@@ -22,6 +22,7 @@ View angle<input id=angle value="65,35" size=5><button onclick="init2d(0);render
 <td>
 <div>UPLOAD TO MACHINE</div><hr>
 <div id=info>Info:</div>
+Job name <input id=jobname size=10 value=gcode><br>
 <button id=btclick onclick="upload()">Upload</button> <progress id=progress1 min="0" max="100" value="0" style="width:100px">0% complete</progress><br>
 
 <hr>
@@ -35,6 +36,8 @@ View angle<input id=angle value="65,35" size=5><button onclick="init2d(0);render
 <button id=btclick onclick="homing()">Home</button>&nbsp;
 <button id=btclick onclick="heating()">Heating</button><br>
 <button id=btclick onclick="cooling()">Cooling</button><br>
+<hr>
+<a href="jobs" target=job><button>View machine jobs</button></a> 
 <td>
 <div>WEBSOCKET GCODE SENDER</div>
 <hr>
@@ -609,17 +612,17 @@ function rendergcode(){
 		}
 		lv=vc;
 	}
-    /*/ nice background
+	ctx.clearRect(0, 0, 200, 200);
+    ///*/ nice background
 	var grd=ctx.createLinearGradient(0,0,0,200);
 	grd.addColorStop(0,"#88bbFF");
 	grd.addColorStop(0.35,"white");
 	grd.addColorStop(0.55,"#eeaa33");
 	grd.addColorStop(1,"#bb7711");
 
-	ctx.fillStyle=grd;
+	ctx.fillStyle="white";
 	ctx.fillRect(0,0,200,200);
-	*/
-	ctx.clearRect(0, 0, 200, 200);
+	//*/
   
 	//calculate scale
 	var zs=100.0/(zmax-zmin);
@@ -814,7 +817,53 @@ mbody.ondragend = function() {
 };
 
 var wemosd1=1;
-function realupload(gcode,jpg) {
+var uploadimage=1;
+function upload(){
+	var fn=getvalue("jobname")+".gcode";
+	function uploadjpg(){
+		if (!uploadimage)return;
+		c=$("myCanvas");
+		c.toBlob(function(blob){
+			realupload(blob,fn+".jpg",0);
+			},"image/jpeg",0.4);
+	}
+	realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),fn,uploadjpg);
+}
+
+function realupload(gcode,fname,callback) {
+    var xhr = new XMLHttpRequest();
+    form = new FormData();
+    form.append("file1", gcode, fname);
+
+
+    xhr.open(
+        "POST",
+        "http://"+getvalue("wsip")+"/upload",
+        true
+    );
+
+	//xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
+    //xhr.setRequestHeader('Content-type', 'application/ecmascript');
+    //xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+	
+    var progressBar = $('progress1');
+    xhr.onload = function(e) {
+        progressBar.value = 0;
+        if (!wemosd1) alert(xhr.response);
+		//resetflashbutton();
+		if (callback)callback();
+    };
+    // Listen to the upload progress.
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            progressBar.value = (e.loaded / e.total) * 100;
+            progressBar.textContent = progressBar.value; // Fallback for unsupported browsers.
+        }
+    };
+    xhr.send(form);
+}
+
+function oldrealupload(gcode,jpg) {
   var xhr = new XMLHttpRequest();
   form = new FormData();
   if (!wemosd1){
@@ -834,7 +883,7 @@ function realupload(gcode,jpg) {
 	  form.append("gram",mround(gram));
 	  form.append("file2",jpg,"jpeg.jpg");
 	}
-  form.append("file1",gcode,"gcode");
+  form.append("file1",gcode,"gcode.gcode");
   
   
   xhr.open(
@@ -856,7 +905,7 @@ function realupload(gcode,jpg) {
 
   xhr.send(form);
 }
-function upload(){
+function oldupload(){
 	c=$("myCanvas");
 	c.toBlob(function(blob){
 		realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),blob);

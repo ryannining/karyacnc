@@ -116,6 +116,7 @@ function checkwaitok(){
 	if (millis()-waitok>700)sendgcode(machinepos);
 }
 function sendgcode(g) {
+	g=g.replace(/(\r\n|\n|\r)/gm, "");
     if (debugs & 1)
         console.log(g);
     try {
@@ -418,7 +419,8 @@ var onReceiveCallback = function(info) {
         }
     }
 };
-var onSend = function(sendInfo) {//console.log(sendInfo);
+var onSend = function(sendInfo) {
+	//console.log(sendInfo);
 }
 
 var writeSerial = function(str) {
@@ -664,6 +666,8 @@ try {
     storage = localStorage;
 }
 
+var jobsettings={};
+
 function savesetting() {
     var a = document.getElementsByClassName("saveit");
     sett = {};
@@ -685,7 +689,8 @@ function savesetting() {
         storage.set({
             "settings": sett,
             "text1": text1,
-            "gcstyle": gcstyle
+            "gcstyle": gcstyle,
+			"jobsettings":jobsettings
         });
     }
 }
@@ -715,6 +720,8 @@ function updateweb(sett){
 		updatestyle(k,sett[k]);
 	}
 }
+
+
 try {
     if (stotype == 0) {
         storage.get("text1", function(r) {
@@ -726,7 +733,11 @@ try {
         storage.get("settings", function(r) {
 			updateweb(r.settings);
         });
+        storage.get("jobsettings", function(r) {
+			jobsettings=r.jobsettings;
+        });
     } else {
+		jobsettings=storage.jobsettings;
         text1 = storage.text1;
         if (text1 == undefined)text1 = "";
         if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);

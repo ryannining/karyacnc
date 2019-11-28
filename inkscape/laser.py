@@ -807,7 +807,7 @@ class laser_gcode(inkex.Effect):
                     csp1 = self.apply_transforms(path, csp1)
                     #Ryan modification
                     # flatten if contain BICUBIC or ARC
-                    if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0):
+                    if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0):
                         cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
                     np = []
                     # need to check if its clockwise

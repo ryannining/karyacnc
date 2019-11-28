@@ -15,7 +15,7 @@ opacity: 0.8;
     position: absolute;
     box-shadow: black 10px 10px 15px;
 	}	
-#mwidth{font-size:18px;color:blue}	
+#mwidth1{font-size:18px;color:blue}	
 </style>
 <body style="font-family:arial;font-size:12pt">
 </center>
@@ -29,15 +29,20 @@ opacity: 0.8;
 <tr><td>Invert <td><input id=invert type=checkbox size=3 class=saveit>
 <tr><td>Normalize <td><input id=normal type=checkbox size=3 class=saveit>
 <tr><td>Flip X <td><input id=flip type=checkbox size=3 class=saveit>
-<tr><td>DPI <td><input id=mdpi value=72 size=3 class=saveit>
-<tr><td colspan=2><b>ACTUAL WORKING AREA<hr><p id=mwidth></p>
+<tr><td>DPI <input id=usedpi type=checkbox size=3 class=saveit><td><input id=mdpi value=72 size=3 class=saveit>
+<tr><td>Width <td><input id=mwidth value=100 size=5 class=saveit>mm
+
+
+<tr><td colspan=2><b>ACTUAL WORKING AREA<hr><p id=mwidth1></p>
 <tr><td colspan=2><b>Gcode</b>
 <tr><td>Feed <td><input id=speed size=3 value="100" class=saveit>mm/s 
 <tr><td>Max Depth <td><input id=zdown value=3 size=3 class=saveit>mm
+<tr><td>OfsX <td><input id=ofsX size=3 value="0" class=saveit>
+<tr><td>OfsY <td><input id=ofsY size=3 value="0" class=saveit>
 
-<tr><td>Cut from<td><select id=feedmethod>
+<tr><td>Cut from<td><select id=feedmethod class=saveit>
 <option value=0>Top</option>
-<option value=2>Center rectangular</option>
+<option value=2 selected>Center rectangular</option>
 </select>
 
 <tr><td colspan=2><br><b>Finishing</b>
@@ -69,12 +74,13 @@ opacity: 0.8;
 <b>Image</b>
 <hr>
 <img width=200 id="thepic" src="depth1.png" alt="The Pic" >
-<canvas id="myCanvas" width="160" height="300" style="border:1px solid #d3d3d3;">
+<canvas id="myCanvas1" width="160" height="300" style="border:1px solid #d3d3d3;">
 Your browser does not support the HTML5 canvas tag.</canvas>
 <td>
 <b>GCODE</b>
 <hr>
 <br>
+<div id=alert1 style="background:yellow"></div>
 <div id=waktu>Waktu Kerja:</div>
 Machine IP <input id=wsip size=10 value="192.168.0.114" class=saveit>
 <button id=btuploadstart>Start</button><button id=btuploadstop>Stop</button><button id=btuploadpause>Pause</button><button id=btuploadresume>Resume</button>
@@ -235,16 +241,37 @@ function generategcode(){
 }
 function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 	prepareimage();
-	var c = document.getElementById("myCanvas");
+    var img = document.getElementById("thepic");
+	rwidth=scale*img.naturalWidth;
+	rheight=scale*img.naturalHeight;
+	var ofx=getvalue("ofsX")*1;
+	var ofy=getvalue("ofsY")*1;
+	
+	var c = document.getElementById("myCanvas1");
 	var ctx = c.getContext("2d");
-	var scale = 25.4 / getvalue('mdpi');
+	udpi=$("usedpi").checked;
+    var scale = 25.4 / getvalue('mdpi');
+	if (!udpi){
+		ww=getvalue("mwidth").split("x");
+		rwidth=ww[0]*1;
+		if (ww[1]==undefined)
+			rheight=ww[0]*img.naturalHeight/img.naturalWidth;
+		else
+			rheight=ww[1]*1;
+		scale=rwidth/img.naturalWidth;
+		setvalue('mdpi',mround(25.4/scale));
+	}
+	
+	
 	var zdown=getvalue("zdown");
 	var waktu=0;
 	var w0=0;
 	var w1=0;
 	var row=bmw;
+
 	var stepx=mw/bmw;
 	var stepy=mh/bmh;
+
 	var r2=sqr(r);
 	var rx=r/stepx;
 	var ry=r/stepy;
@@ -257,21 +284,23 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 	for (var ji=-Math.ceil(ry);ji<=ry;ji++){
 		for (var ii=-Math.ceil(rx);ii<=rx;ii++){
 			// flat bit
+			//var addr=Math.floor(ji*row)+Math.floor(ii);
+			var addr=ji*row+ii;
 			if (endmill==2){
 				lr=sqr(ii*stepx)+sqr(ji*stepy);
-				if (lr<=r2)rd.push([ji*row+ii,0,ii,ji]);
+				if (lr<=r2)rd.push([addr,0,ii,ji]);
 			}			
 			// v bit
 			if (endmill==0){
 				lr=sqr(ii*stepx)+sqr(ji*stepy);
 				c2=sqrt(lr)*ve; //  0  1         2  3  4          5 
-				if (lr<=r2)rd.push([ji*row+ii,c2,ii,ji]);
+				if (lr<=r2)rd.push([addr,c2,ii,ji]);
 			}			
 			// ballnose
 			if (endmill==1){
 				lr=sqr(ii*stepx)+sqr(ji*stepy);
 				c2=r2-(lr); //  0  1         2  3  4          5 
-				if (c2>=0)rd.push([ji*row+ii,r-sqrt(c2),ii,ji]);
+				if (c2>=0)rd.push([addr,r-sqrt(c2),ii,ji]);
 			}			
 		}
 	}
@@ -321,14 +350,14 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 		var zp=0;
 		var xp=Math.floor(rx)*stepx;
 		var yp=Math.floor(ry)*stepy;
-		gcodes.push("M3\nG0 F2000 Z2\nG0 X"+mround(xp)+" Y"+mround(yp)+"\nG1 F"+feed+" Z0");
+		gcodes.push("M3\nG0 F2000 Z2\nG0 X"+mround(xp+ofx)+" Y"+mround(yp+ofy)+"\nG1 F"+feed+" Z0");
 		var zm=0;
 		for (var fj = 0; fj < bmh; fj += skip) {
 			j=Math.floor(fj);
 			var rep=rep2;
 			var  zsc,a;
 			if (j==0)rep=Math.max(rep1,rep2);
-			gcodes.push(";Line "+j+"\nG1 Z"+mround(-zm)+" Y"+mround(j*stepy));
+			gcodes.push(";Line "+j+"\nG1 Z"+mround(-zm)+" Y"+mround(j*stepy+ofy));
 			for (var r=0;r<rep;r++){
 				n=!n;
 				var lz=-1000;
@@ -346,8 +375,8 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 					//if (zm==undefined)zm=0;
 					//if (zm==NaN)zm=0;
 					if ((lz!=zm) || (ni==0) || (ni==bmw-1)){
-						if (ni>0)gcodes.push("G1 X"+mround(lx)+" Z"+mround(-lz));
-						gcodes.push("G1 X"+mround(xp)+" Z"+mround(-zm));
+						if (ni>0)gcodes.push("G1 X"+mround(lx+ofx)+" Z"+mround(-lz));
+						gcodes.push("G1 X"+mround(xp+ofx)+" Z"+mround(-zm));
 						lz=zm;
 					}
 					lx=xp;
@@ -361,10 +390,12 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 		var rep1=getvalue("repeat1");
 		var rep2=getvalue("repeat2");
 		var zm=0;
-		var sx=Math.floor(bmw/2);
-		var sy=Math.floor(bmh/2);
+		var sx=Math.ceil(bmw/2);
+		var sy=Math.ceil(bmh/2);
 		var w=0;
-		var wmax=Math.max(bmw,bmh);
+		var wmin=Math.min(sx,sy);
+		var dy=Math.abs(sy-wmin);
+		var dx=Math.abs(sx-wmin);
 		var xp,yp;
 		gcodes.push("M3\nG0 F2000 Z1\nG1 F"+feed+" Z2");
 		var rep1=getvalue("repeat1");
@@ -384,7 +415,7 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 			//if (zm==undefined)zm=0;
 			//if (zm==NaN)zm=0;
 			var g1;
-			if (m)g1="G1 Y"+mround(yp); else g1="G1 X"+mround(xp);
+			if (m)g1="G1 Y"+mround(yp+ofy); else g1="G1 X"+mround(xp+ofx);
 			//gcodes.push(g1+" Z"+mround(-zm));return;
 
 			if ((lz!=zm) || fp){
@@ -394,21 +425,24 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 			}
 			lx=g1;
 		}
-		while (w<=wmax){
+		while (w<=wmin){
 		
 			//make rectangular by P = w
 			rep=rep2;
 			if (jw=0)rep=Math.max(rep1,rep2);
 			for (var r=0;r<rep;r++){
 				zsc=(r+1)/rep;
+				xp=(sx+w+dx);//if (xp>=bmw)xp=bmw-1;
+				yp=(sy-w-dy);//if (yp<0)yp=0; 
+				gcodes.push("G0 Z1\nG0 X"+mround(xp*stepx+ofx)+" Y"+mround(yp*stepy+ofy));
 				// top right to left top
-				xp=(sx+w);if (xp>=bmw)xp=bmw-1;
-				yp=(sy-w);if(yp<0)yp=0;
-				gcodes.push("G0 Z1\nG0 X"+mround(xp*stepx)+" Y"+mround(yp*stepy));
-				lx=0;for (var i=sx+w;i>=sx-w;i--)storegcode(sy-w,i,0,Math.abs(sx-i)==w);
-				lx=0;for (var j=sy-w;j<=sy+w;j++)storegcode(j,sx-w,1,Math.abs(sy-j)==w);
-				lx=0;for (var i=sx-w;i<=sx+w;i++)storegcode(sx+w,i,0,Math.abs(sx-i)==w);
-				lx=0;for (var j=sy+w;j>=sy-w;j--)storegcode(j,sx+w,1,Math.abs(sy-j)==w);
+				lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx);
+				// top left to bottom left 
+				lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy);
+				// botton left bottom right
+				lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx);
+				// bottom right to top right
+				lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy);
 			}
 			w++;
 		}
@@ -480,7 +514,7 @@ function sharpen(ctx, w, h, mix) {
 	ctx.putImageData(dstData, 0, 0);
 }
 function prepareimage() {
-	var c = document.getElementById("myCanvas");
+	var c = document.getElementById("myCanvas1");
 	var img = document.getElementById("thepic");
 	var scale = 25.4 / getvalue('mdpi');
 	rwidth=scale*img.naturalWidth;
@@ -488,7 +522,7 @@ function prepareimage() {
 	img.width=getvalue("width")*1;
 	
 	c.width=img.width;
-	c.height=getvalue("height");
+	c.height=getvalue("height")*1;
 	var ctx = c.getContext("2d");
 	var flip=$("flip").checked;
 	var d=0;//getvalue("dia")*0.75;
@@ -513,7 +547,7 @@ function prepareimage() {
 	mh=rheight*1.0;
 	var stepx=mw/bmw;
 	var stepy=mh/bmh;
-	$("mwidth").innerHTML="Size: "+mround(mw)+" x "+mround(mh)+"mm <br>Step mm X:"+mround(stepx)+ " Y:"+mround(stepy);
+	$("mwidth1").innerHTML="Size: "+mround(mw)+" x "+mround(mh)+"mm <br>Step mm X:"+mround(stepx)+ " Y:"+mround(stepy);
 	//var mh=mw*c.height/c.width;
 	var dotscale=mw/bmw;
 	
@@ -684,12 +718,17 @@ function download() {
   //document.body.removeChild(element);
   return false;
 }
+function hideId(x){
+}
+function showId2(x){}
+function showId(x){}
+
 
 </script>
 <script src="cnc.js" type="text/javascript" charset="utf-8"></script>
 <script>
-setclick("upload1",function(){begincompress(editor.getValue());upload();});
-setclick("upload2",function(){begincompress(reditor.getValue());upload();});
+setclick("upload1",function(){begincompress(editor.getValue());upload("ukir.gcode");});
+setclick("upload2",function(){begincompress(reditor.getValue());upload("ukir.gcode");});
 
 </script>
 

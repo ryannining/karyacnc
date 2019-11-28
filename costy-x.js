@@ -294,6 +294,7 @@ function getoffset(){
 }
 function prepare_line2(lenmm,lines,ofs1) {
 	var detail=getvalue("curveseg")*1;
+	var ovmore=getvalue("ovcmore")*1;
     var f2 = "F"+(getvalue('feed') * 60)+" ";
     var ofs = getoffset()+ofs1;
 	var sty=gcstyle[shapenum];
@@ -419,7 +420,7 @@ function prepare_line2(lenmm,lines,ofs1) {
 		if ((cmd == CMD_CNC) && getchecked("overcut")) {
 			//ov+=$("overcut").value/10.0;
 			var ro=$("offset").value/2;
-			ov+=sqrt(2*sqr(ro))-ro;
+			ov+=(sqrt(2*sqr(ro))-ro)+ovmore;
 		}
 		cxt=0;
 		cyt=0;
@@ -1195,6 +1196,10 @@ function lines2gcode(num, data, z,z2, cuttabz, srl,lastlayer = 0,firstlayer=1,sn
     if (lines.length==0)return;
 	var X1 = lines[0][1];
     var Y1 = lines[0][2];
+	if (ccw) {
+		X1 = lines[lines.length-1][1];
+		Y1 = lines[lines.length-1][2];
+	}
     var sc = 1;
     if ($("flipx").checked) {
         sc = -1;
@@ -1536,6 +1541,7 @@ function gcode_verify(en=0) {
     if ($("flipx").checked) sc = -1;
 	var f1 = getvalue('trav') * 60;
 	pdn1 = getvalue("pdn").replace("=cncz", "0") + '\n';
+	pup1 = getvalue("pup") + '\n';
     setvalue("pgcode", getvalue("pup") + "\nM3 S255 P10\nG0 F"+f1+" X" + mround(sc * xmin) + " Y" + mround(ymin) + "\nM3 S255 P10\nG0 X" + mround(sc * xmax) + "\nM3 S255 P10\nG0 Y" + mround(ymax) + "\nM3 S255 P10\nG0 X" + mround(sc * xmin) + " \nM3 S255 P10\nG0 Y" + mround(ymin) + "\nG0 X0 Y0 Z0\n"+pdn1+"\n");
     autoprobe="G30 S"+getvalue("alres")+" X" + mround(w*10) + " Y" + mround(h*10) ;
 	drawengrave();	
@@ -1543,7 +1549,7 @@ function gcode_verify(en=0) {
 	doconcentricengrave();
 	var g=getvalue("engcode")+gcodecarve;
 	
-	if (g)setvalue("engcode",g+"\nG0 X0 Y0 F15000\ng0 z0\nm3 s0\nM5\n");
+	if (g)setvalue("engcode",g+pup1+"G0 X0 Y0 F15000\ng0 z0\nm3 s0\nM5\n");
 
 	ctx.font = "30px Arial";
     ctx.fillStyle = "black";
@@ -1551,6 +1557,7 @@ function gcode_verify(en=0) {
 	ctx.fillText("Feed:"+getvalue("feed")+"mm/s   Tool \u2300 :"+getvalue('offset')+"mm", 2, c.height-42);
 	
 }
+var acpengrave=0;
 
 function sortedgcode() {
 	totaltime=0;
@@ -1630,7 +1637,7 @@ function sortedgcode() {
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
-        s += "g0 f350 z" + mround(lastz)+"\n";
+        //s += "g0 f350 z" + mround(lastz)+"\n";
 		cuttab += tabz;
 		_spiraldown=$("spiraldown").checked;
     } else {
@@ -1748,8 +1755,8 @@ function sortedgcode() {
 			var isacp=0;
 			if (getchecked("acpmode")){
 				var zf=zdown*_re;
-				if (!iseng)zf-=1.5;
-				acp=ps+"G1 X"+mround(sgcodes[j][0][2])+" Y"+mround(sgcodes[j][0][3])+" F9000\n";
+				if (!iseng)zf-=1.5;else zf-=0.5;
+				acp=ps+"G0 X"+mround(sgcodes[j][0][2])+" Y"+mround(sgcodes[j][0][3])+" F"+(getvalue("trav")*60)+"\n";
 				acp+="G1 Z"+mround(zf)+" F600\n";
 				isacp=1;
 			}
@@ -1761,6 +1768,7 @@ function sortedgcode() {
 					s+=acp;
 				}
 			}
+			var ccw=0;
 			for (var i = 0; i < _re; i++) {
                 var fff=0;
                 if (isacp && (i>0) && (i<_re-1)){
@@ -1768,9 +1776,11 @@ function sortedgcode() {
                 }
 				//if (i<=1)cncz2 += zdown*0.5;else 
 				if (spiraldown)z2=cncz2;else z2=cncz; 
-				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, vcuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2+fff,0);
+				if (acpengrave && iseng)cncz=z2=_re*zdown;
+				sr= lines2gcode(sgcodes[j][1], sgcodes[j][0], z2,cncz, vcuttab,sgcodes[j][0][5],i==_re-1,i==0,snum,f2+fff,ccw);
 				if(docarve)sr='';
 				if (iseng){
+				  ccw=ccw?0:1;	
 				  se+=sr;	
 				} else s+=sr;
 				cncz+=zdown;
@@ -1787,7 +1797,7 @@ function sortedgcode() {
 	if ($("usestart").checked)xystart=getvalue("startat").split(",");
 	var mz="G92 Z0 X"+xystart[0]+" Y"+xystart[1]+"\n";
 	if (isgrbl)mz=machinezero;
-	s=mz+"\n"+s;
+	if ($("zerobefore").checked)s=mz+"\n"+s;
     s = s + getvalue("pup");
 	var f1 = getvalue('trav') * 60;
     s = s + '\nG0 F'+f1+' Y'+xystart[1]+' \n G0 X'+xystart[1]+'\n';
@@ -1907,7 +1917,7 @@ function myFunction(scale1) {
 	cuttablen=getvalue("tablen")*1+getvalue("offset")*1;
 	cutevery=getvalue("tabevery")*1;
 	cutofs=getvalue("tabofs")*1;
-	detail=getvalue("curveseg")*1;
+	detail=getvalue("curveseg")*0.5;
     var pw1 = 1;
     var pw2 = 0; //getvalue('pwm');
     var pup = getvalue('pup');

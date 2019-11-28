@@ -56,7 +56,7 @@ var filament = 0;
 var printtime = 0;
 
 var eMul = 50;
-var xyscale=100;
+var xyscale=25;
 var eBound = 127;
 var eSize = 1;
 
@@ -678,13 +678,13 @@ function drawvcarve(){
 var cglines=[];
 
 function clcarve(tofs,ofs1,clines){
-	var detail=1.0;
     if (cmd==CMD_CNC)tofs=tofs*0.8;
 	if (tofs<0.2)tofs=0.2;
 	if (ofs1<0.2)ofs1=0.2;
 	var paths=[];
 	cglines=[];
 	var scale = 1000;
+	var detail=getvalue("curveseg")*scale*0.5;
 	for (var ci in clines){
 		var path=[];
 		var lines=clines[ci];
@@ -700,7 +700,7 @@ function clcarve(tofs,ofs1,clines){
 			//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
 			
 		var glines=[];
-		var ofs=0;
+		var ofs=-tofs;
 		var maxx=100;
 		while (maxx-->0)
 		{
@@ -724,7 +724,7 @@ function clcarve(tofs,ofs1,clines){
 			for (var i = 0; i < offsetted_paths.length; i++) {
 				var newline=[];
 				var path=offsetted_paths[i];
-				var path=ClipperLib.JS.Lighten(path,50);
+				var path=ClipperLib.JS.Lighten(path,detail);
 				var s=0;
 				var ds=0;
 				var cx=0;
@@ -841,7 +841,7 @@ function concentricgcode(){
 
 	
 
-	gc+=pup+"G0 Y0\nG0 X0\n";
+	gc+=pup;
 	//if (ENGRAVE==1)
 	gc=getvalue("engcode")+gc;
 	setvalue("engcode",gc);
