@@ -387,8 +387,8 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 	}
 	// from center rectangular ccw
 	if (feedmethod==2) {
-		var rep1=getvalue("repeat1");
-		var rep2=getvalue("repeat2");
+		var rep1=getvalue("repeat1")*1;
+		var rep2=getvalue("repeat2")*1;
 		var zm=0;
 		var sx=Math.ceil(bmw/2);
 		var sy=Math.ceil(bmh/2);
@@ -398,10 +398,8 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 		var dx=Math.abs(sx-wmin);
 		var xp,yp;
 		gcodes.push("M3\nG0 F2000 Z1\nG1 F"+feed+" Z2");
-		var rep1=getvalue("repeat1");
-		var rep2=getvalue("repeat2");
 		var lz,lx,a,sxc,rep;
-		storegcode=function (j,i,m,fp){
+		storegcode=function (j,i,m,fp,ff){
 			if (i<0)i=0;
 			if (j<0)j=0;
 			if (i>=bmw)i=bmw-1;
@@ -412,6 +410,9 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 			yp=j*stepy;
 			// tolerance = 0.05mm 
 			zm=Math.round(bmdz[a]*zsc*40)*0.025;
+			if (ff){
+				gcodes.push("G0 Z"+mround(-zm)+"\nG0 X"+mround(xp+ofx)+" Y"+mround(yp+ofy));
+			}
 			//if (zm==undefined)zm=0;
 			//if (zm==NaN)zm=0;
 			var g1;
@@ -429,20 +430,21 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 		
 			//make rectangular by P = w
 			rep=rep2;
-			if (jw=0)rep=Math.max(rep1,rep2);
+			if (w==0)rep=rep1;
 			for (var r=0;r<rep;r++){
 				zsc=(r+1)/rep;
 				xp=(sx+w+dx);//if (xp>=bmw)xp=bmw-1;
 				yp=(sy-w-dy);//if (yp<0)yp=0; 
-				gcodes.push("G0 Z1\nG0 X"+mround(xp*stepx+ofx)+" Y"+mround(yp*stepy+ofy));
+				if (w==0 && r==0)gcodes.push("G0 Z2\nG0 X"+mround(xp*stepx+ofx)+" Y"+mround(yp*stepy+ofy));
+
 				// top right to left top
-				lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx);
+				lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx+w+dx));
 				// top left to bottom left 
-				lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy);
+				lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
 				// botton left bottom right
-				lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx);
+				lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
 				// bottom right to top right
-				lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy);
+				lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
 			}
 			w++;
 		}

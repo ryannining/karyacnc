@@ -293,7 +293,7 @@ function getoffset(){
 	return ofs;
 }
 function prepare_line2(lenmm,lines,ofs1) {
-	var detail=getvalue("curveseg")*1;
+	var detail=getvalue("curveseg")*0.6;
 	var ovmore=getvalue("ovcmore")*1;
     var f2 = "F"+(getvalue('feed') * 60)+" ";
     var ofs = getoffset()+ofs1;

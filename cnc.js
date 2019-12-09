@@ -431,7 +431,7 @@ setclick("btupload", function() {
 });
 setclick("btjob5", function() {
     begincompress(jobs.join("\n"));
-	if(!warnoverflow)upload("jobs");
+	if(!warnoverflow)upload(getvalue("jobname")+".gcode");
 });
 
 setclick("btuploadstart",startprint);
@@ -700,7 +700,7 @@ function clcarve(tofs,ofs1,clines){
 			//  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
 			
 		var glines=[];
-		var ofs=-tofs;
+		var ofs=-(tofs*2);
 		var maxx=100;
 		while (maxx-->0)
 		{
@@ -821,8 +821,8 @@ function concentricgcode(){
 	
 	for (var j=0;j<sglines.length;j++){
 		gline=sglines[j][0];
+		gc+=pup;
 		for (var r=0;r<re;r++){
-			gc+=pup;
 			var zz=-(r+1)*rz;
 			for (var ni=0;ni<=gline.length;ni++){
 				var i=ni;
@@ -837,6 +837,8 @@ function concentricgcode(){
 				}
 			}
 		}
+		gc+=pup;
+		
 	}
 
 	
