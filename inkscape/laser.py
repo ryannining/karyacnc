@@ -290,6 +290,28 @@ class laser_gcode(inkex.Effect):
                 ws.send("\n")
             ws.send(">REVECTOR");
             ws.close()        
+    def export_path(self,paths,xmin,ymin):
+        f = open(self.options.directory+self.options.file, "w")
+        gcodes=[]
+        for pp in paths:
+            style=pp[0]
+            ss="P:"+style["fill:"]+":"+style["stroke:"]+":"+style["stroke-width:"]+"\n"
+            #f.write(ss)
+            for p in pp[1]:
+                s=str(p[0]-xmin)+","+str(p[1]-ymin)+"\n"
+                ss+=s
+            ss+="\n"
+            gcodes.append(ss)    
+            f.write(ss)
+        f.close()
+        #return
+        if self.options.karyacnc:
+            from websocket import create_connection
+            ws = create_connection("ws://"+self.options.karyaws+":"+self.options.port+"/")
+            for g in gcodes:
+                ws.send(g)
+            ws.send(">REVECTOR2");
+            ws.close()        
         
 
     def __init__(self):
@@ -330,7 +352,7 @@ class laser_gcode(inkex.Effect):
             c = []
             if len(p)==0 :
                 return []
-            p = self.transform_csp(p, layer)
+            #p = self.transform_csp(p, layer)
             for k in range(len(p)):
                 subpath = p[k]
                 cw=isClockwise(subpath)
@@ -789,6 +811,9 @@ class laser_gcode(inkex.Effect):
 
         print_(("self.layers=",self.layers))
         print_(("paths=",paths))
+        kpaths=[]
+        xmin=100000
+        ymin=100000
         for layer in self.layers :
             if layer in paths :
                 print_(("layer",layer))
@@ -831,31 +856,38 @@ class laser_gcode(inkex.Effect):
                         #gcode+=";"+str(cw)+"\n"
                         sum=0
                         ln=0
+                        kpath=[]
                         for icsp in range(num):
                             csp=sp[icsp]
+                            kpath.append((csp[1][0],csp[1][1]))
+                            xmin=min(xmin,csp[1][0])
+                            ymin=min(ymin,csp[1][1])
+                            """
                             icsp2=icsp+1
                             if icsp2==num:icsp2=0
                             csp2=sp[icsp2]
                             
                             cmd = 'L'
                             if first:
-                                cmd = 'M'
+                                cmd = 'M' 
                             first = False
-                            np.append([cmd,[csp[1][0],csp[1][1]]])
+                            np.append([cmd,[csp[1][0],-csp[1][1]]])
                             #          y2      *   x1       -   x2        *   y1   
                             #sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
                             #          x2      -   x1       *   x2        *   y1   
                             sum += (csp2[1][0] - csp[1][0]) * (csp2[1][1] + csp[1][1])
                             ln = ln + vector_from_to_length(csp2[1],csp[1])
                             #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
-                        
+                        """
+                        kpaths.append((pstyle,kpath))
+                        """
+                        pc.append(pstyle)
                         flip=sum<=0
                         if yellow:flip=not flip
                         clockw.append(flip)
                         if ln<4:flip=False
                         #if outer:flip=flip
                         if yellow or dyellow:flips.append(flip)
-                        pc.append(pstyle)    
                         outer=False
                        
                     # check inner or outside here
@@ -885,7 +917,7 @@ class laser_gcode(inkex.Effect):
                                 if (i!=j):
                                     spi=csp1[i]
                                     spj=csp1[j]
-                                    # check every point in spj is inside spi
+                                    # check every point in spi is inside spj
                                     flip=False
                                     for k in range(len(spi)):
                                         csp=spi[k]
@@ -910,6 +942,9 @@ class laser_gcode(inkex.Effect):
                 gcode += self.generate_gcode(curve, layer, 0,pc,flips)
 
         self.export_gcode(gcode)
+        """
+        self.export_path(kpaths,xmin,ymin)
+
 
 ################################################################################
 ###

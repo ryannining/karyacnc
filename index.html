@@ -87,7 +87,7 @@
 							<tr><td colspan=2>Disable Tab </td><td colspan=2><input id=disabletab class=saveit size=15></td></tr>
 							<tr><td colspan=2>Disable Ovc </td><td colspan=2><input id=disableovc class=saveit size=15></td></tr>
 							<tr><td colspan=2>Curve seg. </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
-							<tr><td colspan=2>Tab every </td><td colspan=2><input id=tabevery class=saveit value='200' size=5></td></tr>
+							<tr><td colspan=2>Tab every </td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
 							<tr><td colspan=2>Tab len </td><td colspan=2><input id=tablen class=saveit value='5' size=5></td></tr>
 							<tr><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
 							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
@@ -127,6 +127,7 @@
 							<tr><td colspan=2>Depth </td><td colspan=2><input size=1 id=carved value=3 class=saveit></td></tr>
 							<tr><td colspan=2>Repeat </td><td colspan=2><input size=1 id=carverep value=2 class=saveit></td></tr>
 							<tr><td colspan=2>Safe Z  </td><td colspan=2><input size=1 id=safez value="0.5" class=saveit></td></tr>
+							<tr><td colspan=2>CL Step  </td><td colspan=2><input size=1 id=clstep value="0.8" class=saveit></td></tr>
 						</table>
 				</td></tr>
 				<tr style="background:lime"><td>DPI</td><td colspan=2>Machine</td></tr>
@@ -345,6 +346,7 @@
 		<script src="costy-x.js"></script>
 		<script src="clipper.js"></script>
 		<script src="serial.js"></script>
+		<script src="gcodex.js"></script>
 		<script src="cnc.js"></script>
 	</body>
 

@@ -469,12 +469,12 @@ function modechange() {
         setvalue("pdn", "M3 S255");
     }
     if (val == 2) {
-        setvalue("pup", "M3 S0");
+        setvalue("pup", "");
         setvalue("pdn", "M3 S255");
     }
     if (val == 3) {
-        setvalue("pup", "G0 F850 Z2");
-        setvalue("pdn", "G0 F440 Z=cncz");
+        setvalue("pup", "G0 F3000 Z15");
+        setvalue("pdn", "G0 F1800 Z=cncz");
         //setvalue("feed", "3");
         //setvalue("zdown", "10");
     }
@@ -890,6 +890,11 @@ function startserver() {
                 }else 
                 if (e.data == ">REVECTOR") {
                     text1 = gcodetoText1(buff);
+                    refreshgcode();
+                    buff = "";
+                } else 
+                if (e.data == ">REVECTOR2") {
+                    text1 = pathstoText1(buff);
                     refreshgcode();
                     buff = "";
                 } else {

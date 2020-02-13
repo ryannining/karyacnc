@@ -82,6 +82,10 @@ function speed1(){
 function speed2(){
 	urlopen("gcode?t=m220 s130");	
 }
+function seteeprom(id,v){
+	urlopen("gcode?t=m210 P"+id+" S"+v);	
+}
+
 function zup(){
 	urlopen("gcode?t=G0 Z15 F800");	
 }
