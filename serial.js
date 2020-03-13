@@ -371,6 +371,9 @@ var listPorts = function() {
 var onGotDevices = function(ports) {
     var s = "";
     for (var i = 0; i < ports.length; i++) {
+        if (ports[i].path.indexOf("ttyS")>-1)continue;
+        if (ports[i].path.indexOf("\\\\.\\")>-1)continue;
+        
         if (ports[i].path)
             s = s + "<option value=" + ports[i].path + ">" + ports[i].path + "</option>";
     }

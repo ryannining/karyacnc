@@ -8,6 +8,13 @@ var CMD_3D = 4;
 var CMD_CNC = 3;
 var CMD_LASER = 1;
 var OVC_MODE = 0; // 1 drill 0 path
+
+function arrayRotate(arr, count) {
+  count -= arr.length * Math.floor(count / arr.length);
+  arr.push.apply(arr, arr.splice(0, count));
+  return arr;
+}
+
 function $(id) {
     return document.getElementById(id);
 }
@@ -309,17 +316,10 @@ function prepare_line2(lenmm, lines, ofs1) {
     oshapenum = shapenum;
     if (sty == undefined) sty = defaultsty;
     if ($("strokeoffset").checked) ofs += sty["stroke-width"] * 1;
-    var doEngrave = 0;
-    var dovcarve = 0;
-    var doconengrave = 0;
     if ($("enablecolor").checked) {
     		stro=sty["stroke"] ;
-        doEngrave = (RBcolor(stro) == "00ff") || (sty["fill"] == "#0000ff");
-        domarking = (RBcolor(stro) == "ff00") || (sty["fill"] == "#ff0000");
-        dovcarve = (sty["stroke"] == "#00ffff") || (sty["fill"] == "#00ffff");
-        doconengrave = (RBcolor(stro) == "8080") || (sty["fill"] == "#800080");
     }
-    if (dovcarve) ofs = 0.5;
+    if (sty.dovcarve) ofs = 0.5;
     ofs *= 0.5;
     maxofs = Math.max(ofs, maxofs);
     collapsepoint = cmd == CMD_CNC ? getvalue("drill") * 1 : 0;
@@ -347,7 +347,7 @@ function prepare_line2(lenmm, lines, ofs1) {
     } else {
         var glines = [];
         var clk = isClockwise(lines);
-        if (ofs != 0) { // cek disini
+        if (1){//(ofs != 0) { // cek disini
             // generate offset
             ///*
             var path = [];
@@ -371,10 +371,10 @@ function prepare_line2(lenmm, lines, ofs1) {
 
             co.AddPaths(paths, ClipperLib.JoinType.jtRound, ClipperLib.EndType.etClosedPolygon);
             co.MiterLimit = 2;
-            co.ArcTolerance = (dovcarve ? 0.01 : 0.02) * scale;
+            co.ArcTolerance = (sty.dovcarve ? 0.01 : 0.02) * scale;
             var delta = ofs * scale;
             if (!clk) delta = -delta;
-            if (doEngrave || doconengrave) delta = -(delta); // engrave always inside, so swap it
+            if (sty.doEngrave || sty.doconengrave) delta = -(delta); // engrave always inside, so swap it
             co.Execute(offsetted_paths, delta);
             var s = 0;
             var ds = 0;
@@ -384,10 +384,8 @@ function prepare_line2(lenmm, lines, ofs1) {
                 var newline = [];
                 var path = offsetted_paths[i];
                 var path = ClipperLib.JS.Lighten(offsetted_paths[i], detail * scale);
-                if (sty["fill"] == "#ff00ff") {
+                if (sty.dovcarve) {
                     combinedpath.push(path);
-                    if (sty["deep"]) carvesty["deep"] = sty["deep"];
-                    if (sty["repeat"]) carvesty["repeat"] = sty["repeat"];
                 } else {
                     if (path.length) {
                         for (var j = 0; j < path.length; j++) {
@@ -424,7 +422,7 @@ function prepare_line2(lenmm, lines, ofs1) {
             glines.push(lines);
             //oldlines.push(lines);
         }
-        if (sty["fill"] == "#ff00ff") {
+        if (sty.dovcarve) {
             // temporary save to combined and return empty			
             return [newlines, clk];
         }
@@ -489,6 +487,8 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
     if (closed) area = xarea();
     else area = 1;
     var lines;
+    var sty=gcstyle[shapenum];
+    //area-=sty.deep*1000;
     if (closed) {
         var ofs1 = 0;
         if ($("usefinish").checked) ofs1 = getvalue('finishline') * 1;
@@ -496,9 +496,10 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
         var lines = lines2[0];
         var clk = lines2[1];
         if (!$("smallfirst").checked) {
-            area = 1;
-            if (clk) area = 1000; // the outer still need to be the last
+            area = 100;
+            if (clk) area += 2000; // the outer still need to be the last
         }
+        if (sty.greenskip) area += 500000; // the outer still need to be the last
         for (var i = 0; i < lines.length; i++) {
             var line1 = lines[i];
             var ar = area;
@@ -638,9 +639,9 @@ function doengrave() {
     msort = function(a, b) {
         return (b * 1 - a * 1);
     };
-    var re = (carvesty["repeat"] != undefined) ? carvesty["repeat"] : getvalue("carverep");
+    var re = getvalue("carverep");
     re = (re * 1);
-    carvedeep = (carvesty["deep"] != undefined) ? carvesty["deep"] : getvalue("carved");
+    carvedeep = getvalue("carved");
     carvedeep *= 1;
     var rz = carvedeep / re;
 
@@ -870,20 +871,25 @@ var veeline;
 var conline;
 var oyct = 0;
 
-function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
+function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift) {
     //if (sxmax < sxmin);
-    cuttabz = 1;
+    cuttabz = 0;
+    var olx=lx;
+    var oly=ly;
+    if (shift== undefined)shift=0;
     var dline = [];
     engraveDPI = getvalue("rasterdpi") * 1;
     var sty = gcstyle[snum];
-    if (sty == undefined) sty = defaultsty;
+    var stu=sty == undefined;
+    if (stu) sty = defaultsty;
+    if (sty.greenskip)stu=1;
 
     var len = Math.abs(len);
     if (len < Math.min(50, cutevery * 2)) cuttabz = 0;
     if (disable_tab.indexOf(num + "") >= 0) cuttabz = 0;
     var lenc = 0;
-    var ccw = 0;
-    if ($("cutccw").checked) ccw = 1;
+    var ccw = flip;
+    if ($("cutccw").checked) ccw = !ccw;
 
     dv = Math.min(cutmax,Math.round(len / cutevery) * 2);
     //if (dv>8) dv=4;
@@ -940,9 +946,6 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
     lx2 = lx;
     ly2 = ly;
     nc = 2;
-    var doEngrave = 0;
-    var dovcarve = 0;
-    var doconcentric = 0;
     var concentricdeep = 0;
     if ($("enablecolor").checked) {
         var carvedeep = getvalue('carved') * 1;
@@ -950,13 +953,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
         fil = sty["stroke"];
         strokedeep = parseInt("0x" + stro.substr(3, 2)) * 0.1;
 
-        doconcentric = (stro.substr(1, 2) + stro.substr(5, 2) == "8080") || (sty["fill"] == "#800080");
-        doconcentric = (stro.substr(1, 2) + stro.substr(5, 2) == "8080") || (sty["fill"] == "#800080");
-        domarking = (stro.substr(1, 2) + stro.substr(5, 2) == "ff00") || (sty["fill"] == "#ff0000");
-        doEngrave = (stro.substr(1, 2) + stro.substr(5, 2) == "00ff") || (sty["fill"] == "#0000ff");
-        dovcarve = (sty["stroke"] == "#00ffff") || (sty["fill"] == "#00ffff");
-        greenskip = (sty["stroke"] == "#00ff00") || (sty["fill"] == "#00ff00");
-        if (doconcentric) {
+        if (sty.doconengrave) {
             concentricdeep = strokedeep > 0 ? strokedeep : carvedeep;
         }
     }
@@ -965,16 +962,21 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
         cll = isClockwise(lines);
         if (!cll) lcol = "#00C800";
     }
-    if (dovcarve) lcol = "#ffff00";
-    if (doconcentric) lcol = "#800080";
+    if (sty.dovcarve) lcol = "#ffff00";
+    if (sty.doconengrave) lcol = "#800080";
     ox = 0;
     oy = 0;
-    for (var ci = 0; ci < lines.length; ci++) {
+    ll=lines.length;
+    if (shift)ll++;
+    for (var ci = 0; ci < ll; ci++) {
         if (ccw) {
             i = (lines.length - 1) - ci;
         } else {
             i = ci;
         }
+        i+=shift;
+        if (i>=lines.length)i-=lines.length;
+        if (i>=lines.length)i-=lines.length;
         //vary speed on first few mm
         x = lines[i][1];
         y = lines[i][2];
@@ -986,19 +988,22 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
             x = y;
             y = sxmax - xx;
         }
-        if (ci && closed && doEngrave) {
+        if (ci && closed && sty.doEngrave) {
             engraveline(ox, oy, x, y);
         }
 
         ox = x;
         oy = y;
     }
-    for (var ci = 0; ci < lines.length; ci++) {
+    for (var ci = 0; ci < ll; ci++) {
         if (ccw) {
             i = (lines.length - 1) - ci;
         } else {
             i = ci;
         }
+        i+=shift;
+        if (i>=lines.length)i-=lines.length;
+        if (i>=lines.length)i-=lines.length;
         nlenctr = lenctr;
         lenctr += lines[i][4];
         //vary speed on first few mm
@@ -1024,7 +1029,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
         if (cmd == CMD_CNC) {
             if (lines[i][4]) {
                 iscut = 0;
-                if (cuttabz) {
+                if (cuttabz && ci>0) {
                     // if cut1 is in lenc and lencnext then cut the line
                     // and dont increase the i counter
                     if ((slc >= lenc) && (slc <= lenctr)) {
@@ -1055,12 +1060,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
 
         g = ci;
         if (g >= 0) {
-            if (g == 0) {
-                X1 = (x + maxofs) * dpm;
-                Y1 = (y + maxofs) * dpm;
-                jmltravel++;
-                ctx.strokeStyle = "#88888888";
-            }
+
             if (g > 0) ctx.strokeStyle = lcol;
             if (iscut) {
                 if (incut == 1) {
@@ -1088,13 +1088,19 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
             lx2 = x;
             ly2 = y;
             if (g == 0) {
-                ctx.stroke();
+                X1 = lx;
+                Y1 = ly;
+                if (!stu) {
+                    jmltravel++;
+                    ctx.strokeStyle = "#88888888";
+                    ctx.stroke();
+                }
                 ctx.beginPath();
                 ctx.setLineDash(dash);
                 ctx.moveTo(lx, ly);
             }
             if (iscut) {
-                ctx.arc(lx, ly, 2, 0, 2 * Math.PI);
+                if (cuttabz)ctx.arc(lx, ly, 2, 0, 2 * Math.PI);
                 nc += 2;
                 ctx.moveTo(lx, ly);
             }
@@ -1107,12 +1113,16 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
     d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
     if (num == "") return;
 
-    ctx.beginPath();
+    //ctx.beginPath();
 
     //ctx.setLineDash([2]);
-    ctx.moveTo(lx, ly);
+    if (closed){
+        lx=X1;
+        ly=Y1;
+    }
+    //ctx.moveTo(lx, ly);
     //ctx.lineTo(X1, Y1);
-    ctx.stroke();
+    //ctx.stroke();
     //ctx.endPath();
     //srl.push([X1, Y1, 0, tl + d1, 0,[0,0],0]);
     //if (seg) {
@@ -1195,8 +1205,12 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum) {
         clw = "<";
         if (cll) clw = ">";
     }
-    if (dovcarve) veeline.push(dline);
-    if (doconcentric) conline.push([dline, concentricdeep]);
+    if (sty.dovcarve) veeline.push(dline);
+    if (sty.doconengrave) conline.push([dline, concentricdeep]);
+    if (sty.greenskip){
+        lx=olx;
+        ly=oly;
+    }
     // display ccw and num 
     //if (cxmin < cxmax) ctx.fillText("#" + num+clw, dpm * ((cxmax - cxmin) / 2 + cxmin), dpm * cymax + 10);
 }
@@ -1214,7 +1228,7 @@ function uptosafe(f){
 }
 function movetofast(x,y,f){
 }
-function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip) {
+function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip,shift) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
     if (z2 > skipz) {
@@ -1225,17 +1239,17 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         z = 0;
         z2 = 0;
     }
-
+    var closed=data[7];
     var dz = z2 - z;
 
 
     var len = Math.abs(data[0]);
-    if (len < Math.min(50, cutevery * 2)) cuttabz = 0;
+    if (len < Math.min(50, cutevery * 2)) cuttabz = z2;
     //    if (len < 50) cuttabz = z;
     if (disable_tab.indexOf(num + "") >= 0) cuttabz = z;
     var lenc = 0;
     var ccw = flip ? 1 : 0;
-    if ($("cutccw").checked) ccw = flip ? 1 : 0;
+    if ($("cutccw").checked) ccw = !ccw;
 
     dv = Math.min(cutmax,Math.round(len / cutevery) * 2);
     //if (dv>4)dv=4;
@@ -1246,11 +1260,14 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     fm = 0;
     var lines = data[4];
     if (lines.length == 0) return;
-    var X1 = lines[0][1];
-    var Y1 = lines[0][2];
+    
+    var X1 = lines[shift][1];
+    var Y1 = lines[shift][2];
     if (ccw) {
-        X1 = lines[lines.length - 1][1];
-        Y1 = lines[lines.length - 1][2];
+        var p=lines.length - 1+shift;
+        if (p>=lines.length)p-=lines.length;
+        X1 = lines[p][1];
+        Y1 = lines[p][2];
     }
     var sc = 1;
     if ($("flipx").checked) {
@@ -1351,6 +1368,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         } else {
             i = ci;
         }
+        i+=shift;
+        if (i>=lines.length)i-=lines.length;// rotate if shifted
         nlenctr = lenctr;
         lenctr += lines[i][4];
         //vary speed on first few mm
@@ -1439,6 +1458,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         ly = y;
         lz = zz;
     }
+    // close the loop
+    if (closed)gcode1(f2 * fm3, X1, Y1, zz);
     //close loop
     if (!lastlayer && (cmd == CMD_3D)) {
         // if 3d then move along some mm
@@ -1492,13 +1513,14 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         // if not 3d	
     } // else gcode1(f2 * fm, X1, Y1);
 
-
+    
     if (cmd == 2) {
         // if foam mode must move up
         gcode0(f1, X1, 0);
     }
     //gcode0(f1,X1,Y1);
     lastz = z;
+    // if not closed loop then pen up
     if ((lines[0][1] != lines[lines.length - 1][1]) ||
         (lines[0][2] != lines[lines.length - 1][2])) div += pup + "\n";
 
@@ -1549,12 +1571,10 @@ function gcode_verify(en = 0) {
         snum = sgcodes[i][0][8];
         sty = gcstyle[snum];
         stro = sty["stroke"];
-        doconcentric = (stro.substr(1, 2) + stro.substr(5, 2) == "8080") || (sty["fill"] == "#800080");
 
         if (sty == undefined) sty = defaultsty;
-        nocut = disable_cut.indexOf(sgcodes[i][1] + "") >= 0;
-        if ((sty["stroke"] == "#0000ff") || (sty["fill"] == "#0000ff") || (sty["fill"] == "#ff00ff") || (doconcentric)) nocut = !c1;
-        if ((sty["stroke"] == "#00ff00") || (sty["fill"] == "#00ff00")) nocut = 1;
+        nocut = sty.greenskip;
+        if (sty.doEngrave  || (sty.doconengrave)) nocut = !c1;
         if (nocut) {
             dash = [5, 5];
             col = "gray";
@@ -1563,7 +1583,7 @@ function gcode_verify(en = 0) {
             sfinal += Math.abs(sgcodes[i][0][0]);
             col = sty["stroke"];
         }
-        draw_line(sgcodes[i][1], col, sgcodes[i][0][4], sgcodes[i][0][5], dash, sgcodes[i][0][0], sgcodes[i][0][7], snum);
+        draw_line(sgcodes[i][1], col, sgcodes[i][0][4], sgcodes[i][0][5], dash, sgcodes[i][0][0], sgcodes[i][0][7], snum,sgcodes[i][2],sgcodes[i][3]);
         if (en && (ENGRAVE == 1)) doengrave();
     }
     if (en) {
@@ -1638,34 +1658,85 @@ function sortedgcode() {
     var ly = 0;
     e1 = 0;
     sortit = 1;
+	var cs=-1;
+	var sflip,sshift;
+    // gcodes.push([lenmm, "", x1, y1, lines[i], srl, ar, closed, shapenum]);    
+    for (var i = 0; i < gcodes.length; i++) {
+        var sty=gcstyle[gcodes[i][8]];
+        sty.childs=sty.ochilds; // reset child number counter
+    }
     for (var j = 0; j < gcodes.length; j++) {
         if (sortit) {
-            var cs = -1;
+            cs = -1;
             var bg = 10000000;
+			sflip=0;
+			sshift=0;
             for (var i = 0; i < gcodes.length; i++) {
+                var sty=gcstyle[gcodes[i][8]];
+                if (sty.childs>0) 
+                    continue; // if still have child do not process
+                var pts = gcodes[i][4];
+                var shift=0;
+                var flip=0;
+                var dis=1000000;
+                var pstep=Math.floor(pts.length/100)+1;
+                if (gcodes[i][7]) { // if closed loop we can check all the points
+                    for (var p=0;p<pts.length;p+=pstep){
+				        var dx = pts[p][1] - lx;
+				        var dy = pts[p][2] - ly;
+				        var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
+				        if (dis2<dis){
+					        shift=p;
+					        dis=dis2;
+				        }
+                    }
+                } else { // if segment then only check the corner
+				        var dx = pts[0][1] - lx;
+				        var dy = pts[0][2] - ly;
+				        dis = sqrt(dx * dx + dy * dy); // distance + area size
+				        dx = pts[pts.length - 1][1] - lx;
+				        dy = pts[pts.length - 1][2] - ly;
+				        var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
+                        if (dis2<dis){
+                            flip=1;
+                            dis=dis2;
+                        }
+                } 
+                // we already use closest and the hierarchy , so no need area size
+                //dis+=(gcodes[i][6] - 1);
 
-                var dx = gcodes[i][2] - lx;
-                var dy = gcodes[i][3] - ly;
-                var dis = sqrt(dx * dx + dy * dy) + (gcodes[i][6] - 1); // distance + area size
-                //var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
+				//var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
 
                 if ((gcodes[i][6] > 0) && (dis < bg)) {
                     cs = i;
+					sshift=shift;
+					sflip=flip;
                     bg = dis;
+
+                }
+            }
+            if (cs>=0){
+                sty=gcstyle[gcodes[cs][8]];
+                for (var pi in sty.parent){
+                    gcstyle[sty.parent[pi]].childs--;
                 }
             }
         } else cs = j;
         // smalles in cs
         if (cs >= 0) {
-            sgcodes.push([gcodes[cs], cs + 1]);
+            
+            sgcodes.push([gcodes[cs], cs + 1,sflip,sshift]);
             gcodes[cs][6] = -gcodes[cs][6];
-            if (1) { //gcodes[7]){
-                lx = gcodes[cs][2];
-                ly = gcodes[cs][3];
-            } else {
-                var line = gcodes[cs][4];
-                lx = line[line.length - 1][1];
-                ly = line[line.length - 1][2];
+			var pts = gcodes[cs][4];
+			// closed path back to first position
+            lx = pts[sshift][1];
+            ly = pts[sshift][2];
+            if (!gcodes[cs][7]){
+				// segment path back to last point
+				if (!sflip) {
+                    lx = pts[pts.length - 1][1];
+                    ly = pts[pts.length - 1][2];
+                }
             }
         }
     }
@@ -1720,7 +1791,6 @@ function sortedgcode() {
             fnl = sgcodes[j][0][1] == "F"; // "F" = finish line
             sty = gcstyle[snum];
             stro = sty["stroke"];
-            doconcentric = (stro.substr(1, 2) + stro.substr(5, 2) == "8080") || (sty["fill"] == "#800080");
             var f2 = getvalue('feed') * 60;
             if (sty == undefined) sty = defaultsty;
             if ((ov > 0) && (cmd == CMD_CNC)) {
@@ -1752,16 +1822,10 @@ function sortedgcode() {
             var strokedeep = 0;
             if ($("enablecolor").checked) {
                 stro = sty["stroke"];
-                strokedeep = parseInt("0x" + stro.substr(3, 2)) * 0.1;
-                doconcentric = (stro.substr(1, 2) + stro.substr(5, 2) == "8080") || (sty["fill"] == "#800080");
-                domarking = (stro.substr(1, 2) + stro.substr(5, 2) == "ff00") || (sty["fill"] == "#ff0000");
-                doEngrave = (stro.substr(1, 2) + stro.substr(5, 2) == "00ff") || (sty["fill"] == "#0000ff");
-                dovcarve = (sty["stroke"] == "#00ffff") || (sty["fill"] == "#00ffff");
-                greenskip = (sty["stroke"] == "#00ff00") || (sty["fill"] == "#00ff00");
 
                 var _rz = (getvalue("carved") * 1) / (getvalue("carverep") * 1);
 
-                if (domarking) {
+                if (sty.domarking) {
                     spiraldown = 0;
                     f2 = getvalue('pltfeed') * 60;
                     zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
@@ -1771,7 +1835,7 @@ function sortedgcode() {
                     iscut = 0;
                     iseng = 1;
                 }
-                if ((doEngrave) || (sty["fill"] == "#ff00ff")) { // blue and pink (v carve)
+                if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
                     if ($("rasteroutline").checked) {
                         if (cmd == CMD_LASER) _re = 1;
                         else {
@@ -1787,15 +1851,15 @@ function sortedgcode() {
                     iscut = 0;
                     iseng = 1;
                 }
-                if (greenskip) {
+                if (sty.greenskip) {
                     _re = 0;
                     iscut = 0;
                 }
-                if (doconcentric) {
+                if (sty.doconengrave) {
                     _re = 0;
                     iscut = 0;
                 }
-                if (dovcarve) { // cyan == V carve
+                if (sty.dovcarve) { // cyan == V carve
                     _re = 1;
                     docarve = 1;
                     iscut = 0;
@@ -1814,10 +1878,10 @@ function sortedgcode() {
                 len += lines[ci][4];
             }
             sgcodes[j][0][0] = len;
-
+            var shift = sgcodes[j][3];
             // do burn cutting
             if ((_re * iscut > 0) && (cmd == CMD_LASER) && $("burn1").checked) {
-                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 0, snum, 60 * 60, 0);
+                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 0, snum, 60 * 60, 0,shift);
             }
 
             // do pen up
@@ -1841,13 +1905,14 @@ function sortedgcode() {
                     s += acp;
                 }
             }
+
             // do burn cutting for CNC, first cut is half 
             if ((_re * iscut > 0) && (cmd == CMD_CNC) && $("burn1").checked) {
                 s+=";Burn CNC \n";
-                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], zdown/2, zdown/2, vcuttab , sgcodes[j][0][5], 1, 1, snum, f2*1.25, 0);
+                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], zdown/2, zdown/2, vcuttab , sgcodes[j][0][5], 1, 1, snum, f2*1.25, 0,shift);
                 cncz = Math.max(cncz+zdown/2,cncdeep);
                 cncz2 =Math.max(cncz2+zdown/2,cncdeep);            }
-            var ccw = 0;
+            var ccw = sgcodes[j][2];
             for (var i = 0; i < _re; i++) {
                 var fff = 0;
                 if (isacp && (i > 0) && (i < _re - 1)) {
@@ -1860,7 +1925,7 @@ function sortedgcode() {
                 if (spiraldown) z2 = cncz2;
                 else z2 = cncz;
                 if (acpengrave && iseng) cncz = z2 = _re * zdown;
-                sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, ccw);
+                sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, ccw,shift);
                 if (docarve) sr = '';
                 if (iseng) {
                     //ccw = ccw ? 0 : 1;
@@ -1872,7 +1937,7 @@ function sortedgcode() {
             }
             // do last cutting
             if (_re && spiraldown && !ismark) {
-                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 0, snum, f2, 0);
+                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 0, snum, f2, 0,shift);
             }
             //s+=pup1+"\n\n";
         }
@@ -1978,9 +2043,7 @@ function myFunction(scale1) {
     shapenum = 0;
     oshapenum = -1;
     combinedpath = [];
-    carvesty["deep"] = undefined;
-    carvesty["repeat"] = undefined;
-
+ 
     //text1=Potrace.getSVG(1);
     //alert(text1);
     pause_at = getvalue('pauseat').split(",");
@@ -2320,9 +2383,11 @@ function isInside(x,y, path){
         j=i;
     }
     return inside
-}    
+}
 function pathstoText1(gx) {
+
     // try to support G2 and G3
+    var join=$("enablejoin").checked;
     gcstyle = [];
     gs = gx.split("\n");
     var scale = getvalue('scale') / 25.4;
@@ -2350,8 +2415,15 @@ function pathstoText1(gx) {
         "stroke": "#000000",
         "stroke-width": 0,
         "deep": undefined,
-        "repeat": undefined
+        "repeat": undefined,
+        doEngrave : 0,
+        domarking : 0,
+        dovcarve : 0,
+        doconengrave : 0,
+        greenskip : 0
+
     };
+	var mind=sqr(0.5);
     var inpath = 0;
     var paths = [];
     var path = [];
@@ -2364,16 +2436,13 @@ function pathstoText1(gx) {
     var ln=0;
     var yellow,dyellow,outer;
     var flips=[];
+    var xmi,xma,ymi,yma;
     for (var i in gs) {
         var lns = gs[i];
         if (lns[0] == "P") {
             var ss = lns.split(":");
             //[P:fill:stroke:strikewidth\n]
             inpath = 0;
-            sum=0;
-            ln=0;
-            cx=0;
-            cy=0;
             path = [];
             sty["fill"] = ss[1];
             yellow=(ss[1]=="#ffff00") || (ss[2]=="#ffff00") 
@@ -2382,24 +2451,28 @@ function pathstoText1(gx) {
             sty["stroke"] = ss[2];
             sty["stroke-width"] = parseFloat(ss[3]);
 
-            gcstyle.push(sty);
-            sty = {
-                "fill": "#000000",
-                "stroke": "#000000",
-                "stroke-width": 0,
-                "deep": undefined,
-                "repeat": undefined
-            };
+
         } else
             if (lns == "") {
                 if (inpath>1){
-                    sum -= (fx - ox) * (fy + oy);
-                    ln += sqrt(sqr(ox-fx)+sqr(oy-fy));
-                    flip=sum<=0
-                    if (yellow)flip=!flip;
-                    //if (ln<4)flip=0;
-                    paths.push([path,flip,cx/inpath,cy/inpath]);
+                    flip=yellow
+                    
+
+                    // closed loop ?
+                    var closed=sqr(ox-fx)+sqr(oy-fy)<mind;
+                    // no match found
+                    // path,flip,cx,cy,ln,parent,width,height,closed
+                    sty.childs=0;
+                    paths.push([path,flip,0,0,0,0,0,0,closed,sty]);
+                    gcstyle.push(sty);
                     inpath=0;
+                    sty = {
+                        "fill": "#000000",
+                        "stroke": "#000000",
+                        "stroke-width": 0,
+                        "deep": undefined,
+                        "repeat": undefined
+                    };                    
                 }
             } else {
                 // X,Y
@@ -2407,46 +2480,157 @@ function pathstoText1(gx) {
                 var ss = lns.split(",");
                 var x=parseFloat(ss[0]);
                 var y=parseFloat(ss[1]);
-                cx+=x;
-                cy+=y;
                 if (inpath==1){
                     fx=x;
                     fy=y;
                 }
                 path.push([x, y]);
-                if (inpath>1){
-                    //          y2      *   x1       -   x2        *   y1   
-                    //#sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
-                    //          x2      -   x1       *   x2        *   y1   
-                    sum -= (ox - x) * (oy + y);
-                    ln += sqrt(sqr(ox-x)+sqr(oy-y));
-                }
                 ox=x;
                 oy=y;
             }
 
     }
+    
+    // make polylines from segmented
+    if (join){
+        for (var i in paths){
+                        // if not closed then find previous paths that match the endpoint
+            var pa=paths[i];
+            if (pa[0].length==0)continue;
+            if (!pa[8]){
+                
+                for(var ii in paths){
+                    if (i==ii)continue;
+                    var p=paths[ii];
+                    if (p[0].length==0)continue;
+                    if (p[9].stroke!=pa[9].stroke)continue;// if not same stroke color contonue
+                    if (p[8])continue; // if already closed continue
+
+                    var ox,oy,fx,fy;
+                    fx=pa[0][0][0];
+                    fy=pa[0][0][1];
+                    ox=pa[0][pa[0].length-1][0];
+                    oy=pa[0][pa[0].length-1][1];
+                    
+                    var p1=p[0][0]; // first point
+                    var p2=p[0][p[0].length-1]; // last point
+                    if (sqr(p1[0]-ox)+sqr(p1[1]-oy)<mind) { // path1 -> path2
+                        pa[0]=pa[0].concat(p[0]);
+                        p[0]=[];
+
+                    }
+                    if (sqr(p2[0]-ox)+sqr(p2[1]-oy)<mind) { // path1 -> <path2 
+                        pa[0]=pa[0].concat(p[0].reverse());
+                        p[0]=[];
+                    }
+                }
+            }    
+        }
+    }
+    // clear path from empty path
+    var npaths=[];
+    for (var i in paths){
+        if (paths[i][0].length>0)npaths.push(paths[i]);   
+    }
+    paths=npaths;
+    
+    // calculate bounding
+        // fill the cx,cy,ln,width,height
+
+    for (var i in paths){
+                    // if not closed then find previous paths that match the endpoint
+        var pa=paths[i];
+        var ps=pa[0];
+        //if (ps.length==0)continue;
+        cx=0;
+        cy=0;
+        sum=0;
+        xma = -1000000;
+        xmi = 1000000;
+        yma = -1000000;
+        ymi = 1000000;
+        var ox=ps[ps.length-1][0];
+        var oy=ps[ps.length-1][1];
+        var j=0;
+        for (j in ps){
+            var p=ps[j];
+            var x=p[0];
+            var y=p[1];
+            xmi=Math.min(x,xmi);
+            xma=Math.max(x,xma);
+            ymi=Math.min(y,ymi);
+            yma=Math.max(y,yma);
+            if (j>0){
+                cx+=x;
+                cy+=y;
+                sum -= (ox - x) * (oy + y);
+                //ln += sqrt(sqr(ox-x)+sqr(oy-y));
+            }
+            ox=x;
+            oy=y;
+        }
+        // update paths
+        ln=sqrt(sqr(xma-xmi)+sqr(yma-ymi));
+        if (sum<0)paths[i][1]=!paths[i][1];
+        paths[i][2]=cx/j;
+        paths[i][3]=cy/j;
+        paths[i][4]=ln;
+        paths[i][6]=xma-xmi;
+        paths[i][7]=yma-ymi;
+    }
+	var etime = new Date();
+    var ms = etime.getTime();    
     // check inside/ outside
     for (i in paths) {
         var path = paths[i][0];
+        //if (path.length==0)continue;
         var flip = paths[i][1];
+        cx=paths[i][2];
+        cy=paths[i][3];
+        var l1=paths[i][4];
+        var parent=[];
         for (ii in paths){
-            if (i==ii) continue;
+            if (i==ii || paths[ii][4]<l1 || (gcstyle[ii]["stroke"]=="#00ff00" && gcstyle[ii]["fill"]=="none")) continue;
+            var d=sqr(cx-paths[ii][2])+sqr(cy-paths[ii][3]);
+            if (sqrt(d)>paths[ii][4]+l1)continue;
             for (var j=0;j<path.length;j+=10){
                 var p=path[j];
-                
-                if (isInside(p[0],p[1],paths[ii][0])){
+                if ((paths[ii][4]>l1) && isInside(p[0],p[1],paths[ii][0])){
                     flip=!flip;
+                    parent.push(ii);
+                    paths[ii][9].childs++;
                     break;
                 }
             }
         }
         paths[i][1]=flip; // update
-        //if (flip)paths[i][0]=path.reverse();
+        paths[i][5]=parent;
     }
-
+	var etime = new Date();
+	ms = etime.getTime() - ms;
+	console.log("Process time " + ms);
+    gcstyle = [];
+    var pi=1;
     for (i in paths) {
         var path = paths[i][0];
+        //if (path.length==0)continue;
+        sty=paths[i][9];
+        var stro=sty["stroke"];
+        var fill=sty["fill"];
+        sty.deep=paths[i][5].length; // parent deep, used for draw sorting
+        sty.doEngrave = (RBcolor(stro) == "00ff") || (fill == "#0000ff");
+        sty.domarking = (RBcolor(stro) == "ff00") || (fill == "#ff0000");
+        sty.dovcarve = (stro == "#00ffff") || (fill == "#00ffff");
+        sty.doconengrave = (RBcolor(stro) == "8080") || (fill == "#800080");
+        sty.greenskip = (stro == "#00ff00") || (fill == "#00ff00");
+        sty.strokedeep = parseInt("0x" + stro.substr(3, 2)) * 0.1;
+        sty.ochilds=sty.childs;
+        sty.parent=paths[i][5];
+        
+        //for (var pi in paths[i][5]){
+            
+        //};
+        gcstyle.push(sty);
         if (paths[i][1])path=path.reverse();
         // new shape
         sc++;
@@ -2472,6 +2656,7 @@ function pathstoText1(gx) {
         }
     }
     t1 += '" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
+    sty=defaultsty;
     gcstyle.push(sty);
     gcstyle.push(sty);
     gcstyle.push(sty);

@@ -111,6 +111,7 @@
 						<br><button id=bthidden5>Inkscape Option</button><button id=bthidden3>Show Gcode</button>
 						<table id=vars3 class=smallwindow>
 							<tr><td colspan=4 align=left><b>INKSCAPE COLORING</b><br>RED:Outline BLUE:Engrave GREEN:Disable</td></tr>
+							<tr><td colspan=2>Combine segment </td><td colspan=2><input size=1 type=checkbox id=enablejoin checked class=saveit></td></tr>
 							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
 							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
 							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
@@ -185,7 +186,7 @@
 				<tr><td colspan=3 align=left>
 					<hr><b>Conc. Engrave (<font color=#800080>Line is Purple</font>)</b><br>
 					<button id=btconengrave>Concentric Engrave</button><br>
-					<hr><b>V CARVING (<font color=#00FFFF>Line is Aqua</font>)</b><br>
+					<hr><b>V CARVING (<font color=#00c0c0>FILL is Aqua</font>)</b><br>
 					<b>Endmill:</b>&nbsp;
 					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
 					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit>&nbsp;&nbsp;

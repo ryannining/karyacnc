@@ -274,22 +274,7 @@ def biarc(sp1, sp2, z1, z2, depth=0):
 
 class laser_gcode(inkex.Effect):
 
-    def export_gcode(self,gcode):
-        gcode_pass = gcode
-        for x in range(1,self.options.passes):
-            gcode += "G91\nG1 Z-" + self.options.pass_depth + "\nG90\n" + gcode_pass
-        if 0:
-            f = open(self.options.directory+self.options.file, "w")
-            f.write(self.options.laser_off_command + " S0" + "\n" + self.header + "G1 F" + self.options.travel_speed + "\n" + gcode + self.footer)
-            f.close()
-        if self.options.karyacnc:
-            from websocket import create_connection
-            ws = create_connection("ws://"+self.options.karyaws+":"+self.options.port+"/")
-            for g in gcode.split("\n"):
-                ws.send(g)
-                ws.send("\n")
-            ws.send(">REVECTOR");
-            ws.close()        
+      
     def export_path(self,paths,xmin,ymin):
         f = open(self.options.directory+self.options.file, "w")
         gcodes=[]
@@ -339,41 +324,7 @@ class laser_gcode(inkex.Effect):
         self.OptionParser.add_option("",   "--port",                            action="store", type="string",          dest="port",                                default="8888",        help="Websocket port")
         self.OptionParser.add_option("",   "--active-tab",                      action="store", type="string",          dest="active_tab",                          default="",                             help="Defines which tab is active")
         self.OptionParser.add_option("",   "--biarc-max-split-depth",           action="store", type="int",             dest="biarc_max_split_depth",               default="4",                            help="Defines maximum depth of splitting while approximating using biarcs.")
-    def parse_curve(self, p, layer, flips,pc,w = None, f = None):
-            def isClockwise(poly):
-                sum = 0;
-                for i in range(len(poly)):
-                    cur = poly[i][1]
-                    ii=i + 1
-                    if ii==len(poly):ii=0;
-                    next = poly[ii][1]
-                    sum += (next[1] * cur[0]) - (next[0] * cur[1])
-                return sum;
-            c = []
-            if len(p)==0 :
-                return []
-            #p = self.transform_csp(p, layer)
-            for k in range(len(p)):
-                subpath = p[k]
-                cw=isClockwise(subpath)
-                flip=cw>0
-                #if flips[k]:flip=not flip
-                flip=flips[k]
-                if (flip):subpath.reverse()
-                c += [ [    [subpath[0][1][0],subpath[0][1][1]]   , 'move', 0, 0,k] ]
-                for ii in range(1,len(subpath)):
-                    if flip:
-                        i=ii #len(subpath)-ii
-                    else:
-                        i=ii
-                    sp1 = [  [subpath[i-1][j][0], subpath[i-1][j][1]] for j in range(3)]
-                    sp2 = [  [subpath[i  ][j][0], subpath[i  ][j][1]] for j in range(3)]
-                    c+=[ [sp1[1],'line', 0, 0, sp2[1], [0,0]]];
-                c += [ [ [subpath[-1][1][0],subpath[-1][1][1]]  ,'end',0,0] ]
-                print_("Curve: " + str(c))
-            return c
-
-
+    
     def check_dir(self):
         if self.options.directory[-1] not in ["/","\\"]:
             if "\\" in self.options.directory :
@@ -431,70 +382,6 @@ class laser_gcode(inkex.Effect):
 
 
 
-################################################################################
-###
-###        Generate Gcode
-###        Generates Gcode on given curve.
-###
-###        Crve defenitnion [start point, type = {'arc','line','move','end'}, arc center, arc angle, end point, [zstart, zend]]
-###
-################################################################################
-    def generate_gcode(self, curve, layer, depth,pc,flips):
-        tool = self.tools
-        print_("Tool in g-code generator: " + str(tool))
-        def c(c):
-            c = [c[i] if i<len(c) else None for i in range(6)]
-            if c[5] == 0 : c[5]=None
-            s = [" X", " Y", " Z", " I", " J", " K"]
-            r = ''
-            for i in range(6):
-                if c[i]!=None:
-                    r += s[i] + ("%f" % (round(c[i],4))).rstrip('0')
-            return r
-
-        if len(curve)==0 : return ""
-
-        try :
-            self.last_used_tool == None
-        except :
-            self.last_used_tool = None
-        print_("working on curve")
-        print_("Curve: " + str(curve))
-        g = ""
-
-        lg, f =  'G00', "F%f"%tool['penetration feed']
-        penetration_feed = "F%s"%tool['penetration feed']
-        current_a = 0
-        for i in range(1,len(curve)):
-        #    Creating Gcode for curve between s=curve[i-1] and si=curve[i] start at s[0] end at s[4]=si[0]
-            s, si = curve[i-1], curve[i]
-            feed = f if lg not in ['G01','G02','G03'] else ''
-            if s[1]    == 'move':
-                pp=pc[s[4]];
-                try:
-                    if pp["deep:"]>0:g+= ";@deep:"+pp["deep:"]+"\n";
-                except:
-                    pass
-                try:
-                    if pp["repeat:"]>0:g+= ";@repeat:"+pp["repeat:"]+"\n";
-                except:
-                    pass
-                g += ";@inner:"+str(flips[s[4]])+"\n";
-                g += ";@fill:"+pp["fill:"]+"\n";
-                g += ";@stroke:"+pp["stroke:"]+"\n";
-                g += ";@stroke-width:"+pp["stroke-width:"]+"\n";
-                g += "G0 " + c(si[0]) + "\n" + tool['gcode before path'] + "\n"
-                lg = 'G00'
-            elif s[1] == 'end':
-                g += tool['gcode after path'] + "\n"
-                lg = 'G00'
-            elif s[1] == 'line':
-                if lg=="G00": g += "G1 " + feed + "\n"
-                g += "G1 " + c(si[0]) + "\n"
-                lg = 'G01'
-        if si[1] == 'end':
-            g += tool['gcode after path'] + "\n"
-        return g
 
 
     def get_transforms(self,g):
@@ -517,84 +404,7 @@ class laser_gcode(inkex.Effect):
         return csp
 
 
-    def transform(self, source_point, layer, reverse=False):
-        if layer == None :
-            layer = self.current_layer if self.current_layer is not None else self.document.getroot()
-        if layer not in self.transform_matrix:
-            for i in range(self.layers.index(layer),-1,-1):
-                if self.layers[i] in self.orientation_points :
-                    break
-
-            print_(str(self.layers))
-            print_(str("I: " + str(i)))
-            print_("Transform: " + str(self.layers[i]))
-            if self.layers[i] not in self.orientation_points :
-                self.error(_("Orientation points for '%s' layer have not been found! Please add orientation points using Orientation tab!") % layer.get(inkex.addNS('label','inkscape')),"no_orientation_points")
-            elif self.layers[i] in self.transform_matrix :
-                self.transform_matrix[layer] = self.transform_matrix[self.layers[i]]
-            else :
-                orientation_layer = self.layers[i]
-                if len(self.orientation_points[orientation_layer])>1 :
-                    self.error(_("There are more than one orientation point groups in '%s' layer") % orientation_layer.get(inkex.addNS('label','inkscape')),"more_than_one_orientation_point_groups")
-                points = self.orientation_points[orientation_layer][0]
-                if len(points)==2:
-                    points += [ [ [(points[1][0][1]-points[0][0][1])+points[0][0][0], -(points[1][0][0]-points[0][0][0])+points[0][0][1]], [-(points[1][1][1]-points[0][1][1])+points[0][1][0], points[1][1][0]-points[0][1][0]+points[0][1][1]] ] ]
-                if len(points)==3:
-                    print_("Layer '%s' Orientation points: " % orientation_layer.get(inkex.addNS('label','inkscape')))
-                    for point in points:
-                        print_(point)
-                    #    Zcoordinates definition taken from Orientatnion point 1 and 2
-                    self.Zcoordinates[layer] = [max(points[0][1][2],points[1][1][2]), min(points[0][1][2],points[1][1][2])]
-                    matrix = numpy.array([
-                                [points[0][0][0], points[0][0][1], 1, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 0, points[0][0][0], points[0][0][1], 1, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, points[0][0][0], points[0][0][1], 1],
-                                [points[1][0][0], points[1][0][1], 1, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 0, points[1][0][0], points[1][0][1], 1, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, points[1][0][0], points[1][0][1], 1],
-                                [points[2][0][0], points[2][0][1], 1, 0, 0, 0, 0, 0, 0],
-                                [0, 0, 0, points[2][0][0], points[2][0][1], 1, 0, 0, 0],
-                                [0, 0, 0, 0, 0, 0, points[2][0][0], points[2][0][1], 1]
-                            ])
-
-                    if numpy.linalg.det(matrix)!=0 :
-                        m = numpy.linalg.solve(matrix,
-                            numpy.array(
-                                [[points[0][1][0]], [points[0][1][1]], [1], [points[1][1][0]], [points[1][1][1]], [1], [points[2][1][0]], [points[2][1][1]], [1]]
-                                        )
-                            ).tolist()
-                        self.transform_matrix[layer] = [[m[j*3+i][0] for i in range(3)] for j in range(3)]
-
-                    else :
-                        self.error(_("Orientation points are wrong! (if there are two orientation points they sould not be the same. If there are three orientation points they should not be in a straight line.)"),"wrong_orientation_points")
-                else :
-                    self.error(_("Orientation points are wrong! (if there are two orientation points they sould not be the same. If there are three orientation points they should not be in a straight line.)"),"wrong_orientation_points")
-
-            self.transform_matrix_reverse[layer] = numpy.linalg.inv(self.transform_matrix[layer]).tolist()
-            print_("\n Layer '%s' transformation matrixes:" % layer.get(inkex.addNS('label','inkscape')) )
-            print_(self.transform_matrix)
-            print_(self.transform_matrix_reverse)
-
-            ###self.Zauto_scale[layer]  = math.sqrt( (self.transform_matrix[layer][0][0]**2 + self.transform_matrix[layer][1][1]**2)/2 )
-            ### Zautoscale is absolete
-            self.Zauto_scale[layer] = 1
-            print_("Z automatic scale = %s (computed according orientation points)" % self.Zauto_scale[layer])
-
-        x,y = source_point[0], source_point[1]
-        if not reverse :
-            t = self.transform_matrix[layer]
-        else :
-            t = self.transform_matrix_reverse[layer]
-        return [t[0][0]*x+t[0][1]*y+t[0][2], t[1][0]*x+t[1][1]*y+t[1][2]]
-
-
-    def transform_csp(self, csp_, layer, reverse = False):
-        csp = [  [ [csp_[i][j][0][:],csp_[i][j][1][:],csp_[i][j][2][:]]  for j in range(len(csp_[i])) ]   for i in range(len(csp_)) ]
-        for i in xrange(len(csp)):
-            for j in xrange(len(csp[i])):
-                for k in xrange(len(csp[i][j])):
-                    csp[i][j][k] = self.transform(csp[i][j][k],layer, reverse)
-        return csp
+    
 
 
 ################################################################################
@@ -682,6 +492,7 @@ class laser_gcode(inkex.Effect):
                 if i.tag == inkex.addNS("g",'svg') and i.get(inkex.addNS('groupmode','inkscape')) == 'layer':
                     self.layers += [i]
                     recursive_search(i,i)
+                    """ 
                 elif i.get('gcodetools') == "Gcodetools orientation group" :
                     try:
                         points = self.get_orientation_points(i)
@@ -693,6 +504,7 @@ class laser_gcode(inkex.Effect):
                         print_("Found orientation points in '%s' layer: %s" % (layer.get(inkex.addNS('label','inkscape')), points))
                     else :
                         self.error(_("Warning! Found bad orientation points in '%s' layer. Resulting Gcode could be corrupt!") % layer.get(inkex.addNS('label','inkscape')), "bad_orientation_points_in_some_layers")
+                    """    
                 elif i.get("karyacnc") == "1":
                     #
                     if i.get("id") in self.selected :
@@ -716,69 +528,12 @@ class laser_gcode(inkex.Effect):
         recursive_search(self.document.getroot(),self.document.getroot())
 
 
-    def get_orientation_points(self,g):
-        items = g.getchildren()
-        items.reverse()
-        p2, p3 = [], []
-        p = None
-        for i in items:
-            if i.tag == inkex.addNS("g",'svg') and i.get("gcodetools") == "Gcodetools orientation point (2 points)":
-                p2 += [i]
-            if i.tag == inkex.addNS("g",'svg') and i.get("gcodetools") == "Gcodetools orientation point (3 points)":
-                p3 += [i]
-        if len(p2)==2 : p=p2
-        elif len(p3)==3 : p=p3
-        if p==None : return None
-        points = []
-        for i in p :
-            point = [[],[]]
-            for  node in i :
-                if node.get('gcodetools') == "Gcodetools orientation point arrow":
-                    point[0] = self.apply_transforms(node,cubicsuperpath.parsePath(node.get("d")))[0][0][1]
-                elif node.get('gcodetools') == "Gcodetools orientation point text":
-                    r = re.match(r'(?i)\s*\(\s*(-?\s*\d*(?:,|\.)*\d*)\s*;\s*(-?\s*\d*(?:,|\.)*\d*)\s*;\s*(-?\s*\d*(?:,|\.)*\d*)\s*\)\s*',node.text)
-                    point[1] = [float(r.group(1)),float(r.group(2)),float(r.group(3))]
-                else:
-                    ttt=1
-            if point[0]!=[] and point[1]!=[]:    points += [point]
-        if len(points)==len(p2)==2 or len(points)==len(p3)==3 : return points
-        else : return None
 ################################################################################
 ###
 ###        Laser
 ###
 ################################################################################
     def laser(self) :
-
-        def get_boundaries(points):
-            minx,miny,maxx,maxy=None,None,None,None
-            out=[[],[],[],[]]
-            for p in points:
-                if minx==p[0]:
-                    out[0]+=[p]
-                if minx==None or p[0]<minx:
-                    minx=p[0]
-                    out[0]=[p]
-
-                if miny==p[1]:
-                    out[1]+=[p]
-                if miny==None or p[1]<miny:
-                    miny=p[1]
-                    out[1]=[p]
-
-                if maxx==p[0]:
-                    out[2]+=[p]
-                if maxx==None or p[0]>maxx:
-                    maxx=p[0]
-                    out[2]=[p]
-
-                if maxy==p[1]:
-                    out[3]+=[p]
-                if maxy==None or p[1]>maxy:
-                    maxy=p[1]
-                    out[3]=[p]
-            return out
-
         gcode=""
         if (self.karyacnc):gcode = ";KARYACNC,"+self.karyacnc+"\n"
         
@@ -835,21 +590,7 @@ class laser_gcode(inkex.Effect):
                     if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0):
                         cspsubdiv.cspsubdiv(csp1, self.options.flatten*0.5)
                     np = []
-                    # need to check if its clockwise
-                    yellow=col=="#ffff00"
-                    dyellow=col=="#808000"
-                    outer=not yellow
-                    def isClockwise(poly):
-                        sum = 0;
-                        for i in range(len(poly)):
-                            cur = poly[i][1]
-                            ii=i + 1
-                            if ii==len(poly):ii=0;
-                            next = poly[ii][1]
-                            #sum += (next[1] * cur[0]) - (next[0] * cur[1])
-                            sum += (next[0] - cur[0]) * (next[1] + cur[1])
-                        return sum;
-                    clockw=[]
+
                     for sp in csp1:
                         first = True
                         num=len(sp)
@@ -862,164 +603,12 @@ class laser_gcode(inkex.Effect):
                             kpath.append((csp[1][0],csp[1][1]))
                             xmin=min(xmin,csp[1][0])
                             ymin=min(ymin,csp[1][1])
-                            """
-                            icsp2=icsp+1
-                            if icsp2==num:icsp2=0
-                            csp2=sp[icsp2]
                             
-                            cmd = 'L'
-                            if first:
-                                cmd = 'M' 
-                            first = False
-                            np.append([cmd,[csp[1][0],-csp[1][1]]])
-                            #          y2      *   x1       -   x2        *   y1   
-                            #sum += (csp2[1][1] * csp[1][0]) - (csp2[1][0] * csp[1][1])
-                            #          x2      -   x1       *   x2        *   y1   
-                            sum += (csp2[1][0] - csp[1][0]) * (csp2[1][1] + csp[1][1])
-                            ln = ln + vector_from_to_length(csp2[1],csp[1])
-                            #np.insert(0,[cmd,[csp[1][0],csp[1][1]]])
-                        """
                         kpaths.append((pstyle,kpath))
-                        """
-                        pc.append(pstyle)
-                        flip=sum<=0
-                        if yellow:flip=not flip
-                        clockw.append(flip)
-                        if ln<4:flip=False
-                        #if outer:flip=flip
-                        if yellow or dyellow:flips.append(flip)
-                        outer=False
-                       
-                    # check inner or outside here
-                    def isInside(point, vs):
-                        # ray-casting algorithm based on
-                        # http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-
-                        x = point[0]
-                        y = point[1]
-
-                        inside = False
-                        j=len(vs)-1
-                        for i in range(len(vs)):
-                            xi = vs[i][1][0]
-                            yi = vs[i][1][1]
-                            xj = vs[j][1][0]
-                            yj = vs[j][1][1]
-
-                            intersect = ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / (yj - yi) + xi)
-                            if intersect: inside = not inside
-                            j=i
-                        return inside
-                    if not (yellow or dyellow):
-                        for i in range(len(csp1)):
-                            cflip=True
-                            for j in range(len(csp1)):
-                                if (i!=j):
-                                    spi=csp1[i]
-                                    spj=csp1[j]
-                                    # check every point in spi is inside spj
-                                    flip=False
-                                    for k in range(len(spi)):
-                                        csp=spi[k]
-                                        if isInside([csp[1][0],csp[1][1]],spj):
-                                            flip=not flip
-                                            break
-                                    if flip:cflip=not cflip
-                            if not clockw[i]:cflip=not cflip
-                            flips.append(cflip)
                         
-                    
-
-
-                    #flips[len(flips)-1]=not outer
-                    #node.set('d',simplepath.formatPath(np))
-                    #print(simplepath.formatPath(np))
-                    #gcode+=";"+simplepath.formatPath(np)
-                    csp=cubicsuperpath.parsePath(simplepath.formatPath(np))
-                    # ================
-                    p+=csp
-                curve = self.parse_curve(p, layer,flips,pc)
-                gcode += self.generate_gcode(curve, layer, 0,pc,flips)
-
-        self.export_gcode(gcode)
-        """
         self.export_path(kpaths,xmin,ymin)
+        #inkex.errormsg("test")
 
-
-################################################################################
-###
-###        Orientation
-###
-################################################################################
-    def orientation(self, layer=None) :
-        print_("entering orientations")
-        if layer == None :
-            layer = self.current_layer if self.current_layer is not None else self.document.getroot()
-        if layer in self.orientation_points:
-            self.error(_("Active layer already has orientation points! Remove them or select another layer!"),"active_layer_already_has_orientation_points")
-
-        orientation_group = inkex.etree.SubElement(layer, inkex.addNS('g','svg'), {"gcodetools":"Gcodetools orientation group"})
-
-        # translate == ['0', '-917.7043']
-        if layer.get("transform") != None :
-            translate = layer.get("transform").replace("translate(", "").replace(")", "").split(",")
-        else :
-            translate = [0,0]
-
-        # doc height in pixels (38 mm == 143.62204724px)
-        doc_height = self.unittouu(self.document.getroot().xpath('@height', namespaces=inkex.NSS)[0])
-
-        if self.document.getroot().get('height') == "100%" :
-            doc_height = 1052.3622047
-            print_("Overruding height from 100 percents to %s" % doc_height)
-
-        print_("Document height: " + str(doc_height));
-
-        if self.options.unit == "G21 (All units in mm)" :
-            points = [[0.,0.,0.],[100.,0.,0.],[0.,100.,0.]]
-            orientation_scale = 1
-            print_("orientation_scale < 0 ===> switching to mm units=%0.10f"%orientation_scale )
-        elif self.options.unit == "G20 (All units in inches)" :
-            points = [[0.,0.,0.],[5.,0.,0.],[0.,5.,0.]]
-            orientation_scale = 90
-            print_("orientation_scale < 0 ===> switching to inches units=%0.10f"%orientation_scale )
-
-        points = points[:2]
-
-        print_(("using orientation scale",orientation_scale,"i=",points))
-        for i in points :
-            # X == Correct!
-            # si == x,y coordinate in px
-            # si have correct coordinates
-            # if layer have any tranform it will be in translate so lets add that
-            si = [i[0]*orientation_scale, (i[1]*orientation_scale)+float(translate[1])]
-            g = inkex.etree.SubElement(orientation_group, inkex.addNS('g','svg'), {'gcodetools': "Gcodetools orientation point (2 points)"})
-            inkex.etree.SubElement(    g, inkex.addNS('path','svg'),
-                {
-                    'style':    "stroke:none;fill:#000000;",
-                    'd':'m %s,%s 2.9375,-6.343750000001 0.8125,1.90625 6.843748640396,-6.84374864039 0,0 0.6875,0.6875 -6.84375,6.84375 1.90625,0.812500000001 z z' % (si[0], -si[1]+doc_height),
-                    'gcodetools': "Gcodetools orientation point arrow"
-                })
-            t = inkex.etree.SubElement(    g, inkex.addNS('text','svg'),
-                {
-                    'style':    "font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;",
-                    inkex.addNS("space","xml"):"preserve",
-                    'x':    str(si[0]+10),
-                    'y':    str(-si[1]-10+doc_height),
-                    'gcodetools': "Gcodetools orientation point text"
-                })
-            t.text = "(%s; %s; %s)" % (i[0],i[1],i[2])
-        #add karyaCNC settings
-        t = inkex.etree.SubElement(    layer, inkex.addNS('text','svg'),
-            {
-                'style':    "font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;fill:#000000;fill-opacity:1;stroke:none;",
-                inkex.addNS("space","xml"):"preserve",
-                'x':    "0",
-                'y':    str(20+doc_height),
-                'karyacnc': "1"
-            })
-        t.text = "feed:100,trav:100,repe:2,mode:laser"
-        
 
 ################################################################################
 ###
@@ -1046,6 +635,7 @@ class laser_gcode(inkex.Effect):
                 print_  = lambda *x : None
         else : print_  = lambda *x : None
         self.get_info()
+        """
         if self.orientation_points == {} :
             self.error(_("Orientation points have not been defined! A default set of orientation points has been automatically added."),"warning")
             self.orientation( self.layers[min(0,len(self.layers)-1)] )
@@ -1059,8 +649,9 @@ class laser_gcode(inkex.Effect):
             "gcode before path": ("G4 P0 \n" + self.options.laser_command + " S" + str(int(self.options.laser_power)) + "\nG4 P" + self.options.power_delay),
             "gcode after path": ("G4 P0 \n" + self.options.laser_off_command + " S0" + "\n" + "G1 F" + self.options.travel_speed),
         }
-
+        
         self.get_info()
+        """
         self.laser()
 
 e = laser_gcode()
