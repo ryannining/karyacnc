@@ -57,6 +57,11 @@ var wemosd1 = 1;
 var uploadimage = 1;
 
 function upload(fn) {
+    if ($("pltmode").checked){
+        $("alert1").innerHTML="<br>PLT MODE !";
+        return;
+    }
+
     function uploadjpg() {
         if (!uploadimage) return;
         c = $("myCanvas1");

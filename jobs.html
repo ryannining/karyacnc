@@ -21,6 +21,22 @@
 		padding:10px;
 		margin:5px;display:inline-block;
 	}
+	.j3 {border: 1px solid;
+		border-radius: 5px;
+		width: 40%;
+		height: auto;
+		padding:10px;
+		margin:5px;display:inline-block;
+		color:red;
+	}	
+	.j2 {border: 1px solid;
+		border-radius: 5px;
+		width: 40%;
+		height: auto;
+		padding:10px;
+		margin:5px;display:inline-block;
+		background:#aaccff;
+	}	
 	.jog {
 		padding:5px;
 		min-width:60;
@@ -33,15 +49,38 @@
 	<body style="font-family:arial;font-size:12pt;margin:auto">
 	<div class=j1 style="width:80%">
 	<b>JOG MACHINE</b><hr>
-	<table width=100%>
-		<tr align=center><td><button class=jog onclick="speed1()">1x</button></td><td><button class=jog onclick="jogup()">Up</button></td><td><button class=jog onclick="zup()">Z 15</button></td><td width=60%><button class=jog onclick="jogpause()">Pause Job</button></td></tr>
+
+	<table width=100% >
+		<tr align=center><td><button class=jog onclick="speed1()">1x</button></td><td><button class=jog onclick="jogup()">Up</button></td><td><button class=jog onclick="zup()">Z+1</button><button class=jog onclick="z15()">Z 15</button></td>		
 		<tr align=center><td><button class=jog onclick="jogleft()">Left</button></td>
-			<td>Step : <Select id=step><option value=1>1</option><option value=5>5</option><option value=10>10</option><option value=25>25</option><option value=50>50</option></select> mm</td>
-			<td><button class=jog onclick="jogright()">Right</button></td><td><button class=jog onclick="jogstop()">Stop Job</button></td></tr>
-		<tr align=center><td><button class=jog onclick="speed2()">1.3x</button></td><td><button class=jog onclick="jogdown()">Down</button></td><td><button class=jog onclick="z0()">Z 0</button></td><td><button class=jog onclick="joghome()">HOME</button><button class=jog onclick="jogzero()">ZERO</button></td></tr>
+			<td><Select id=step>
+				<option value=.25>.25</option>
+				<option value=1>1</option>
+				<option selected value=5>5</option>
+				<option value=10>10</option>
+				<option value=100>100</option>
+				<option value=200>200</option>
+			</select> mm</td>
+			<td><button class=jog onclick="jogright()">Right</button><button class=jog onclick="probe()">Probe</button></td></tr>
+		<tr align=center><td><button class=jog onclick="speed2()">1.5x</button></td><td><button class=jog onclick="jogdown()">Down</button></td><td><button class=jog onclick="zdown()">Z-1</button><button class=jog onclick="z0()">Z 0</button></td></tr>
 	</table>
+	<hr>
+	<hr>
+	<button class=jog onclick="jogpause()">Pause Job</button>
+	<button class=jog onclick="jogstop()">Stop Job</button>
+	<button class=jog onclick="joghome()">HOME</button>
+	<button class=jog onclick="jogzero()">ZERO</button>
+	<hr>	
+
+	<button class=jog onclick="nobedlevel()">No Mesh</button>
+	<button class=jog onclick="bedlevel(200,1200,1200)">Mesh A.Lv</button>
+	<button class=jog onclick="loadbedlevel()">Load mesh</button>
+	<hr>	
+
+	<button class=jog onclick="alert2a()">Reload jobs</button>
+
 	</div><br>
-	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">
+	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">&nbsp;Filter <input  id=dofilter type=checkbox onclick="joblist(lastres)"><input id=filter onkeyup="joblist(lastres)" value=acp>
 	<hr><div id=jobs>
 	</div>
 
@@ -62,6 +101,8 @@ function getvalue(el) {
 function mround(x) {
     return parseFloat(x).toFixed(1);
 }
+var jobs;
+var rjob=-1;
 
 function urlopen(s,callback) {
     var xhr = new XMLHttpRequest();
@@ -72,71 +113,107 @@ function urlopen(s,callback) {
     };
     xhr.send();
 }
-
-function jogup(){
-	urlopen("jogmove?x=0&y=-"+getvalue("step"));	
+function alert2(x){
+    var s="";
+    if (rjob>=0){
+        s=jobs[rjob][0];
+        j1s=document.getElementsByClassName("j1");
+        for (var i=0;i<j1s.length;i++){
+            j1s[i].classList.remove("j2");
+        }
+        $("job"+rjob).classList.add("j3");
+        $("job"+rjob).classList.add("j2");
+    }
+    var etime = new Date();
+    alert("("+s+":"+ etime+") "+x);
+    rjob=-1;
 }
+function nobedlevel(){
+	urlopen("gcode?t=G29",alert2);	
+}
+function bedlevel(s,x,y){
+	urlopen("gcode?t=G30 S"+s+" X"+x+" Y"+y,alert2);	
+}
+function loadbedlevel(){
+	urlopen("gcode?t=G31",alert2);	
+}
+
 function speed1(){
-	urlopen("gcode?t=m220 s100");	
+	urlopen("speed?t=100");	
 }
 function speed2(){
-	urlopen("gcode?t=m220 s130");	
+	urlopen("speed?t=150");	
 }
-function seteeprom(id,v){
-	urlopen("gcode?t=m210 P"+id+" S"+v);	
-}
-
 function zup(){
+	urlopen("jogmove?z=1&y=0&x=0");	
+}
+function zdown(){
+	urlopen("jogmove?z=-1&y=0&x=0");	
+}
+function z15(){
 	urlopen("gcode?t=G0 Z15 F800");	
 }
 function z0(){
 	urlopen("gcode?t=G0 Z0 F800");	
 }
+function probe(){
+	urlopen("probe",alert2);	
+}
 function jogleft(){
-	urlopen("jogmove?y=0&x=-"+getvalue("step"));	
+	urlopen("jogmove?z=0&y=0&x=-"+getvalue("step"));	
 }
 function jogright(){
-	urlopen("jogmove?y=0&x="+getvalue("step"));	
+	urlopen("jogmove?z=0&y=0&x="+getvalue("step"));	
+}
+function jogup(){
+	urlopen("jogmove?z=0&x=0&y=-"+getvalue("step"));	
 }
 function jogdown(){
-	urlopen("jogmove?x=0&y="+getvalue("step"));	
+	urlopen("jogmove?z=0&x=0&y="+getvalue("step"));	
 }
 function jogpause(){
-	urlopen("pauseprint",alert);	
+	urlopen("pauseprint",alert2);	
 }
 function jogstop(){
-	if (confirm("Stop job ?"))	urlopen("stopprint",alert);	
+	if (confirm("Stop job ?"))	urlopen("stopprint",alert2);	
 }
 function joghome(){
 	urlopen("home");	
 }
 function jogzero(){
-	urlopen("gcode?t=G92",alert);	
+	if (confirm("Set position as 0,0,0 ?")) urlopen("gcode?t=G92",alert2);	
 }
 
 
-var jobs;
 function runjob(i){
-	if (confirm("Start job "+jobs[i][0]+" ?"))	urlopen("startjob?jobname="+jobs[i][0],alert);
+    rjob=i;
+	if (confirm("Start job "+jobs[i][0]+" ?"))	urlopen("startjob?jobname="+jobs[i][0],alert2);
 }
-function alert2(x){
+function alert2a(x){
 	//alert(x);
 	urlopen("getjobs",joblist);
 }
 function deljob(i){
-	if (confirm("Remove job "+jobs[i][0]+" ?"))	urlopen("removejob?jobname="+jobs[i][0],alert2);
+	if (confirm("Remove job "+jobs[i][0]+" ?"))	urlopen("removejob?jobname="+jobs[i][0],alert2a);
 }
 var lastres="";
 function joblist(res){
 	var j="";
+	var dofilt=$("dofilter").checked;
+	var filt=$("filter").value.toUpperCase();
+	
 	lastres=res;
 	jobs=eval(res).sort();
 	var ipre=$("preview").checked;
 	for (i in jobs){
+	    if (dofilt){
+	        var ju=jobs[i][0].toUpperCase();
+	        if (ju.indexOf(filt)<0)continue;
+	    }
 		var sz=" "+mround(jobs[i][1]/1000)+"Kb";
 		var img="<a href='http://"+wsip+jobs[i][0]+".jpg' target=preview ><button>Preview</button></a>";
 		if (ipre)img="<img width=100% src='http://"+wsip+jobs[i][0]+".jpg'><br>";
-		j+="<div class=j1><b>"+jobs[i][0]+"</b><br>Size:"+sz+"<hr>"+img+"<button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
+		j+="<div class=j1 id='job"+i+"'><b>"+jobs[i][0]+"</b><br>Size:"+sz+"<hr>"+img+"<button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
 	}
 	$("jobs").innerHTML=j;
 }

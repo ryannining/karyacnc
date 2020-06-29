@@ -3,6 +3,14 @@
 		<title>CostyKarya CNC gcode tracer</title>
 	</head>
 	<style>
+
+.blink_me {
+  animation: blinker 300ms linear infinite;
+}
+
+@keyframes blinker {  
+  50% { opacity: 0.3; }
+}
 	.smallwindow {
 	font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px;z-index:1000;
 	}
@@ -118,6 +126,7 @@
 							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
 							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
 							<tr><td colspan=2>Blue engrave outline</td><td colspan=2><input id=rasteroutfeed class=saveit size=15 value=200></td></tr>
+							<tr><td colspan=2>Burn feed</td><td colspan=2><input id=burnfeed class=saveit size=15 value=40></td></tr>
 							<tr><td colspan=2>Enable Engrave </td><td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit></td></tr>
 							<tr><td colspan=2>Overshoot </td><td colspan=2><input size=1 id=overshoot size=3 value=5 class=saveit></td></tr>
 							<tr><td colspan=2>Enable Outline </td><td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit></td></tr>
@@ -224,6 +233,7 @@
 		</td>
 		<td id="myCanvas1td" width=600 style="padding:5px;border:solid 1px">
 			<p style="background:yellow" id="area_dimension">Object Preview</p>
+			<p class="blink_me" id="alertpath">aaaa</p>
 			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
 			<div id="myCanvas1div" style="width:600px;height:500px;overflow:scroll">
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
@@ -232,7 +242,7 @@
 			<br><button id=btsaveset style="display:none">Save Config</button>
 		</td>
 		<td width=300px bgcolor=lightblue style="padding:5px">
-			<b>Machine Control <span id=portnum></span></b>&nbsp;|<b id=alert1 style='color:red'>IDLE</b><br>
+			<b>Machine Control <span id=portnum></span></b>&nbsp;|<b id=alert1 style='color:red' class=blink_me>IDLE</b><br>
 			<button id=bthidden2>Connection Settings</button>
 			<div style="display:none"><br>LASER POWER SCALE<select id=powerscale>&nbsp;
 				<option value=1>1X</option>
