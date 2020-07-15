@@ -58,8 +58,8 @@
 				<option value=1>1</option>
 				<option selected value=5>5</option>
 				<option value=10>10</option>
-				<option value=100>100</option>
-				<option value=200>200</option>
+				<option value=125>125</option>
+				<option value=205>205</option>
 			</select> mm</td>
 			<td><button class=jog onclick="jogright()">Right</button><button class=jog onclick="probe()">Probe</button></td></tr>
 		<tr align=center><td><button class=jog onclick="speed2()">1.5x</button></td><td><button class=jog onclick="jogdown()">Down</button></td><td><button class=jog onclick="zdown()">Z-1</button><button class=jog onclick="z0()">Z 0</button></td></tr>
@@ -80,7 +80,17 @@
 	<button class=jog onclick="alert2a()">Reload jobs</button>
 
 	</div><br>
-	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">&nbsp;Filter <input  id=dofilter type=checkbox onclick="joblist(lastres)"><input id=filter onkeyup="joblist(lastres)" value=acp>
+	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">&nbsp;Filter <input  id=dofilter type=checkbox onclick="joblist(lastres)">
+	<select id=filter onchange="joblist(lastres)">
+	<option value="mdf">mdf</option>
+	<option value="cnc">cnc</option>
+	<option value="acp">acp</option>
+	<option value="job">job</option>
+	<option value="mika">mika</option>
+	<option value="test">test</option>
+	<option value="jig">jig</option>
+	
+	<select/>
 	<hr><div id=jobs>
 	</div>
 
@@ -211,9 +221,10 @@ function joblist(res){
 	        if (ju.indexOf(filt)<0)continue;
 	    }
 		var sz=" "+mround(jobs[i][1]/1000)+"Kb";
+		jn=jobs[i][0].split(".g")[0];
 		var img="<a href='http://"+wsip+jobs[i][0]+".jpg' target=preview ><button>Preview</button></a>";
 		if (ipre)img="<img width=100% src='http://"+wsip+jobs[i][0]+".jpg'><br>";
-		j+="<div class=j1 id='job"+i+"'><b>"+jobs[i][0]+"</b><br>Size:"+sz+"<hr>"+img+"<button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
+		j+="<div class=j1 id='job"+i+"'><b>"+jn+"</b><hr>"+img+"<button onclick='runjob("+i+")'>Start job</button><button onclick='deljob("+i+")'>Remove job</button></div>";
 	}
 	$("jobs").innerHTML=j;
 }

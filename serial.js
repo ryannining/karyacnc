@@ -540,6 +540,9 @@ setclick("btmotoroff", gcodefunc("M84"));
 setevent("change", "cmode", modechange);
 
 setevent("change", "material", changematerial);
+setevent("change", "profile", setprofile);
+setclick("btsavep", saveprofile);
+setclick("btloadp", loadprofile);
 setclick("btresume", function() {
     okwait = 0;
     sendgcode("m3 S255");
@@ -671,7 +674,8 @@ try {
 
 var jobsettings={};
 
-function savesetting() {
+function savesetting(name) {
+    if (name==undefined)name="";
     var a = document.getElementsByClassName("saveit");
     sett = {};
     for (var i = 0; i < a.length; i++) {
@@ -684,19 +688,25 @@ function savesetting() {
     }
 	updatestyle("wcolor",getvalue("wcolor"));
 	updatestyle("wtitle",getvalue("wtitle"));
+    if (name){
+        jobsettings[name]=sett;   
+    }
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
         storage.setItem("text1", text1);
         storage.setItem("gcstyle", JSON.stringify(gcstyle));
+        storage.setItem("cuttabs", JSON.stringify(cuttabs));
     } else {
         storage.set({
             "settings": sett,
             "text1": text1,
             "gcstyle": gcstyle,
+            "cuttabs": cuttabs,
 			"jobsettings":jobsettings
         });
     }
 }
+
 setclick("btsaveset", savesetting);
 setclick("btgcode2vec", function() {
     text1 = gcodetoText1(getvalue("gcode"));
@@ -723,35 +733,73 @@ function updateweb(sett){
 		updatestyle(k,sett[k]);
 	}
 }
-
-
-try {
-    if (stotype == 0) {
-        storage.get("text1", function(r) {
-            text1 = r.text1;
-        })
-        storage.get("gcstyle", function(r) {
-            gcstyle = r.gcstyle;
-        })
-        storage.get("settings", function(r) {
-			updateweb(r.settings);
-        });
-        storage.get("jobsettings", function(r) {
-			jobsettings=r.jobsettings;
-        });
-    } else {
-		jobsettings=storage.jobsettings;
-        text1 = storage.text1;
-        if (text1 == undefined)text1 = "";
-        if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
-        if (storage.settings != undefined) {
-			updateweb(JSON.parse(storage.settings));
-        }
+function updateprofile(){
+    var p="";
+    for (var k in jobsettings){p+="<option value='"+k+"'>"+k+"</option>";}
+    $("profile").innerHTML=p;
+}
+function loadsettings(name){
+    if (name==undefined)name="";
+    if (name){
+        updateweb(jobsettings[name]);
+        return;
     }
-    //connectwebsock();
+    
+    try {
+        if (stotype == 0) {
+            storage.get("text1", function(r) {
+                text1 = r.text1;
+            })
+            storage.get("gcstyle", function(r) {
+                gcstyle = r.gcstyle;
+            })
+            storage.get("cuttabs", function(r) {
+                cuttabs = r.cuttabs;
+				if (cuttabs==undefined)cuttabs=[];
+            })
+            storage.get("settings", function(r) {
+			    updateweb(r.settings);
+            });
+            storage.get("jobsettings", function(r) {
+			    jobsettings=r.jobsettings;
+			    if (jobsettings==undefined)jobsettings={};
+                updateprofile();
+            });
+        } else {
+		    jobsettings=storage.jobsettings;
+            text1 = storage.text1;
+            if (text1 == undefined)text1 = "";
+            if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
+            if (storage.cuttabs != undefined) cuttabs = JSON.parse(storage.cuttabs);
+            if (storage.settings != undefined) {
+			    updateweb(JSON.parse(storage.settings));
+            if (jobsettings==undefined)jobsettings={};
+            updateprofile();
+            }
+        }
+        //connectwebsock();
 
-} catch (e) {}
-
+    } catch (e) {}
+    
+}
+loadsettings("");
+function loadprofile(){
+    name=getvalue("profilename");
+    if (name=="")name=getvalue("profile");
+    setvalue("profilename",name);
+    loadsettings(name);
+}
+function saveprofile(){
+    name=getvalue("profilename");
+    if (name=="")name=getvalue("profile");
+    setvalue("profilename",name);
+    savesetting(name);
+    updateprofile();
+    
+}
+function setprofile(){
+    setvalue("profilename",getvalue("profile"));
+}
 // websocket
 var websockOK=0;
 function reconnectwebsock(){
