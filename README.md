@@ -25,6 +25,13 @@ Same angle will be combined, different angle will be overlayd.
 
 ![image](https://user-images.githubusercontent.com/11457832/87633729-1ddf8180-c766-11ea-8405-a9c3e7d67878.png)
 
+Laser power (reality is depend on firmware)
+![image](https://user-images.githubusercontent.com/11457832/87748344-cef62280-c81f-11ea-99e4-44584591d0d4.png)
+
+Latest karyacontroller support Constant laser burn, its mean that each motor stepper step, it burn only for defined time (microseconds) if the power is less than 100%. Great for marking/ engraving which prevent overburn on corners (when the motor accelerate/decelerate)
+
+
+
 New feature until March 2019
 - Auto Level for current work area
 - Upload GCODE to internal Flash and run it
