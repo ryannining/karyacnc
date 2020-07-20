@@ -122,15 +122,24 @@
 							<tr><td colspan=2>Combine segment </td><td colspan=2><input size=1 type=checkbox id=enablejoin checked class=saveit></td></tr>
 							<tr><td colspan=2>Enable Color </td><td colspan=2><input size=1 type=checkbox id=enablecolor checked class=saveit></td></tr>
 							<tr><td colspan=2>Separate Cut </td><td colspan=2><input size=1 type=checkbox id=separatecut checked class=saveit></td></tr>
-							<tr><td colspan=2>Smart Engrave </td><td colspan=2><input size=4 id=skiplength value=50 class=saveit>mm <input size=1 type=checkbox id=enablesmartraster checked class=saveit></td></tr>
-							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2><input id=pltfeed class=saveit size=15 value=20></td></tr>
-							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2><input id=rasterfeed class=saveit size=15 value=200></td></tr>
-							<tr><td colspan=2>Blue engrave outline</td><td colspan=2><input id=rasteroutfeed class=saveit size=15 value=200></td></tr>
-							<tr><td colspan=2>Burn feed</td><td colspan=2><input id=burnfeed class=saveit size=15 value=40></td></tr>
+							<tr><td colspan=2>Smart Engrave </td><td colspan=2><input size=3 id=skiplength value=50 class=saveit>mm <input size=1 type=checkbox id=enablesmartraster checked class=saveit></td></tr>
+							
+							<tr><td colspan=2><font color=red><b>RED outline feed</b></font></td><td colspan=2>
+							    <input id=pltfeed class=saveit size=3 value=20><input id=pltpw class=saveit size=2 value=100>%</td></tr>
+							<tr><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2>
+							    <input id=rasterfeed class=saveit size=3 value=200><input id=rasterpw class=saveit size=2 value=100>%</td></tr>
+							<tr><td colspan=2>Blue engrave outline</td><td colspan=2>
+							    <input id=rasteroutfeed class=saveit size=5 value=200><input id=rasteroutpw class=saveit size=2 value=100>%</td></tr>
+							<tr><td colspan=2>Burn feed</td><td colspan=2>
+							    <input id=burnfeed class=saveit size=3 value=40> 100 %</td></tr>
+							<tr><td colspan=2>Vcarve feed</td><td colspan=2>
+							    <input id=vcarvefeed class=saveit size=3 value=40><input id=vcarvepw class=saveit size=2 value=100>%</td></tr>
+							    
 							<tr><td colspan=2>Enable Engrave </td><td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit></td></tr>
 							<tr><td colspan=2>Overshoot </td><td colspan=2><input size=1 id=overshoot size=3 value=5 class=saveit></td></tr>
 							<tr><td colspan=2>Enable Outline </td><td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit></td></tr>
 							<tr><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
+							<tr><td colspan=2>Engrave Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
 							<tr><td></td><td>Y Step </td><td id=ystep>...</td></tr>
 							<tr><td colspan=2>Enable stroke-width </td><td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit></td></tr>
 							<tr><td colspan=2>MODE 0</td><td colspan=2><input size=1 type=checkbox id=emode0 checked class=saveit></td></tr>

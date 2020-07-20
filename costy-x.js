@@ -639,14 +639,42 @@ function drawengrave() {
     for (var i = 0; i < engrave1.length; i++) {
         var e = engrave1[i];
         ctx.strokeStyle = e[3];
-        ctx.moveTo((e[0] + maxofs) * dpm, (e[2] + maxofs) * dpm);
-        ctx.lineTo((e[1] + maxofs) * dpm, (e[2] + maxofs) * dpm);
+        ctx.moveTo((e[0] + maxofs) * dpm, (e[1] + maxofs) * dpm);
+        ctx.lineTo((e[2] + maxofs) * dpm, (e[3] + maxofs) * dpm);
 
     }
     ctx.stroke();
 }
 var engrave1 = [];
 var engravetime = 0;
+
+
+var eangle=0;
+var radians = (Math.PI / 180) * eangle;
+var rcos = Math.cos(radians);
+var rsin = Math.sin(radians);
+var r1cos = Math.cos(-radians);
+var r1sin = Math.sin(-radians);
+
+function setup_rotate(angle){
+    eangle=angle;
+    radians = (Math.PI / 180) * eangle;
+    rcos = Math.cos(radians);
+    rsin = Math.sin(radians);
+    r1cos = Math.cos(-radians);
+    r1sin = Math.sin(-radians);
+}
+function rotateCW(cx, cy, x, y) {
+        nx = (rcos * (x - cx)) + (rsin * (y - cy)) + cx,
+        ny = (rcos * (y - cy)) - (rsin * (x - cx)) + cy;
+        return [nx, ny];
+}
+function rotateCCW(cx, cy, x, y) {
+        nx = (r1cos * (x - cx)) + (r1sin * (y - cy)) + cx,
+        ny = (r1cos * (y - cy)) - (r1sin * (x - cx)) + cy;
+        return [nx, ny];
+}
+
 
 function doengrave() {
 
@@ -659,6 +687,7 @@ function doengrave() {
     var ofs = getoffset();
     carvedeep = getvalue('carved') * 1;
     var f2 = getvalue('rasterfeed') * 60;
+    var pw = getvalue('rasterpw') * 0.01*255;
     var f1 = f2;
     if (cmd == CMD_CNC) {
         f2 = getvalue('rasterfeed') * 60;
@@ -685,219 +714,219 @@ function doengrave() {
     carvedeep *= 1;
     var rz = carvedeep / re;
 
-    var gc = "M3 S255\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
+    var gc = "M3 S"+pw+"\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
     gc += pup;
-    var ry = Object.keys(engrave).sort(nsort);
-    if (ry.length == 0) {
-        return;
-    }
-    var lry = -10000;
-    ri = -1;
-    var engr;
-    var lengr;
+    for (ang in engrave){
+        aengrave=engrave[ang];
+        setup_rotate(ang);
+        var ry = Object.keys(aengrave).sort(nsort);
+        if (ry.length == 0) {
+            continue;
+        }
+        var lry = -10000;
+        ri = -1;
+        var engr;
+        var lengr;
 
-    drwR = 0.2;
-    var c1 = $("rasteroutline").checked;
-    var dir=1; // 0 down 1 up
-    // repeat until no more lines
-    var run=1;
-    var tx=0;var skipx=0;
-    var maxrun=10;
-    while (run && maxrun){
-        run=0;
-        maxrun--;
-        dir=!dir;
-        var first=1;
-        for (var fi = 0; fi < ry.length; fi++) {
-            var i=fi;
-            first=1;
-            if (dir)i=ry.length-1-i; 
-            var _rz = rz;
-            var _re = re;
-            // on first line, cannot eat to much
-            if (i == 0) {
-                _re = carvedeep;
-                _rz = carvedeep / _re;
-            }
-            if (cmd == CMD_LASER) _re = 1;
-            var z = 0;
-            var y = ry[i];
-            engr = engrave[y];
-            if (engr.length==0)continue;
-
-            //check if we need to slow down
-            var slowdown = 0;
-            var slowx = [];
-
-            // if last engrave data have nocut data overlap with current cut data, then its mean need to slow down
-            // because we cut more volume
-            if ((cmd == CMD_CNC) && (i > 1)) {
-                var temp = [];
-                for (var c = 0; c < engr.length; c++) {
-                    temp.push([engr[c], 0]);
+        drwR = 0.2;
+        var c1 = $("rasteroutline").checked;
+        var dir=1; // 0 down 1 up
+        // repeat until no more lines
+        var run=1;
+        var tx=0;var skipx=0;
+        var maxrun=10;
+        while (run && maxrun){
+            run=0;
+            maxrun--;
+            dir=!dir;
+            var first=1;
+            for (var fi = 0; fi < ry.length; fi++) {
+                var i=fi;
+                first=1;
+                if (dir)i=ry.length-1-i; 
+                var _rz = rz;
+                var _re = re;
+                // on first line, cannot eat to much
+                if (i == 0) {
+                    _re = carvedeep;
+                    _rz = carvedeep / _re;
                 }
-                for (var c = 0; c < lengr.length; c++) {
-                    temp.push([lengr[c], 1]);
-                }
-                temp = temp.sort(nsortx);
-                var lc = [0, 0];
+                if (cmd == CMD_LASER) _re = 1;
+                var z = 0;
+                var y = ry[i];
+                engr = aengrave[y];
+                if (engr.length==0)continue;
 
-                for (var c = 0; c < temp.length - 2; c++) {
-                    var t = temp[c];
-                    lc[t[1]] = !lc[t[1]];
-                    // if current is cutting and prev is not then slowdown
-                    //if (c>1 && t[1] && !t[2] && lc[0] && (Math.abs(t[0]-temp[c+1][0])>10)) {slowdown=1;break;} // half almost
-                    if (c > 1 && t[1] && lc[0] && !lc[1] && (Math.abs(t[0] - temp[c + 1][0]) > 5)) {
-                        slowdown = 1;
-                        break;
-                    } // half almost
-                }
-            }
-            var ctxstrokeStyle;
-            if (slowdown) {
-                gc += ";Y:" + mround(y) + " Slowdown .. \nG1 F" + (f2 * 0.5) + "\n";
-                ctxstrokeStyle = "#ff0000";
-            } else {
-                gc += ";Y:" + mround(y) + "\n";
-                ctxstrokeStyle = "#0000ff";
-            }
-            lengr = engr;
-            var gy = (y * 25.41 / engraveDPI);
-            lx = -100;
-            gc += pup;
-            var ashift=0;
-            var pdata = engr.sort(nsort);
-            /*
-                0 - 1
-                2 - 3
-                4 - 5
-            */
-            // go to overshoot
-            var dx = (cmd == CMD_LASER) ? 0 : ox;
-            if (!c1) dx = 0;
-            dx = 0;
-            var rdata=[];
-            pp = pdata.length / 2 - 1;
-            for (var j = 0; j <= pp; j++) {
-                ox = pdata[j * 2 + 1] * 1 + dx;
-                fx = pdata[j * 2] * 1 - dx;
-                // if move to far skip it
-                ashift=j*2+2;
-                
-                if (skiplen>0 && Math.abs(ox-skipx)>skiplen){
-                    if (!first){
-                        ashift-=2;
-                        run=1; // repeat the loop                        
-                        break;
+                //check if we need to slow down
+                var slowdown = 0;
+                var slowx = [];
+
+                // if last engrave data have nocut data overlap with current cut data, then its mean need to slow down
+                // because we cut more volume
+                if ((cmd == CMD_CNC) && (i > 1)) {
+                    var temp = [];
+                    for (var c = 0; c < engr.length; c++) {
+                        temp.push([engr[c], 0]);
+                    }
+                    for (var c = 0; c < lengr.length; c++) {
+                        temp.push([lengr[c], 1]);
+                    }
+                    temp = temp.sort(nsortx);
+                    var lc = [0, 0];
+
+                    for (var c = 0; c < temp.length - 2; c++) {
+                        var t = temp[c];
+                        lc[t[1]] = !lc[t[1]];
+                        // if current is cutting and prev is not then slowdown
+                        //if (c>1 && t[1] && !t[2] && lc[0] && (Math.abs(t[0]-temp[c+1][0])>10)) {slowdown=1;break;} // half almost
+                        if (c > 1 && t[1] && lc[0] && !lc[1] && (Math.abs(t[0] - temp[c + 1][0]) > 5)) {
+                            slowdown = 1;
+                            break;
+                        } // half almost
                     }
                 }
-                rdata.push(ox);
-                rdata.push(fx);
-                skipx=ox;
-                first=0;
-            }                
-            if (rdata.length>0){
-                pdata.splice(0,ashift);
-                // return the data
-                engrave[y]=pdata;
-                for (var r = 0; r < _re; r++) {
-                    ri++;
-                    var rdata = rdata.sort((ri&1)?msort:nsort);
-                    tx = rdata[0];
+                var ctxstrokeStyle;
+                if (slowdown) {
+                    gc += ";Y:" + mround(y) + " Slowdown .. \nG1 F" + (f2 * 0.5) + "\n";
+                    ctxstrokeStyle = "#ff0000";
+                } else {
+                    gc += ";Y:" + mround(y) + "\n";
+                    ctxstrokeStyle = "#0000ff";
+                }
+                lengr = engr;
+                var ogy = (y * 25.41 / engraveDPI);
+                lx = -100;
+                gc += pup;
+                var ashift=0;
+                var pdata = engr.sort(nsort);
+                /*
+                    0 - 1
+                    2 - 3
+                    4 - 5
+                */
+                // go to overshoot
+                var dx = (cmd == CMD_LASER) ? 0 : ox;
+                if (!c1) dx = 0;
+                dx = 0;
+                var rdata=[];
+                pp = pdata.length / 2 - 1;
+                for (var j = 0; j <= pp; j++) {
+                    ox = pdata[j * 2 + 1] * 1 + dx;
+                    fx = pdata[j * 2] * 1 - dx;
+                    // if move to far skip it
+                    ashift=j*2+2;
+                    
+                    if (skiplen>0 && Math.abs(ox-skipx)>skiplen){
+                        if (!first){
+                            ashift-=2;
+                            run=1; // repeat the loop                        
+                            break;
+                        }
+                    }
+                    rdata.push(ox);
+                    rdata.push(fx);
+                    skipx=ox;
+                    first=0;
+                }                
+                if (rdata.length>0){
+                    pdata.splice(0,ashift);
+                    // return the data
+                    engrave[y]=pdata;
+                    for (var r = 0; r < _re; r++) {
+                        ri++;
+                        var rdata = rdata.sort((ri&1)?msort:nsort);
+                        tx = rdata[0];
 
 
-                    var ox = tx + (((ri) & 1) ? overs : -overs);
-
-                    gc += "G0 Y" + mround(gy) + " X" + mround(ox) + "\n";
-                    var drw = 1;
-                    //if (cmd==CMD_LASER)drw=Math.abs(gy-lry)>drwR;
-                    if (drw) lry = gy;
-                    xmin = Math.min(xmin, rdata[0]);
-                    xmax = Math.max(xmax, rdata[0]);
-                    ymin = Math.min(ymin, gy);
-                    ymax = Math.max(ymax, gy);
-                    z -= _rz;
-                    //xmi=10000;
-                    //xma=0;
-                    pp = rdata.length / 2 - 1;
-                    oox = ox;
-                    for (var j = 0; j <= pp; j++) {
-                        ox = rdata[j * 2 + 1] * 1;
-                        fx = rdata[j * 2] * 1;
-                        if (cmd == CMD_LASER) {
+                        var ox = tx + (((ri) & 1) ? overs : -overs);
+                        oox = ox;
                         
-                            gc += "G0 X" + mround(fx) + " F" + f1 + " S0\n";
-                            gc += "G1 X" + mround(ox) + " F" + f2 + " S255\n";
-                            // remove data from engr
+                        var xy0=rotateCCW(0,0,ox,ogy);
 
-                        } else {
-                            // repeat until deep satisfied
-                            if (Math.abs(ox - fx) >= ofs) {
-                                gc += "G0 X" + mround(fx) + "\n";
-                                gc += "G1 Z" + mround(z) + "\n";
-                                gc += "G1 X" + mround(ox) + "\n";
-                                if (j < pp) gc += pup;
+                        //gc += "G0 Y" + mround(gy) + " X" + mround(ox) + "\n";
+                        gy=xy0[1];
+                        ox=xy0[0];
+                        gc += "G0 Y" + mround(gy) + " X" + mround(ox) + "\n";
+                        var drw = 1;
+                        //if (cmd==CMD_LASER)drw=Math.abs(gy-lry)>drwR;
+                        if (drw) lry = gy;
+                        var xy1=rotateCCW(0,0,rdata[0],ogy);
+                        
+                        xmin = Math.min(xmin, xy1[0]);
+                        xmax = Math.max(xmax, xy1[0]);
+                        ymin = Math.min(ymin, xy1[1]);
+                        ymax = Math.max(ymax, xy1[1]);
+                        z -= _rz;
+                        //xmi=10000;
+                        //xma=0;
+                        pp = rdata.length / 2 - 1;
+                        var xy2;
+                        var oox1;
+                        for (var j = 0; j <= pp; j++) {
+                            oox1=rdata[j * 2 + 1] * 1;
+                            oox2=rdata[j * 2] * 1;
+                            xy1=rotateCCW(0,0,oox1,ogy);
+                            xy2=rotateCCW(0,0,oox2,ogy);
+                            ox = xy1[0];
+                            fx = xy2[0];
+                            if (cmd == CMD_LASER) {
+                            
+                                //if (Math.abs(oox2-oox1)>0.1)
+                                gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) + "\n";
+                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) + "\n";
+                                // remove data from engr
+
+                            } else {
+                                // repeat until deep satisfied
+                                if (Math.abs(ox - fx) >= ofs) {
+                                    gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) +"\n";
+                                    gc += "G0 Z0 F"+speedretract+"\n";
+                                    gc += "G1 Z" + mround(z) + "\n";
+                                    gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) +"\n";
+                                    if (j < pp) gc += pup;
+                                }
                             }
+                            if (drw && !r) {
+                                engrave1.push([fx, xy2[1],ox, xy1[1], ctxstrokeStyle]);
+                            }
+                            
                         }
-                        if (drw && !r) {
-                            engrave1.push([fx, ox, gy, ctxstrokeStyle]);
-                        }
-                        tx = ox;
+                        xmin = Math.min(xmin, ox);
+                        xmax = Math.max(xmax, ox);
+                        ox = oox1 + (((ri) & 1) ? -overs : overs);
+                        xy1=rotateCCW(0,0,ox,ogy);
+                        
+                        gc += "G0 X" + mround(xy1[0]) + " Y" + mround(xy1[1])+ "\n";
+                        engravetime += 2 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[0])) / (f2* 0.0167);
                     }
-                    xmin = Math.min(xmin, ox);
-                    xmax = Math.max(xmax, ox);
-                    ox = ox + (((ri) & 1) ? -overs : overs);
-                    gc += "G0 X" + mround(ox) + "\n";
-                    engravetime += 2 * Math.abs(ox - oox) / (f2* 0.0167);
+                    if (slowdown) gc += "G1 F" + (f2) + "\n";
                 }
-                if (slowdown) gc += "G1 F" + (f2) + "\n";
             }
         }
+        gc += pup + "\n";
     }
-    gc += pup + "\n";
     //if (ENGRAVE==1)
     gc = getvalue("engcode") + gc;
     setvalue("engcode", gc);
 }
 
-function addengrave(cx, cy) {
-    if (engrave[cy] == undefined) engrave[cy] = [];
-    engrave[cy].push(cx);
+function addengrave(ang,cx, cy) {
+    if (engrave[ang]==undefined)engrave[ang]={};
+    if (engrave[ang][cy] == undefined) engrave[ang][cy] = [];
+    engrave[ang][cy].push(cx);
 }
-var eng_angle = 45;
 
-function oldengraveline(x1, y1, x2, y2) {
-    //if (cmd!=CMD_LASER)return;
-    if (!$("enableraster").checked) return;
-    if (y2 < y1) {
-        // swap 1 and 2
-        x3 = x1;
-        x1 = x2;
-        x2 = x3;
-
-        y3 = y1;
-        y1 = y2;
-        y2 = y3;
-
-    }
-    var ry1 = Math.floor(y1 / 25.41 * engraveDPI);
-    var ry2 = Math.floor(y2 / 25.41 * engraveDPI);
-    var ts = Math.abs(ry2 - ry1);
-    if (ts > 0) {
-        var sx = (x2 - x1) / ts;
-        cy = ry1;
-        cx = x1;
-        for (var i = 0; i < ts; i++) {
-            addengrave(cx, cy);
-            cx += sx;
-            cy += 1;
-        }
-    }
-    //addengrave(cx,cy);
-}
 
 function newengraveline(x1, y1, x2, y2,half) {
     //if (cmd!=CMD_LASER)return;
+    xy1=rotateCW(0,0,x1,y1);
+    xy2=rotateCW(0,0,x2,y2);
+    x1=xy1[0];
+    y1=xy1[1];
+    x2=xy2[0];
+    y2=xy2[1];
+    
+    
     if (!$("enableraster").checked) return;
     if (y2 < y1) {
         // swap 1 and 2
@@ -928,7 +957,7 @@ function newengraveline(x1, y1, x2, y2,half) {
         sdx = sx2 - sx1;
         sx = ts > 1 ? sdx / (ts - 1) : 0;
         for (var i = 0; i < ts; i++) {
-            if (!half || (half && ((cy&1)==0)))addengrave(sx1, cy);
+            if (!half || (half && ((cy&1)==0)))addengrave(eangle,sx1, cy);
             sx1 += sx;
             cy += 1;
         }
@@ -966,7 +995,10 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
     if (shift== undefined)shift=0;
     var dline = [];
     engraveDPI = getvalue("rasterdpi") * 1;
+    
     var sty = gcstyle[snum];
+    angle = getvalue("rasterangle") * 1;
+    setup_rotate(sty.angle==0?angle:sty.angle);
     var stu=sty == undefined;
     if (stu) sty = defaultsty;
     if (warn){
@@ -2055,15 +2087,20 @@ function sortedgcode() {
                 if (sty.domarking) {
                     spiraldown = 0;
                     f2 = getvalue('pltfeed') * 60;
+                    pw = getvalue('pltpw') * 255*0.01;
+                    pw=sty.markpower?sty.markpower:pw;
                     zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
                     _re = Math.ceil(zdown / _rz);
                     vcuttab = -1 * zdown; //+tabz;
                     zdown *= -1 / _re;
                     iscut = 0;
                     iseng = 1;
+                    se+="M3 S"+parseInt(pw)+"\n";
                 }
                 if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
                     if ($("rasteroutline").checked) {
+                        pw = getvalue('pltpw') * 255*0.01;
+                        se+="M3 S"+parseInt(pw)+"\n";
                         if (cmd == CMD_LASER) _re = 1;
                         else {
                             zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
@@ -2304,6 +2341,7 @@ function myFunction(scale1) {
     disable_cut = getvalue('disablecut').split(",");
     disable_ovc = getvalue('disableovc').split(",");
     disable_tab = getvalue('disabletab').split(",");
+
     speedplunge=getvalue('pdn');
 	if (speedplunge.indexOf("M3")<0)speedplunge=speedplunge.split(" F")[1].split(" ")[0];
     speedretract=getvalue('pup');
@@ -2730,6 +2768,7 @@ function pathstoText1(gx) {
     var ymax = -100000;
     var ymin = 100000;
     //	defaultsty=
+    var dangle = 0;
     var sty = {
         "fill": "#000000",
         "stroke": "#000000",
@@ -2745,7 +2784,8 @@ function pathstoText1(gx) {
         dovcarve : 0,
         doconengrave : 0,
         greenskip : 0,
-        greentravel : 0
+        greentravel : 0,
+        angle:dangle
         
 
     };
@@ -2799,7 +2839,8 @@ function pathstoText1(gx) {
                         "stroke": "#000000",
                         "stroke-width": 0,
                         "deep": undefined,
-                        "repeat": undefined
+                        "repeat": undefined,
+                        "angle":dangle
                     };                    
                 }
             } else {
@@ -2957,9 +2998,14 @@ function pathstoText1(gx) {
         var stro=sty["stroke"];
         var fill=sty["fill"];
         sty.deep=paths[i][5].length; // parent deep, used for draw sorting
-        sty.doEngrave = (RBcolor(stro) == "00ff") || (RBcolor(stro) == "0080") || (fill == "#0000ff");
+        sty.doEngrave = (RBcolor(stro) == "00ff") || (RBcolor(stro) == "0080");
         sty.halfDPI = (RBcolor(stro) == "0080");
-        sty.domarking = (RBcolor(stro) == "ff00") || (fill == "#ff0000");
+        if (sty.doEngrave)
+            sty.angle = parseInt("0x" + stro.substr(3, 2)) * 1;
+        sty.domarking = (RBcolor(stro) == "ff00");
+        sty.markpower = 0;
+        if (sty.domarking) 
+            sty.markpower=parseInt("0x" + stro.substr(3, 2)) * 1;
         sty.dovcarve = (stro == "#00ffff") || (fill == "#00ffff");
         sty.doconengrave = (RBcolor(stro) == "8080") || (fill == "#800080");
         sty.cuttab = (paths[i][0].length==2) && (stro == "#800000");

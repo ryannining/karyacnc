@@ -465,10 +465,10 @@ function concentricgcode() {
     concentrictime = 0;
     if (cglines.length == 0) return;
     var carvedeep = getvalue('carved') * 1;
-    var f2 = getvalue('rasterfeed') * 60;
+    var f2 = getvalue('vcarvefeed') * 60;
     var f1 = f2;
     if (cmd == CMD_CNC) {
-        f2 = getvalue('feed') * 60;
+        f2 = getvalue('vcarvefeed') * 60;
         var f1 = getvalue('trav') * 60;
     }
     var fs=f2/60;
@@ -480,8 +480,8 @@ function concentricgcode() {
     var re = (carvesty["repeat"] != undefined) ? carvesty["repeat"] : getvalue("carverep");
     re = (re * 1);
     var rz = carvedeep / re;
-
-    var gc = "M3 S255\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
+    pw = parseInt(getvalue('vcarvepw') * 255*0.01);
+    var gc = "M3 S"+pw+"\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
     gc += pup;
 
     e1 = 0;
@@ -515,6 +515,7 @@ function concentricgcode() {
 
     var ox=-1000;
     var oy=0;
+    var lz=0;
     for (var j = 0; j < sglines.length; j++) {
         gline = sglines[j][0];
         gc += pup;
@@ -529,7 +530,9 @@ function concentricgcode() {
                 cx = seg1[0];
                 cy = seg1[1];
                 if (ni == 0) {
-                    gc += "G0 F" + f1 + " X" + mround(cx) + " Y" + mround(cy) + "\n" + pdn.replace("=cncz", mround(zz));
+                    gc += "G0 F" + f1 + " X" + mround(cx) + " Y" + mround(cy) + "\n";
+                    if (r==0)gc += "G0 Z0 F"+speedretract+"\n";
+                    gc += pdn.replace("=cncz", mround(zz));
                 } else {
                     gc += "G1 F" + f2 + " X" + mround(cx) + " Y" + mround(cy) + "\n";
                 }
@@ -539,6 +542,7 @@ function concentricgcode() {
                 ox=cx;
                 oy=cy;
             }
+            lz=zz;
         }
         gc += pup;
 

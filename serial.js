@@ -175,6 +175,9 @@ function nextgcode() {
     var bt = document.getElementById('btexecute2');
     bt.innerHTML = "Engrave";
 }
+function next5gcode(){
+    for (var i=0;i<6;i++)nextgcode();okwait=0;
+}
 function idleloop() {
 
     if (wsconnected && checktemp) {
@@ -210,7 +213,7 @@ function execute(gcodes) {
     eline = 0;
     running = egcodes.length;
     okwait = 0;
-    nextgcode();
+    next5gcode();
     //sendgcode("M105");
 }
 
@@ -312,7 +315,7 @@ var onReadCallback = function(s) {
 					if (s[i]=="\n"){
 						var sel = document.getElementById("eepromid");
 						sel.innerHTML += "<option value=\"" + eeprom[eppos] + ":" + eppos + "\">" + estr + "</option>";
-						if (estr=="XYscale ")xyscale=100.0/(eeprom[eppos]*1);
+						if (estr=="Lscale ")xyscale=100.0/(eeprom[eppos]*1);
 						ineeprom=1;
 					};
 				}
@@ -337,7 +340,7 @@ var onReadCallback = function(s) {
 			}
             isok = 0;//(lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
             if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
-                okwait = 0;
+                okwait =0;
                 if ((lastw.toUpperCase().indexOf('WAIT') >= 0)) {
 					$("alert1").innerHTML="IDLE";
 					resetflashbutton();

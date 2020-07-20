@@ -83,7 +83,7 @@ var fScale = 2; // to get range 0-511 from 0-255
 var GXVER = 1;
 if (GXVER == 1) {
     eScale = 1 / 0.02;
-    xyScale = 1 / 0.005; // to get resolution 0.002mm and max step is 64mm before split into many step
+    xyScale = 2 / 0.01; // to get resolution 0.002mm and max step is 64mm before split into many step
     zScale = 1 / 0.1;
     xySize = 2; // 2 bytes
     zSize = 1; // 1 bytes
