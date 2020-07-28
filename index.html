@@ -101,6 +101,7 @@
 							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
 							<tr><td colspan=2>To DogBone </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
 							<tr><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=1 type=checkbox id=usefinish class=saveit></td></tr>
+							<tr><td colspan=2>Lead in (plasma) </td><td colspan=2><input id=leadin class=saveit size=5 value="3"> <input size=1 type=checkbox id=useleadin class=saveit></td></tr>
 							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
 							<tr><td colspan=2>Zero on start </td><td colspan=2><input size=1 type=checkbox id=zerobefore checked class=saveit></td></tr>
 							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
@@ -140,6 +141,7 @@
 							<tr><td colspan=2>Enable Outline </td><td colspan=2><input size=1 type=checkbox id=rasteroutline checked class=saveit></td></tr>
 							<tr><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
 							<tr><td colspan=2>Engrave Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
+							<tr><td colspan=2>GrayInvert</td><td colspan=2><input size=1 type=checkbox id=grayinvert checked class=saveit></td></tr>
 							<tr><td></td><td>Y Step </td><td id=ystep>...</td></tr>
 							<tr><td colspan=2>Enable stroke-width </td><td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit></td></tr>
 							<tr><td colspan=2>MODE 0</td><td colspan=2><input size=1 type=checkbox id=emode0 checked class=saveit></td></tr>
@@ -171,8 +173,8 @@
 					<option value="6,1,6,1500">MDF Hijau 3mm</option>
 					<option value="30,3,7,1500,7">CNC MDF-H 6mm</option>
 					<option value="30,4,11,1500,10">CNC MDF-H 9.5mm</option>
-					<option value="30,1,20,1500,4">CNC ACP 3mm</option>
-					<option value="40,2,27,1500,5">CNC ACP 4mm</option>
+					<option value="20,1,20,1500,4.5">CNC ACP 3mm</option>
+					<option value="25,2,27,1500,6">CNC ACP 4mm</option>
 					<option value="40,1,20,1500,6">CNC PVC 5mm</option>
 					<option value="40,2,32,1500,10">CNC PVC 9mm</option>
 				</select></td></tr>
@@ -180,7 +182,13 @@
 
 				<tr><td><input id="scale" size=5 value="72" class=saveit></td>
 					<td colspan=2>
-					<select id=cmode  class=saveit><option value=1>Laser</option><option value=3>CNC</option><option value=2>Foam</option><option value=4>3D Wall</option></select> <br>
+					<select id=cmode  class=saveit>
+						<option value=1>Laser</option>
+						<option value=3>CNC</option>
+						<option value=2>Foam</option>
+						<option value=5>Plasma</option>
+						<option value=4>3D Wall</option>
+					</select> <br>
 					</td>
 				</tr>
 				<tr><td>Tool &#248 <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td><td colspan=2>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit></td></tr>				

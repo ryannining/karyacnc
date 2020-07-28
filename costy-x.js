@@ -5,7 +5,10 @@
 // GREEN = 
 var ENGRAVE = 0;
 var CMD_3D = 4;
+
+var CMD_PLASMA = 3;
 var CMD_CNC = 3;
+var CMD_FOAM = 2;
 var CMD_LASER = 1;
 var OVC_MODE = 0; // 1 drill 0 path
 var cuttabs=[];
@@ -632,18 +635,21 @@ function drawengrave() {
     if (!$("enableraster").checked) return;
     var c = $("myCanvas1");
     var ctx = c.getContext("2d");
-    ctx.setLineDash([1, 1]);
-    ctx.strokeStyle = "#0000ff";
-    ctx.beginPath();
+    ctx.setLineDash([]);
     $("ystep").innerHTML = mround(25.41 / engraveDPI) + "mm";
     for (var i = 0; i < engrave1.length; i++) {
         var e = engrave1[i];
-        ctx.strokeStyle = e[3];
+        ctx.beginPath();
+        if (e[4]*1>0) {
+			var c=parseInt(255-e[4]).toString(16);
+			if (c.length==1)c="0"+c;
+			ctx.strokeStyle = "#"+c+c+c;
+        } else ctx.strokeStyle="#0000ff";
         ctx.moveTo((e[0] + maxofs) * dpm, (e[1] + maxofs) * dpm);
         ctx.lineTo((e[2] + maxofs) * dpm, (e[3] + maxofs) * dpm);
+        ctx.stroke();
 
     }
-    ctx.stroke();
 }
 var engrave1 = [];
 var engravetime = 0;
@@ -656,13 +662,27 @@ var rsin = Math.sin(radians);
 var r1cos = Math.cos(-radians);
 var r1sin = Math.sin(-radians);
 
+var currPw=0;
 function setup_rotate(angle){
+    currPw=((angle >> 4) & 15) * 17; // 0 - 255
+	angle = (angle & 15)*12;
     eangle=angle;
-    radians = (Math.PI / 180) * eangle;
+	if (angle==0)angle=getvalue("rasterangle") * 12;
+    radians = (Math.PI / 180) * (angle);
     rcos = Math.cos(radians);
     rsin = Math.sin(radians);
     r1cos = Math.cos(-radians);
     r1sin = Math.sin(-radians);
+}
+function rotateV(cx, cy, x, y,angle) {
+    var radians = (Math.PI / 180) * (angle);
+    var rcos = Math.cos(radians);
+    var rsin = Math.sin(radians);
+    var r1cos = Math.cos(-radians);
+    var r1sin = Math.sin(-radians);
+	nx = (rcos * (x - cx)) + (rsin * (y - cy)) + cx,
+	ny = (rcos * (y - cy)) - (rsin * (x - cx)) + cy;
+	return [nx, ny];
 }
 function rotateCW(cx, cy, x, y) {
         nx = (rcos * (x - cx)) + (rsin * (y - cy)) + cx,
@@ -674,6 +694,147 @@ function rotateCCW(cx, cy, x, y) {
         ny = (r1cos * (y - cy)) - (r1sin * (x - cx)) + cy;
         return [nx, ny];
 }
+
+// encode single line multiple pixel to gcodes
+var pixel_p=0;
+var pixel_c=0; // 0 - 1 bit/pixel 1-8 bit/pixel(254olor) 255 as travel
+var pixel_m=0; // 0 - bitmap bits only  1 - bitmap bits + length 
+var pixel_buf=[];
+function addpixel(col,len){ // len is 1 byte max 10mm, resolution is 0.1mm -> 1 byte enough 
+    if (pixel_m==0){
+        pixel_buf.push([col,0]);
+    }else if (pixel_m==1){
+        if (len==undefined)len=1;
+        len=parseInt(len*255);
+        var m=parseInt(len/255)+1; // separate into multiple data each max is 25.5mm
+        for (var i=1;i<=m;i++){
+            var p1=255;
+            if (i==m)p1=len-(m-1)*255;
+            pixel_buf.push([col,p1]);
+        }
+    }
+}
+function setuppixel(mode,numcol){
+    // will be encoded into 2 byte
+    pixel_c=numcol;
+    pixel_m=mode;
+    pixel_p=0;
+}
+function bytetostr(b,m){
+    var s="";
+    bw=1<<(m-1);
+    for (var i=0;i<m;i++){
+        s+=(b&(bw>>i))?"1":"0";
+        
+    }
+    return s;
+}
+function getPixels(index,len){ 
+    var s="";
+    var total=0;
+    for (var i=0;i<len;i++){
+        var p=pixel_buf[i+index];
+        if (pixel_c==1)
+            s=s+(p[0]?"1":"0") // black white
+        else if (pixel_c==4)
+            s=s+bytetostr(p[0],2); // 4 color grayscale
+        else if (pixel_c==16)
+            s=s+bytetostr(p[0],4); // 16 color grayscale
+        else if (pixel_c==255)
+            s=s+bytetostr(p[0],8); // 256 grayscale
+            
+        if (pixel_m==1){ // add length if mode 1
+            s=s+bytetostr(p[1],8); // 8 bit data for length resolution = 0.1 = max 25.6mm
+            total=total+p[1];
+        }
+    }
+    return total;
+}
+function bitto7(l,s){
+    var r=bytetostr((pixel_m<<7)+pixel_c)+bytetostr(l,8); // header is pixel mode and color, then length of the pixel data
+    r+=s;
+    var cc="";
+    var cb=0;
+    // lets convert to 7byte strs
+    for (var i=0;i<r.length;i++){
+        var sf=i%7;
+        cb+=(s[i]=="1")?(1<<sf):0;
+        if (i && (i==r.length-1 || sf==0)){
+            cc+=String.fromCharCode(cb+33);
+            cb=0;
+        }
+        
+    }
+    //if (sf>0)cc+=String.fromCharCode(cb+33);    
+    return cc;
+}
+function pixeltogcode(x1,y1,x2,y2,f){
+    // we will pack every 100
+    var datapercmd = 100*7; // encode 7 bit/byte
+    var ll=0;
+    var dx=x2-x1;
+    var dy=y2-y1;
+    var dis=sqrt(sqr(dx)+sqr(dy));
+    if (dis<=0.1)return;
+    dx/=dis;
+    dy/=dis;
+    
+    var scale=dis/pixel_buf.length; // if mode 0, then real length just numpixel x scale
+    if (pixel_m==1){
+     
+        for (var i=0;i<pixel_buf.length;i++){
+            ll+=pixel_buf[i][1];        
+        }    
+        scale=dis/(ll*0.1);// if mode 1, then real length is scaled
+    }
+    
+    var gc="G0 X"+mround(x1)+" Y"+mround(y1)+" F"+f+"\n"; // travel to first point
+    var x3,y3;    
+    var c=0;
+    i=0;
+    while (i<pixel_buf.length){
+        if (c==0){
+            var s="";
+            var total=0;
+        }
+        var p=pixel_buf[i];
+        i++;
+        if (pixel_c==1)
+            s=s+(p[0]?"1":"0") // black white
+        else if (pixel_c==4)
+            s=s+bytetostr(p[0],2); // 4 color grayscale
+        else if (pixel_c==16)
+            s=s+bytetostr(p[0],4); // 16 color grayscale
+        else 
+            s=s+bytetostr(p[0],8); // 256 grayscale
+            
+        if (pixel_m==1){ // add length if mode 1
+            s=s+bytetostr(p[1],8); // 8 bit data for length resolution = 0.1 = max 25.6mm
+            total=total+p[1];
+        } else total++;
+        c++;
+        if (i==pixel_buf.length || s.length>=datapercmd){
+            if (pixel_m==1) {
+                x3=x1+dx*total*0.1*scale;
+                y3=y1+dy*total*0.1*scale;
+            } else {
+                x3=x1+dx*total*scale;
+                y3=y1+dy*total*scale;
+            }
+            gc+="G7 X"+mround(x3)+" Y"+mround(y3)+" F"+f+" ["+bitto7(c,s)+"\n";
+            c=0;
+        }
+    }
+    return gc;
+        
+}
+setuppixel(1,4);
+
+addpixel(1,10);
+addpixel(1,10);
+addpixel(0,10);
+addpixel(1,10);
+addpixel(1,10);
 
 
 function doengrave() {
@@ -696,11 +857,15 @@ function doengrave() {
     var pup = "G0 Z" + getvalue('safez') + "\n";
     var pdn = getvalue('pdn') + "\n";
     var overs = getvalue('overshoot') * 1;
+    var grayInvert=$('grayinvert').checked;
     var skiplen=0;
     if (cmd == CMD_CNC) overs = 0;
     if ($("enablesmartraster").checked) skiplen=getvalue('skiplength') * 1;
     nsortx = function(a, b) {
         return (a[0] * 1 - b[0] * 1);
+    };
+    msortx = function(a, b) {
+        return (b[0] * 1 - a[0] * 1);
     };
     nsort = function(a, b) {
         return (a * 1 - b * 1);
@@ -713,12 +878,15 @@ function doengrave() {
     carvedeep = getvalue("carved");
     carvedeep *= 1;
     var rz = carvedeep / re;
-
-    var gc = "M3 S"+pw+"\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
-    gc += pup;
+	gc="";
     for (ang in engrave){
         aengrave=engrave[ang];
-        setup_rotate(ang);
+        setup_rotate(ang); // 0 - 120 degree
+        var pwa=((ang >> 4) & 15) * 17; // 0 - 255
+        if (grayInvert)pwa=255-pwa;
+        if (!pwa)pwa=pw; // back to default if 0
+		gc += "M3 S"+pwa+"\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
+		gc += pup;
         var ry = Object.keys(aengrave).sort(nsort);
         if (ry.length == 0) {
             continue;
@@ -735,6 +903,43 @@ function doengrave() {
         var run=1;
         var tx=0;var skipx=0;
         var maxrun=10;
+
+		// fix the different burn array in one line
+		for (var fi = 0; fi < ry.length; fi++) {
+			var y= ry[fi];
+			engr = aengrave[y];
+			var pdata = engr.sort(nsortx);
+			var cstack=[pdata[0][1]];
+			var rdata=[];
+			var pp = pdata.length / 2 - 1;
+			var v3=null;
+			for (fj=0;fj<=pp;fj++){
+				var v1=pdata[fj*2];
+				var v2=pdata[fj*2+1];
+				if (v1[1]==v2[1]) {
+					// if last time have v3
+					rdata.push(v1);
+					rdata.push(v2);
+					v3=null;	
+				} else {
+					// if last time have v3
+					if (fj<pp){
+						v3=pdata[fj*2+2];
+						rdata.push(v1);   
+						var xb=v3[0];         // keep same intensity
+						v3[1]=v2[1];
+						v2[1]=v1[1];
+						rdata.push([v2[0],v2[1]]);
+					} else {
+						rdata.push([v1[0],v2[1]]);
+						rdata.push(v2);
+					}
+					// keep the last
+				}
+			}
+			aengrave[y]=rdata;
+		}
+
         while (run && maxrun){
             run=0;
             maxrun--;
@@ -798,7 +1003,7 @@ function doengrave() {
                 lx = -100;
                 gc += pup;
                 var ashift=0;
-                var pdata = engr.sort(nsort);
+                var pdata = engr.sort(nsortx);
                 /*
                     0 - 1
                     2 - 3
@@ -811,8 +1016,11 @@ function doengrave() {
                 var rdata=[];
                 pp = pdata.length / 2 - 1;
                 for (var j = 0; j <= pp; j++) {
-                    ox = pdata[j * 2 + 1] * 1 + dx;
-                    fx = pdata[j * 2] * 1 - dx;
+                    var p1=pdata[j * 2 + 1];
+                    
+                    var p2=pdata[j * 2];
+                    ox =  p1[0]* 1 + dx;
+                    fx =  p2[0] * 1 - dx;
                     // if move to far skip it
                     ashift=j*2+2;
                     
@@ -823,19 +1031,19 @@ function doengrave() {
                             break;
                         }
                     }
-                    rdata.push(ox);
-                    rdata.push(fx);
+                    rdata.push([ox,p1[1]]);
+                    rdata.push([fx,p2[1]]);
                     skipx=ox;
                     first=0;
                 }                
                 if (rdata.length>0){
                     pdata.splice(0,ashift);
                     // return the data
-                    engrave[y]=pdata;
+                    aengrave[y]=pdata;
                     for (var r = 0; r < _re; r++) {
                         ri++;
-                        var rdata = rdata.sort((ri&1)?msort:nsort);
-                        tx = rdata[0];
+                        if (ri>0)rdata = rdata.reverse();
+                        tx = rdata[0][0];
 
 
                         var ox = tx + (((ri) & 1) ? overs : -overs);
@@ -850,7 +1058,7 @@ function doengrave() {
                         var drw = 1;
                         //if (cmd==CMD_LASER)drw=Math.abs(gy-lry)>drwR;
                         if (drw) lry = gy;
-                        var xy1=rotateCCW(0,0,rdata[0],ogy);
+                        var xy1=rotateCCW(0,0,rdata[0][0],ogy);
                         
                         xmin = Math.min(xmin, xy1[0]);
                         xmax = Math.max(xmax, xy1[0]);
@@ -863,8 +1071,9 @@ function doengrave() {
                         var xy2;
                         var oox1;
                         for (var j = 0; j <= pp; j++) {
-                            oox1=rdata[j * 2 + 1] * 1;
-                            oox2=rdata[j * 2] * 1;
+                            oox1=rdata[j * 2 + 1][0] * 1;
+                            oox2=rdata[j * 2][0] * 1;
+                            cpw=parseInt(rdata[j * 2][1]*pw/255);
                             xy1=rotateCCW(0,0,oox1,ogy);
                             xy2=rotateCCW(0,0,oox2,ogy);
                             ox = xy1[0];
@@ -873,7 +1082,7 @@ function doengrave() {
                             
                                 //if (Math.abs(oox2-oox1)>0.1)
                                 gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) + "\n";
-                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) + "\n";
+                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) + " S"+cpw+"\n";
                                 // remove data from engr
 
                             } else {
@@ -887,7 +1096,7 @@ function doengrave() {
                                 }
                             }
                             if (drw && !r) {
-                                engrave1.push([fx, xy2[1],ox, xy1[1], ctxstrokeStyle]);
+                                engrave1.push([fx, xy2[1],ox, xy1[1], rdata[j * 2][1],ctxstrokeStyle]);
                             }
                             
                         }
@@ -910,10 +1119,10 @@ function doengrave() {
     setvalue("engcode", gc);
 }
 
-function addengrave(ang,cx, cy) {
+function addengrave(ang,pw,cx, cy) {
     if (engrave[ang]==undefined)engrave[ang]={};
     if (engrave[ang][cy] == undefined) engrave[ang][cy] = [];
-    engrave[ang][cy].push(cx);
+    engrave[ang][cy].push([cx,pw]);
 }
 
 
@@ -957,7 +1166,7 @@ function newengraveline(x1, y1, x2, y2,half) {
         sdx = sx2 - sx1;
         sx = ts > 1 ? sdx / (ts - 1) : 0;
         for (var i = 0; i < ts; i++) {
-            if (!half || (half && ((cy&1)==0)))addengrave(eangle,sx1, cy);
+            if (!half || (half && ((cy&1)==0)))addengrave(eangle,currPw,sx1, cy);
             sx1 += sx;
             cy += 1;
         }
@@ -997,8 +1206,8 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
     engraveDPI = getvalue("rasterdpi") * 1;
     
     var sty = gcstyle[snum];
-    angle = getvalue("rasterangle") * 1;
-    setup_rotate(sty.angle==0?angle:sty.angle);
+    
+    setup_rotate(sty.angle);
     var stu=sty == undefined;
     if (stu) sty = defaultsty;
     if (warn){
@@ -1426,6 +1635,8 @@ function getcutpos(index,shift,flip){
 function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip,shift,cutpos) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
+    
+    
     if (z2 > skipz) {
         lastz = z;
         return "";
@@ -1462,6 +1673,39 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     while (p>=lines.length){p-=lines.length;}
     var X1 = lines[p][1];
     var Y1 = lines[p][2];
+    var X0=null;
+    var Y0;
+    var X9=null;
+    var Y9;
+	var uselead=$("useleadin").checked;
+	var leadmm=getvalue("leadin"); // 2mm
+    
+    if (uselead && firstlayer){
+		// get the vector of the first point
+		var dx=0;
+		var dy=0;
+		var pp=p;
+		var d=0;
+		var p2=sqr(leadmm);
+		while (d<p2){
+			pp--;
+			if (pp<0){pp+=lines.length;}
+			var dx=lines[pp][1]-X1;
+			var dy=lines[pp][2]-Y1;
+			d=sqr(dx)+sqr(dy);
+		}
+		d=sqrt(d);
+		dx/=d; // get the vector
+		dy/=d;
+		// lead in
+		var p=rotateV(0,0,leadmm*dx,leadmm*dy,90);
+		X0=p[0]+X1; // start
+		Y0=p[1]+Y1;
+		// lead out
+		//var p=rotateV(0,0,leadmm*dx,leadmm*dy,45+90);
+		//X9=p[0]+X1;  // stop
+		//Y9=p[1]+Y1;
+	}
     var sc = 1;
     if ($("flipx").checked) {
         sc = -1;
@@ -1504,7 +1748,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
             }
         }
     }
-    if (cmd == 2) {
+    if (cmd == CMD_FOAM) {
         pw1 = pw2;
         f1 = f2;
     }
@@ -1529,10 +1773,13 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 
     if (pw2) div = div + "M106 S" + pw1 + "\n";
     //if (firstlayer)div = div + pup + '\n';
-    if (cmd == 2) {
+    if (cmd == CMD_FOAM) {
         gcode0(f1, X1, 0);
     }
-    gcode0(f1, X1, Y1);
+	if (X0!=null) {
+		gcode0(f1, X0, Y0);
+		//gcode0(f2, X1, Y1);
+	} else gcode0(f1, X1, Y1);
 
     //if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
 
@@ -1545,8 +1792,13 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     if (cmd != CMD_3D) {
         //if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
         if (z<0 && firstlayer)div = div +"G0 Z0 F"+speedretract+"\n";
-        div = div + pdn.replace("=cncz", mround(z)) + '\n'+"G1 F"+f2+"\n";
-    }
+        if (firstlayer && leadin){
+        	div += ";LEAD IN\n"
+			div += "G1 F"+f2+" Z"+mround(z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
+		} else {
+			div += pdn.replace("=cncz", mround(z)) + '\n'+"G1 F"+f2+"\n";
+		}    
+	}
     var incut = 0;
     var iscut=0;
     var lenctr = 0;
@@ -1725,10 +1977,13 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     } // else gcode1(f2 * fm, X1, Y1);
 
     
-    if (cmd == 2) {
+    if (cmd == CMD_FOAM) {
         // if foam mode must move up
         gcode0(f1, X1, 0);
     }
+	if (X9!=null) {
+		gcode1(f2, X9, Y9);
+	}
     //gcode0(f1,X1,Y1);
     lastz = z;
     // if not closed loop then pen up
@@ -1848,7 +2103,7 @@ function gcode_verify(en = 0) {
     //menit = menit * re;
     var g = getvalue("engcode") + gcodecarve;
 
-    if (g) setvalue("engcode", g + pup1 + "G0 X0 Y0 F15000\ng0 z0\nm3 s0\nM5\n");
+    if (g) setvalue("engcode", g + pup1 + "G0 X0 Y0 F15000\ng0 z0\n");//m3 s0\n");
 
     ctx.font = "30px Arial";
     ctx.fillStyle = "black";
@@ -2099,7 +2354,7 @@ function sortedgcode() {
                 }
                 if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
                     if ($("rasteroutline").checked) {
-                        pw = getvalue('pltpw') * 255*0.01;
+                        pw = getvalue('rasteroutpw') * 255*0.01;
                         se+="M3 S"+parseInt(pw)+"\n";
                         if (cmd == CMD_LASER) _re = 1;
                         else {
@@ -2194,7 +2449,7 @@ function sortedgcode() {
                 cncz = Math.max(cncz+zdown/2,cncdeep);
                 cncz2 =Math.max(cncz2+zdown/2,cncdeep);            
             }
-            if ($("burn1").checked){
+            if ($("burn1").checked || $("flipx").checked){
                 ccw = ccw ? 0 : 1;
             }
             for (var i = 0; i < _re; i++) {
@@ -2245,8 +2500,8 @@ function sortedgcode() {
         s = "g28\ng0 z0 f350\nm109 s" + filamentTemp + "\nG92 X" + mround(-sc * xmax / 2) + " Y" + mround(ymax / 2) + " E-5\n" + s;
         s += "G92 X" + mround(sc * xmax / 2) + " Y" + mround(-ymax / 2) + "\ng28";
     }
-    s += "\nM5\nM3 S0\n";
-    s += machinezero;
+    //s += "\nM3 S0\n";
+    if (isgrbl)s += machinezero;
 
     //if (!empty)
     setvalue("gcode", s);
@@ -2383,7 +2638,7 @@ function myFunction(scale1) {
     var det = 50 * detail * getvalue('feed') / (60.0 * getvalue("smooth"));
     var seg = $("segment").checked;
     if (seg) det *= 4;
-    if (cmd == 2) {
+    if (cmd == CMD_FOAM) {
         pw1 = pw2;
         f1 = f2;
     }
@@ -2914,10 +3169,14 @@ function pathstoText1(gx) {
             continue;
         }        
         if (paths[i][0].length>0){
-            npaths.push(paths[i]);
             var pa=paths[i];
             var ps=pa[0];
             // work area bounding box
+            bx1=10000;
+            bx2=-10000;
+            by1=10000;
+            by2=-10000;
+            
             for (j in ps){
                 var p=ps[j];
                 var x=p[0];
@@ -2926,7 +3185,12 @@ function pathstoText1(gx) {
                 //xma=Math.max(x,xma);
                 ymi=Math.min(y,ymi);
                 //yma=Math.max(y,yma);
+                bx1=Math.min(x,bx1);
+                bx2=Math.max(x,bx2);
+                by1=Math.min(y,by1);
+                by2=Math.max(y,by2);
             }
+            if (sqr(bx2-bx1)+sqr(by2-by1)>0.1) npaths.push(paths[i]);
         }   
     }
     paths=npaths;
@@ -2997,6 +3261,13 @@ function pathstoText1(gx) {
         var sty=paths[i][9];
         var stro=sty["stroke"];
         var fill=sty["fill"];
+        // modifier for grayscale engrave
+        if (stro == "#808000"){
+            gray = (16*parseInt(15-parseInt("0x" + fill.substr(3, 2)) /17)).toString(16);
+            if (gray.length==1)gray="0"+gray;
+            stro = "#00"+gray+"ff";
+            sty["stroke"]=stro;
+		}
         sty.deep=paths[i][5].length; // parent deep, used for draw sorting
         sty.doEngrave = (RBcolor(stro) == "00ff") || (RBcolor(stro) == "0080");
         sty.halfDPI = (RBcolor(stro) == "0080");

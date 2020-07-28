@@ -115,8 +115,13 @@ var debugs = 3;
 function checkwaitok(){
 	if (millis()-waitok>700)sendgcode(machinepos);
 }
+var lasts="";
 function sendgcode(g) {
 	g=g.replace(/(\r\n|\n|\r)/gm, "");
+	// keep the last Svalue
+	lasts=g.match(/S[+-]?\d+(?:\.\d+)?/);
+	if (lasts!=null)lasts=lasts[0];
+	
     if (debugs & 1)
         console.log(g);
     try {
@@ -128,11 +133,41 @@ function sendgcode(g) {
 		//if (waitokH)clearTimeout(waitokH);
         //waitokH=setTimeout(checkwaitok,1000);
 		
-    } catch (e) {}
+    } catch (e) {console.log(e);}
 }
 
 var shapefinish = '';
 var currentshape = 0;
+var waitforwait=0;
+function on__wait(){
+    if (waitforwait){
+        waitforwait=0;
+        sendgcode(machinepos);
+        stopit();
+	    $("alert1").innerHTML="IDLE";
+	    resetflashbutton();
+	    if (stopinfo) {
+		    var ms = etime.getTime();
+		    etime = new Date();
+		    console.log("Stop " + etime);
+		    ms = etime.getTime() - ms;
+		    mss = "Real time:" + mround(ms / 60000.0);
+		    setvalue("applog",getvalue("applog")+mss+"\n");
+		    console.log(mss);
+		    if (!preview){
+			    setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
+			    $("infolain").innerHTML = mss;
+		    }
+		    stopinfo = 0;
+	    } else sendgcode(machinepos);
+
+        var bt = document.getElementById('btexecute');
+        bt.innerHTML = "Execute";
+        var bt = document.getElementById('btexecute2');
+        bt.innerHTML = "Engrave";
+    }
+}
+
 function nextgcode() {
     if (comtype == 1 && !wsconnected) {
         //setTimeout(nextgcode,1000);
@@ -168,12 +203,7 @@ function nextgcode() {
         }
     }
     //sendgcode("G4");
-    sendgcode(machinepos);
-    stopit();
-    var bt = document.getElementById('btexecute');
-    bt.innerHTML = "Execute";
-    var bt = document.getElementById('btexecute2');
-    bt.innerHTML = "Engrave";
+    waitforwait=1;
 }
 function next5gcode(){
     for (var i=0;i<6;i++)nextgcode();okwait=0;
@@ -213,7 +243,7 @@ function execute(gcodes) {
     eline = 0;
     running = egcodes.length;
     okwait = 0;
-    next5gcode();
+    nextgcode();
     //sendgcode("M105");
 }
 
@@ -241,7 +271,7 @@ function executegcodes2() {
     } else {
         bt.innerHTML = "Engrave";
         stopit();
-        //sendgcode("M2");
+        sendgcode("M2");
     }
 }
 function executepgcodes() {
@@ -254,11 +284,12 @@ function pause() {
     var bt = document.getElementById('btpause');
     if (bt.innerHTML == "PAUSE") {
         running = 0;
-        sendgcode("M3 S200 P10");
+        pausing=1;
+        sendgcode("M2");
         bt.innerHTML = "RESUME";
     } else {
         running = 1;
-        sendgcode("M3 S200");
+        if (lasts)sendgcode("M3 "+lasts); // should be back to last power
         nextgcode();
         bt.innerHTML = "PAUSE";
     }
@@ -285,6 +316,7 @@ function handleuserkey(n){
 		// do engrave
 	}
 }
+var pausing=0;
 var onReadCallback = function(s) {
     resp1 += s;
 	var estr="";
@@ -327,10 +359,26 @@ var onReadCallback = function(s) {
             }
             if (lastw.toUpperCase().indexOf("T:") >= 0) {
                 document.getElementById("info3d").innerHTML = lastw;
-                checktemp = 1;
+                checktemp = lastw.toUpperCase()!="T:0.000";
             }
+            
             if (lastw.toUpperCase().indexOf("MESH") >= 0) {
-                checktemp = 1;
+                //checktemp = 1;
+            }
+            if (lastw.toUpperCase().indexOf("STOPPED!") >= 0) {
+                // STOPPED! BUFF:XX
+                // we need to know which gcode is this coordinate belong to
+                if (pausing){
+                    try { 
+                        ispausing=0;
+                        var elinex=eline;
+                        elinex-=parseInt(lastw.split("BUFF:")[1])+3;
+                        sendgcode("G0 Z10 F1000");
+                        var gc=egcodes[elinex].toUpperCase();
+                        sendgcode(gc.replace("G1","G0"));
+                        eline=elinex;
+                    } catch(e){}
+                }
             }
             if (!isgrbl && (lastw.toUpperCase().indexOf('GRBL') >= 0)) {
                 isgrbl = 1;
@@ -338,30 +386,17 @@ var onReadCallback = function(s) {
 				machinepos="?";
 				setashome2();
 			}
+			
             isok = 0;//(lastw.length == 2) && (lastw[0].toUpperCase() == 'O');
-            if (isok || (lastw.toUpperCase().indexOf('OK') >= 0) || (lastw.toUpperCase().indexOf('ERROR:') >= 0) || (lastw.toUpperCase().indexOf('WAIT') >= 0)) {
+            lastwx=lastw;
+            lastw = "";
+            if (isok || (lastwx.toUpperCase().indexOf('OK') >= 0) || (lastwx.toUpperCase().indexOf('ERROR:') >= 0) || (lastwx.toUpperCase().indexOf('WAIT') >= 0)) {
                 okwait =0;
-                if ((lastw.toUpperCase().indexOf('WAIT') >= 0)) {
-					$("alert1").innerHTML="IDLE";
-					resetflashbutton();
-					if (stopinfo) {
-						var ms = etime.getTime();
-						etime = new Date();
-						console.log("Stop " + etime);
-						ms = etime.getTime() - ms;
-						mss = "Real time:" + mround(ms / 60000.0);
-						setvalue("applog",getvalue("applog")+mss+"\n");
-						console.log(mss);
-						if (!preview){
-							setvalue("totaltime",mround(getvalue("totaltime")*1+ms / 60000.0));
-							$("infolain").innerHTML = mss;
-						}
-						stopinfo = 0;
-					} else sendgcode(machinepos);
+                if ((lastwx.toUpperCase().indexOf('WAIT') >= 0)) {
+					on__wait();
                 }
                 nextgcode();
             }
-            lastw = "";
         } else
             lastw = lastw + s[i];
     }
@@ -470,15 +505,21 @@ function changematerial() {
 
 function modechange() {
     val = getvalue("cmode");
-    if (val == 1) {
+    if (val == CMD_LASER) {
         setvalue("pup", "");
         setvalue("pdn", "M3 S255");
     }
-    if (val == 2) {
+    if (val == CMD_FOAM) {
         setvalue("pup", "");
         setvalue("pdn", "M3 S255");
     }
-    if (val == 3) {
+    if (val == CMD_CNC) {
+        setvalue("pup", "G0 F3000 Z15");
+        setvalue("pdn", "G0 F1800 Z=cncz");
+        //setvalue("feed", "3");
+        //setvalue("zdown", "10");
+    }
+    if (val == CMD_PLASMA) { // need to change !!
         setvalue("pup", "G0 F3000 Z15");
         setvalue("pdn", "G0 F1800 Z=cncz");
         //setvalue("feed", "3");
