@@ -848,7 +848,8 @@ function doengrave() {
     var ofs = getoffset();
     carvedeep = getvalue('carved') * 1;
     var f2 = getvalue('rasterfeed') * 60;
-    var pw = getvalue('rasterpw') * 0.01*255;
+    var pw = parseInt(getvalue('rasterpw') * 0.01*255);
+    var cpwd= " S"+pw;
     var f1 = f2;
     if (cmd == CMD_CNC) {
         f2 = getvalue('rasterfeed') * 60;
@@ -939,7 +940,8 @@ function doengrave() {
 			}
 			aengrave[y]=rdata;
 		}
-
+        
+		var lpw="";
         while (run && maxrun){
             run=0;
             maxrun--;
@@ -1042,7 +1044,8 @@ function doengrave() {
                     aengrave[y]=pdata;
                     for (var r = 0; r < _re; r++) {
                         ri++;
-                        if (ri>0)rdata = rdata.reverse();
+                        //if (ri>0)rdata = rdata.reverse();
+                        rdata.sort(ri&1?msortx:nsortx);
                         tx = rdata[0][0];
 
 
@@ -1074,6 +1077,9 @@ function doengrave() {
                             oox1=rdata[j * 2 + 1][0] * 1;
                             oox2=rdata[j * 2][0] * 1;
                             cpw=parseInt(rdata[j * 2][1]*pw/255);
+                            if (cpw>0)cpw=" S"+cpw;else cpw=cpwd;
+                            
+                            if (lpw==cpw)cpw="";else lpw=cpw;
                             xy1=rotateCCW(0,0,oox1,ogy);
                             xy2=rotateCCW(0,0,oox2,ogy);
                             ox = xy1[0];
@@ -1082,7 +1088,7 @@ function doengrave() {
                             
                                 //if (Math.abs(oox2-oox1)>0.1)
                                 gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) + "\n";
-                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) + " S"+cpw+"\n";
+                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) +cpw+"\n";
                                 // remove data from engr
 
                             } else {
