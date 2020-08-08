@@ -168,11 +168,29 @@ function addgcode(g) {
             default:
                 return; // not implemented
         }
-        s = gd['S'];
+        s = parseInt(gd['S']);
         if (s == undefined) s = 255;
-        h |= 1 << 3;
+        h |= 1 << 3; // S is in F
+		
+		// special M3 with X and Y is to inform the size of the material needed, its 100x the resolution
+		
+        var isX = gk.indexOf('X') + 1;
+        var isY = gk.indexOf('Y') + 1;        
+		if (isX) h |= 1 << 4;
+		if (isY) h |= 1 << 5;
+		 
         write(h, 1);
         write(s, 1);
+		
+		if (isX){
+			var wx = Math.round(gd['X'] * 0.01* xyScale);
+			write(wx + xyLimit, xySize);
+		}
+		if (isY){
+			var wx = Math.round(gd['Y'] * 0.01* xyScale);
+			write(wx + xyLimit, xySize);
+		}
+		
         console.log(ln + " M" + gd['M'] + " S" + s);
     }
     var rmul=-1;
@@ -191,7 +209,7 @@ function addgcode(g) {
                 
                 break; // 
             case 0:
-                h |= 1 << 1; // treat all movement as G1, this will save 1 state
+                h |= 0 << 1; // treat all movement as G1, this will save 1 state
                 break; // we need bit 1 as identify a repeat header
             case 1:
                 h |= 1 << 1;
@@ -418,6 +436,11 @@ function begincompress(paste, callback1, callback2) {
     h = 1;
     h |= 2 << 1;
     write(h, 1);
+    
+    console.log("From "+totalgcode+" to "+compress.length);
+    console.log("Ratio "+mround(compress.length/totalgcode));
+    
+    
     if (callback2) callback2();
 }
 

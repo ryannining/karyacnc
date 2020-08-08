@@ -364,11 +364,12 @@ function drawvcarve() {
     ctx.stroke();
 }
 var cglines = [];
-
+var realofs=0;
 function clcarve(tofs, ofs1, clines) {
     if (cmd == CMD_CNC) tofs = tofs * getvalue("clstep");
     if (tofs < 0.2) tofs = 0.2;
     if (ofs1 < 0.2) ofs1 = 0.2;
+    realofs=tofs;
     var paths = [];
     cglines = [];
     var glines = [];
@@ -397,6 +398,7 @@ function clcarve(tofs, ofs1, clines) {
 
         var ofs = -(tofs);
         var maxx = 400;
+        var last=0;
         while (maxx-- > 0) {
             // increase tool offset
             ofs += tofs;
@@ -411,7 +413,12 @@ function clcarve(tofs, ofs1, clines) {
             //if (!clk)delta=-delta;
             co.Execute(offsetted_paths, -Math.abs(delta));
             // if no more then break
-            if (offsetted_paths.length <= 0) break;
+            if (offsetted_paths.length <= 0) {
+				if (last)break;
+				last=1;
+				ofs -= tofs*0.75;
+				continue;
+			}
 
             var ox = 0;
             var oy = 0;
@@ -457,12 +464,11 @@ function clcarve(tofs, ofs1, clines) {
 
 
 }
-
 // draw and together convert to gcode
-var concentrictime = 0;
+var pockettime = 0;
 
-function concentricgcode() {
-    concentrictime = 0;
+function pocketgcode() {
+    pockettime = 0;
     if (cglines.length == 0) return;
     var carvedeep = getvalue('carved') * 1;
     var f2 = getvalue('vcarvefeed') * 60;
@@ -472,14 +478,22 @@ function concentricgcode() {
         var f1 = getvalue('trav') * 60;
     }
     var fs=f2/60;
-    var pup = "G0 Z" + getvalue('safez') + "\n";
     var pdn = getvalue('pdn') + "\n";
     var overs = getvalue('overshoot') * 1;
     if (cmd == CMD_CNC) overs = 0;
 
-    var re = (carvesty["repeat"] != undefined) ? carvesty["repeat"] : getvalue("carverep");
-    re = (re * 1);
+    var re = 1*((carvesty["repeat"] != undefined) ? carvesty["repeat"] : getvalue("carverep"));
+    var re1 = 1*(getvalue("firstrep"));
+    if (re1<re)re1=re+1;
+    if (cmd==CMD_LASER)re1=re;
     var rz = carvedeep / re;
+    var rz1 = carvedeep / re1;
+    var pup = "G0 F"+speedretract+" Z" + getvalue('safez') + "\n";
+    var pup2 = "G0 F"+speedretract+" Z" + mround(-rz) + "\n";
+    if (cmd==CMD_LASER){
+        pup=getvalue('pdn') + "\n";
+        pup2=pup;
+    }
     pw = parseInt(getvalue('vcarvepw') * 255*0.01);
     var gc = "M3 S"+pw+"\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
     gc += pup;
@@ -496,7 +510,7 @@ function concentricgcode() {
 
             var dx = cglines[i][2] - lx;
             var dy = cglines[i][3] - ly;
-            var dis = sqrt(dx * dx + dy * dy) + cglines[i][1]; // distance + area size
+            var dis = sqrt(dx * dx + dy * dy)*0.3 + cglines[i][1]; // distance + area size
             //var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
 
             if ((cglines[i][1] > 0) && (dis < bg)) {
@@ -516,35 +530,39 @@ function concentricgcode() {
     var ox=-1000;
     var oy=0;
     var lz=0;
+    var climbcut=$("cutccw").checked;
     for (var j = 0; j < sglines.length; j++) {
         gline = sglines[j][0];
-        gc += pup;
-        var _re = Math.ceil(sglines[j][2] / rz);
+        var _re = Math.ceil(sglines[j][2] / (j==0?rz1:rz));
         var _rz = sglines[j][2] / (_re);
         for (var r = 0; r < _re; r++) {
             var zz = -(r + 1) * _rz;
             for (var ni = 0; ni <= gline.length; ni++) {
                 var i = gline.length-ni; // flip the path (for smooth)
+                if (climbcut)i=ni;
                 if (i == gline.length) i = 0;
                 var seg1 = gline[i];
                 cx = seg1[0];
                 cy = seg1[1];
+                
                 if (ni == 0) {
-                    gc += "G0 F" + f1 + " X" + mround(cx) + " Y" + mround(cy) + "\n";
-                    if (r==0)gc += "G0 Z0 F"+speedretract+"\n";
+                    var dd=(sqr(ox-cx)+sqr(oy-cy)>sqr(realofs*2));
+					gc += dd?pup:pup2;
+                    gc += "G0 F" + (dd?f1:f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
+                    if (dd)gc += "G0 Z0 F"+speedretract+"\n";
                     gc += pdn.replace("=cncz", mround(zz));
                 } else {
                     gc += "G1 F" + f2 + " X" + mround(cx) + " Y" + mround(cy) + "\n";
                 }
                 if (ox!=-1000){
-                    concentrictime += Math.sqrt(sqr(cx - ox) + sqr(cy - oy)) / fs;
+                    pockettime += Math.sqrt(sqr(cx - ox) + sqr(cy - oy)) / fs;
                 }
                 ox=cx;
                 oy=cy;
             }
             lz=zz;
         }
-        gc += pup;
+        //gc += pup;
 
     }
 
@@ -557,7 +575,8 @@ function concentricgcode() {
 
 }
 
-function drawconcentric() {
+
+function drawpocket() {
     var fs = getvalue('rasterfeed') * 1;
     var c = $("myCanvas1");
     var ctx = c.getContext("2d");
@@ -589,9 +608,9 @@ setclick("btvcarve", function () {
     vcarve(getvalue("vdia") / 2, getvalue("vangle") * 1, r, veeline, 0.00002 * getvalue("vdia"), 0.01 * getvalue("vdia"));
 });
 
-function doconcentricengrave() {
+function dopocketengrave() {
     clcarve(getoffset(), 0, conline);
-    concentricgcode();
-    drawconcentric();
+    pocketgcode();
+    drawpocket();
 }
-setclick("btconengrave", doconcentricengrave);
+setclick("btconengrave", dopocketengrave);

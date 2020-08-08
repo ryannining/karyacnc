@@ -85,7 +85,7 @@
 								<option value=0>Cutting</option>
 								<option value=1>Engrave</option>
 								<option value=2>Vcarve</option>
-								<option value=3>Concentric Engrave</option>
+								<option value=3>Pocket</option>
 							
 							</select></td></tr>							
 							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
@@ -149,6 +149,7 @@
 							<tr><td colspan=4 align=left>Feed using standar feed</td></tr>
 							<tr><td colspan=2>Depth </td><td colspan=2><input size=1 id=carved value=3 class=saveit></td></tr>
 							<tr><td colspan=2>Repeat </td><td colspan=2><input size=1 id=carverep value=2 class=saveit></td></tr>
+							<tr><td colspan=2>First Repeat </td><td colspan=2><input size=1 id=firstrep value=3 class=saveit></td></tr>
 							<tr><td colspan=2>Safe Z  </td><td colspan=2><input size=1 id=safez value="0.5" class=saveit></td></tr>
 							<tr><td colspan=2>CL Step  </td><td colspan=2><input size=1 id=clstep value="0.8" class=saveit></td></tr>
 						</table>
@@ -210,11 +211,11 @@
 				<tr><td><input id=zdown0 size=1 value=0 class=saveit> - <input id=zdown size=1 value=1 class=saveit>
 					</td><td colspan=2><input id=tabc value=0 size=3  class=saveit></td></tr>
 				<tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
-					</td><td>Rotate <input id=rotate type=checkbox class=saveit></td></tr>
-				<tr><td colspan=1>Cut CCW <input id=cutccw type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
+					</td><td>Rotate 90'<input id=rotate type=checkbox class=saveit></td></tr>
+				<tr><td colspan=1>Climb mill <input id=cutccw type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
 				<tr><td colspan=3 align=left>
-					<hr><b>Conc. Engrave (<font color=#800080>Line is Purple</font>)</b><br>
-					<button id=btconengrave>Concentric Engrave</button><br>
+					<hr><b>Pocket (<font color=#800080>Line is Purple</font>)</b><br>
+					<button id=btconengrave>Pocket</button><br>
 					<hr><b>V CARVING (<font color=#00c0c0>FILL is Aqua</font>)</b><br>
 					<b>Endmill:</b>&nbsp;
 					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>

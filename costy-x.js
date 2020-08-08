@@ -420,8 +420,9 @@ function prepare_line2(lenmm, lines, ofs1) {
                                     var p2=cuttabs[k][1];
                                     var si=intersects_p(p1[0],p1[1],p2[0],p2[1],ox,oy,x,y);
                                     if (si!=null){
-                                        console.log("Intersect at" + (s+ds*si));
-                                        cuts.push(s+ds*si);
+                                    	si=s+ds*(1-si)-cuttablen/2;
+                                        console.log("Intersect at" + (si));
+                                        cuts.push(si);
                                     }
                                 }
                             }
@@ -665,8 +666,8 @@ var r1sin = Math.sin(-radians);
 var currPw=0;
 function setup_rotate(angle){
     currPw=((angle >> 4) & 15) * 17; // 0 - 255
-	angle = (angle & 15)*12;
     eangle=angle;
+	angle = (angle & 15)*12;
 	if (angle==0)angle=getvalue("rasterangle") * 12;
     radians = (Math.PI / 180) * (angle);
     rcos = Math.cos(radians);
@@ -848,8 +849,8 @@ function doengrave() {
     var ofs = getoffset();
     carvedeep = getvalue('carved') * 1;
     var f2 = getvalue('rasterfeed') * 60;
-    var pw = parseInt(getvalue('rasterpw') * 0.01*255);
-    var cpwd= " S"+pw;
+    var pw = getvalue('rasterpw') * 0.01*255;
+    var cpwd = " S" + pw;
     var f1 = f2;
     if (cmd == CMD_CNC) {
         f2 = getvalue('rasterfeed') * 60;
@@ -874,8 +875,9 @@ function doengrave() {
     msort = function(a, b) {
         return (b * 1 - a * 1);
     };
-    var re = getvalue("carverep");
-    re = (re * 1);
+    var re = 1*getvalue("carverep");
+    var rep1 = 1*getvalue("firstrep");
+    
     carvedeep = getvalue("carved");
     carvedeep *= 1;
     var rz = carvedeep / re;
@@ -924,7 +926,7 @@ function doengrave() {
 					v3=null;	
 				} else {
 					// if last time have v3
-					if (fj<pp){
+					if (fj<pp){ // if not last item
 						v3=pdata[fj*2+2];
 						rdata.push(v1);   
 						var xb=v3[0];         // keep same intensity
@@ -940,8 +942,9 @@ function doengrave() {
 			}
 			aengrave[y]=rdata;
 		}
-        
 		var lpw="";
+		var tlx=1000;
+		var tly=1000;
         while (run && maxrun){
             run=0;
             maxrun--;
@@ -955,7 +958,7 @@ function doengrave() {
                 var _re = re;
                 // on first line, cannot eat to much
                 if (i == 0) {
-                    _re = carvedeep;
+                    _re = rep1;
                     _rz = carvedeep / _re;
                 }
                 if (cmd == CMD_LASER) _re = 1;
@@ -1003,7 +1006,7 @@ function doengrave() {
                 lengr = engr;
                 var ogy = (y * 25.41 / engraveDPI);
                 lx = -100;
-                gc += pup;
+                if (cmd==CMD_LASER) gc += pup;
                 var ashift=0;
                 var pdata = engr.sort(nsortx);
                 /*
@@ -1057,7 +1060,9 @@ function doengrave() {
                         //gc += "G0 Y" + mround(gy) + " X" + mround(ox) + "\n";
                         gy=xy0[1];
                         ox=xy0[0];
-                        gc += "G0 Y" + mround(gy) + " X" + mround(ox) + "\n";
+						var dd=sqrt(sqr(ox-tlx)+sqr(gy-tly))>(ofs*2);
+						if (dd)gc+=pup;
+                        gc += (dd?"G0":"G1")+" Y" + mround(gy) + " X" + mround(ox) + "\n";
                         var drw = 1;
                         //if (cmd==CMD_LASER)drw=Math.abs(gy-lry)>drwR;
                         if (drw) lry = gy;
@@ -1076,28 +1081,39 @@ function doengrave() {
                         for (var j = 0; j <= pp; j++) {
                             oox1=rdata[j * 2 + 1][0] * 1;
                             oox2=rdata[j * 2][0] * 1;
-                            cpw=parseInt(rdata[j * 2][1]*pw/255);
-                            if (cpw>0)cpw=" S"+cpw;else cpw=cpwd;
-                            
-                            if (lpw==cpw)cpw="";else lpw=cpw;
-                            xy1=rotateCCW(0,0,oox1,ogy);
-                            xy2=rotateCCW(0,0,oox2,ogy);
+                            cpw = parseInt(rdata[j * 2][1] * pw / 255);
+                            if (cpw > 0)
+                                cpw = " S" + cpw;
+                            else
+                                cpw = cpwd;
+
+                            if (lpw == cpw)
+                                cpw = "";
+                            else
+                                lpw = cpw;
+                            xy1 = rotateCCW(0, 0, oox1, ogy);
+                            xy2 = rotateCCW(0, 0, oox2, ogy);
                             ox = xy1[0];
                             fx = xy2[0];
                             if (cmd == CMD_LASER) {
-                            
+
                                 //if (Math.abs(oox2-oox1)>0.1)
                                 gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) + "\n";
-                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) +cpw+"\n";
+                                gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) + cpw + "\n";
                                 // remove data from engr
+
 
                             } else {
                                 // repeat until deep satisfied
                                 if (Math.abs(ox - fx) >= ofs) {
+                                    //else gc += "G1 Z"+mround(z)+" F"+speedretract+"\n";
+
                                     gc += "G0 X" + mround(fx) + " Y" + mround(xy2[1]) +"\n";
-                                    gc += "G0 Z0 F"+speedretract+"\n";
+                                    if(j)gc += "G0 Z0 F"+speedretract+"\n";
                                     gc += "G1 Z" + mround(z) + "\n";
                                     gc += "G1 X" + mround(ox) + " Y" + mround(xy1[1]) +"\n";
+                                    tlx=ox;
+                                    tly=xy1[1];
                                     if (j < pp) gc += pup;
                                 }
                             }
@@ -1106,25 +1122,27 @@ function doengrave() {
                             }
                             
                         }
-                        xmin = Math.min(xmin, ox);
-                        xmax = Math.max(xmax, ox);
-                        ox = oox1 + (((ri) & 1) ? -overs : overs);
-                        xy1=rotateCCW(0,0,ox,ogy);
-                        
-                        gc += "G0 X" + mround(xy1[0]) + " Y" + mround(xy1[1])+ "\n";
-                        engravetime += 2 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[0])) / (f2* 0.0167);
+						xmin = Math.min(xmin, ox);
+						xmax = Math.max(xmax, ox);
+                        if (cmd == CMD_LASER) {
+							ox = oox1 + (((ri) & 1) ? -overs : overs);
+							xy1=rotateCCW(0,0,ox,ogy);
+
+							gc += "G0 X" + mround(xy1[0]) + " Y" + mround(xy1[1])+ "\n";
+							engravetime += 2 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[0])) / (f2* 0.0167);
+                        } else ox = oox1;
                     }
                     if (slowdown) gc += "G1 F" + (f2) + "\n";
                 }
             }
         }
-        gc += pup + "\n";
+        if (cmd==CMD_LASER)gc += pup + "\n";
     }
+    gc += pup + "\n";
     //if (ENGRAVE==1)
     gc = getvalue("engcode") + gc;
     setvalue("engcode", gc);
 }
-
 function addengrave(ang,pw,cx, cy) {
     if (engrave[ang]==undefined)engrave[ang]={};
     if (engrave[ang][cy] == undefined) engrave[ang][cy] = [];
@@ -1232,6 +1250,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
 
     var ccw = flip;
     if ($("cutccw").checked) ccw = !ccw;
+    plt =($("pltmode").checked) ;
     
     var cutindex=0;
     slc =cutpos[cutindex];
@@ -1286,7 +1305,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
     lx2 = lx;
     ly2 = ly;
     nc = 2;
-    var concentricdeep = 0;
+    var pocketdeep = 0;
     if ($("enablecolor").checked) {
         var carvedeep = getvalue('carved') * 1;
         stro = sty["stroke"];
@@ -1294,15 +1313,15 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
         strokedeep = parseInt("0x" + stro.substr(3, 2)) * 0.1;
 
         if (sty.doconengrave) {
-            concentricdeep = strokedeep > 0 ? strokedeep : carvedeep;
+            pocketdeep = strokedeep > 0 ? strokedeep : carvedeep;
         }
     }
     var cll = false;
-    if (closed) {
+    if (closed && !plt) {
         cll = isClockwise(lines);
         if (!cll) lcol = "#00C800";else lcol = "#000000";
     }
-    if (sty.dovcarve) lcol = "#ffff00";
+    if (sty.dovcarve) lcol = "#00ffff";
     if (sty.doconengrave) lcol = "#800080";
     if (sty.domarking) lcol = "#FF0000";
     ox = 0;
@@ -1557,7 +1576,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
         if (cll) clw = ">";
     }
     if (sty.dovcarve) veeline.push(dline);
-    if (sty.doconengrave) conline.push([dline, concentricdeep]);
+    if (sty.doconengrave) conline.push([dline, pocketdeep]);
     if (sty.greenskip){
         lx=olx;
         ly=oly;
@@ -1683,8 +1702,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     var Y0;
     var X9=null;
     var Y9;
-	var uselead=$("useleadin").checked;
 	var leadmm=getvalue("leadin"); // 2mm
+	var uselead=$("useleadin").checked && (leadmm<len);
     
     if (uselead && firstlayer){
 		// get the vector of the first point
@@ -1693,24 +1712,29 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		var pp=p;
 		var d=0;
 		var p2=sqr(leadmm);
+		var nn=10;
 		while (d<p2){
 			pp--;
+			nn--;
+			if (!nn)break;
 			if (pp<0){pp+=lines.length;}
 			var dx=lines[pp][1]-X1;
 			var dy=lines[pp][2]-Y1;
 			d=sqr(dx)+sqr(dy);
 		}
-		d=sqrt(d);
-		dx/=d; // get the vector
-		dy/=d;
-		// lead in
-		var p=rotateV(0,0,leadmm*dx,leadmm*dy,90);
-		X0=p[0]+X1; // start
-		Y0=p[1]+Y1;
-		// lead out
-		//var p=rotateV(0,0,leadmm*dx,leadmm*dy,45+90);
-		//X9=p[0]+X1;  // stop
-		//Y9=p[1]+Y1;
+		if (nn){
+			d=sqrt(d);
+			dx/=d; // get the vector
+			dy/=d;
+			// lead in
+			var p=rotateV(0,0,leadmm*dx,leadmm*dy,90);
+			X0=p[0]+X1; // start
+			Y0=p[1]+Y1;
+			// lead out
+			//var p=rotateV(0,0,leadmm*dx,leadmm*dy,45+90);
+			//X9=p[0]+X1;  // stop
+			//Y9=p[1]+Y1;
+		}
 	}
     var sc = 1;
     if ($("flipx").checked) {
@@ -2098,8 +2122,8 @@ function gcode_verify(en = 0) {
     autoprobe = "G30 S" + getvalue("alres") + " X" + mround(w * 10) + " Y" + mround(h * 10);
     drawengrave();
     drawvcarve();
-    doconcentricengrave();
-    var menit = mround((concentrictime + carvetime + totaltime + engravetime + travtime) / 60.0);
+    dopocketengrave();
+    var menit = mround((pockettime + carvetime + totaltime + engravetime + travtime) / 60.0);
 	 if (cmd == CMD_CNC) {
 	 	menit*=2; // realisticcally 1.5
 	 } else {
@@ -2455,7 +2479,7 @@ function sortedgcode() {
                 cncz = Math.max(cncz+zdown/2,cncdeep);
                 cncz2 =Math.max(cncz2+zdown/2,cncdeep);            
             }
-            if ($("burn1").checked || $("flipx").checked){
+			if (!sty.closed && ($("burn1").checked || $("flipx").checked)){
                 ccw = ccw ? 0 : 1;
             }
             for (var i = 0; i < _re; i++) {
@@ -3169,9 +3193,10 @@ function pathstoText1(gx) {
     for (var i in paths){
         var sty=paths[i][9];
         var stro=sty["stroke"];
-        var cuttab = (paths[i][0].length==2) && (stro == "#800000");
+        var cuttab = (stro == "#800000");
         if (cuttab){
-            cuttabs.push(paths[i][0]);
+			var cp=paths[i][0];
+			if (cp.length>=2) cuttabs.push([cp[0],cp[cp.length-1]]);
             continue;
         }        
         if (paths[i][0].length>0){
@@ -3260,7 +3285,20 @@ function pathstoText1(gx) {
     var ms = etime.getTime();    
     // check inside/ outside
     
-    
+     for (i in paths) {
+        var path = paths[i][0];
+        //if (path.length==0)continue;
+        var sty=paths[i][9];
+        var stro=sty["stroke"];
+        var fill=sty["fill"];
+        // modifier for grayscale engrave
+		if (stro=="#ffff00"){
+			stro="#000000";
+			fill="#ffff00";
+			sty["stroke"]=stro;
+			sty["fill"]=fill;
+		}
+    }   
     for (i in paths) {
         var path = paths[i][0];
         //if (path.length==0)continue;
@@ -3268,7 +3306,8 @@ function pathstoText1(gx) {
         var stro=sty["stroke"];
         var fill=sty["fill"];
         // modifier for grayscale engrave
-        if (stro == "#808000"){
+
+		if (stro == "#808000"){
             gray = (16*parseInt(15-parseInt("0x" + fill.substr(3, 2)) /17)).toString(16);
             if (gray.length==1)gray="0"+gray;
             stro = "#00"+gray+"ff";
@@ -3311,7 +3350,7 @@ function pathstoText1(gx) {
                 for (var j=0;j<path.length;j+=10){
                     var p=path[j];
                     if ((paths[ii][4]>l1) && isInside(p[0],p[1],paths[ii][0])){
-                        if (paths[i][9].closed)flip=!flip;
+                        if (paths[i][9].closed && (psty["fill"]!="#ffff00"))flip=!flip;
                         parent.push(ii);
                         paths[ii][9].childs++;
                         break;
