@@ -1,5 +1,6 @@
 //console.log("App Running");
-// 
+//
+var finishgcode="";
 var machinezero="G92";
 var machinepos="M114";
 var wsconnected = 0;
@@ -14,7 +15,7 @@ var py = 0;
 var pz = 0;
 var pe = 0;
 var etime = new Date();
-var checktemp = 1;
+var checktemp = 0;
 var isgrbl = 0;
 var gcstyle = [];
 var preview=0;
@@ -160,6 +161,7 @@ function on__wait(){
 		    }
 		    stopinfo = 0;
 	    } else sendgcode(machinepos);
+        resetflashbutton();
 
         var bt = document.getElementById('btexecute');
         bt.innerHTML = "Execute";
@@ -251,7 +253,7 @@ function executegcodes(gcodes) {
     var bt = document.getElementById('btexecute');
     if (bt.innerHTML == "Execute") {
 		preview=0;
-        execute(gcodes);
+        execute(gcodes+finishgcode);
         bt.innerHTML = "Stop";
     } else {
         bt.innerHTML = "Execute";
@@ -264,9 +266,9 @@ function executegcodes2() {
     if (bt.innerHTML == "Engrave") {
 		preview=0;
         if ($("engravecut").checked)
-            execute(getvalue('engcode') + "\n" + getvalue('gcode'));
+            execute(getvalue('engcode') + "\n" + getvalue('gcode')+finishgcode);
         else
-            execute(getvalue('engcode'));
+            execute(getvalue('engcode')+finishgcode);
         bt.innerHTML = "Stop";
     } else {
         bt.innerHTML = "Engrave";
@@ -593,7 +595,7 @@ setclick("btresume", function() {
     nextgcode();
 });
 setclick("btsetcut", function() {
-    setvalue("disablecut", getvalue("shapes"));
+ //   setvalue("disablecut", getvalue("shapes"));
 });
 
 setclick("btengrave", function() {
@@ -769,12 +771,14 @@ function updatestyle(k,va){
 function updateweb(sett){
 	for (var k in sett) {
 		var a = $(k);
-		if (a.type == 'checkbox')
-			a.checked = sett[k];
-		else
-			setvalue(k, sett[k]);
-		// custom
-		updatestyle(k,sett[k]);
+		if (a!=undefined){
+			if (a.type == 'checkbox')
+				a.checked = sett[k];
+			else
+				setvalue(k, sett[k]);
+			// custom
+			updatestyle(k,sett[k]);
+		}
 	}
 }
 function updateprofile(){
@@ -851,13 +855,14 @@ function reconnectwebsock(){
 		//setTimeout(connectwebsock, 2000);
 	}
 }
-
+var autoreconnect=0;
 function connectwebsock() {
 	websockOK=0;
 	wsconnected=$("wsconnect").innerHTML=="Close";
     if (wsconnected) {
+		autoreconnect=0;
         ws.close();
-    //    return;
+		return;
     }
     h = getvalue("wsip");
     if (h) {
@@ -878,6 +883,7 @@ function connectwebsock() {
             a.innerHTML = "Web socket:Failed connect ! ";
             $("wsconnect").innerHTML = 'Connect';
             ws.close();
+            autoreconnect=0;
             wsconnected = 0;
 			reconnectwebsock();
 			hideId("machine_ws");
@@ -895,6 +901,7 @@ function connectwebsock() {
 			websockOK=1;
 			showId("machine_ws");
 			resetflashbutton();
+			autoreconnect=1;
         }
         ;
 
@@ -904,7 +911,8 @@ function connectwebsock() {
             a.innerHTML = "Web socket:disconnected";
             $("wsconnect").innerHTML = 'Connect';
             wsconnected = 0;
-			reconnectwebsock();
+            // disable autoreconnect
+			if (autoreconnect)reconnectwebsock();
 			hideId("machine_ws");
         }
         ;

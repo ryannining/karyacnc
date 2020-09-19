@@ -54,12 +54,12 @@
 		<tr align=center><td><button class=jog onclick="speed1()">1x</button></td><td><button class=jog onclick="jogup()">Up</button></td><td><button class=jog onclick="zup()">Z+1</button><button class=jog onclick="z15()">Z 15</button></td>		
 		<tr align=center><td><button class=jog onclick="jogleft()">Left</button></td>
 			<td><Select id=step>
-				<option value=.25>.25</option>
+				<option value=.25>.5</option>
 				<option value=1>1</option>
 				<option selected value=5>5</option>
-				<option value=10>10</option>
-				<option value=125>125</option>
-				<option value=205>205</option>
+				<option value=25>25</option>
+				<option value=50>50</option>
+				<option value=150>150</option>
 			</select> mm</td>
 			<td><button class=jog onclick="jogright()">Right</button><button class=jog onclick="probe()">Probe</button></td></tr>
 		<tr align=center><td><button class=jog onclick="speed2()">1.5x</button></td><td><button class=jog onclick="jogdown()">Down</button></td><td><button class=jog onclick="zdown()">Z-1</button><button class=jog onclick="z0()">Z 0</button></td></tr>
@@ -78,6 +78,10 @@
 	<hr>	
 
 	<button class=jog onclick="alert2a()">Reload jobs</button>
+	<button class=jog onclick="spindle(255)">Spindle On</button>
+	<button class=jog onclick="spindle(0)">Spindle Off</button>
+    <hr>
+    <input id=xbacklash value=0.2 size=3><input id=ybacklash value=0 size=3><button class=jog onclick="setxbc()">Set BC</button>
 
 	</div><br>
 	Show preview <input id=preview type=checkbox onclick="joblist(lastres)">&nbsp;Filter <input  id=dofilter type=checkbox onclick="joblist(lastres)">
@@ -147,18 +151,31 @@ function bedlevel(s,x,y){
 function loadbedlevel(){
 	urlopen("gcode?t=G31",alert2);	
 }
-
+function setxbc(){
+	urlopen("gcode?t=M206 P80 S"+getvalue("xbacklash"),function(x){
+	urlopen("gcode?t=M206 P84 S"+getvalue("ybacklash"),alert2);	});
+}
+function setybc(){
+}
 function speed1(){
 	urlopen("speed?t=100");	
 }
 function speed2(){
 	urlopen("speed?t=150");	
 }
+function spindle(x){
+	urlopen("gcode?t=M3 S"+x);	
+}
+
 function zup(){
-	urlopen("jogmove?z=1&y=0&x=0");	
+	zz=getvalue("step")*1;
+	if (zz>1)zz=1;
+	urlopen("jogmove?z="+zz+"&y=0&x=0");	
 }
 function zdown(){
-	urlopen("jogmove?z=-1&y=0&x=0");	
+	zz=getvalue("step")*1;
+	if (zz>1)zz=1;
+	urlopen("jogmove?z=-"+zz+"&y=0&x=0");	
 }
 function z15(){
 	urlopen("gcode?t=G0 Z15 F800");	

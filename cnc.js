@@ -57,9 +57,9 @@ var wemosd1 = 1;
 var uploadimage = 1;
 
 function upload(fn) {
-    if ($("pltmode").checked){
+    if ($("pltmode") && $("pltmode").checked){
         $("alert1").innerHTML="<br>PLT MODE !";
-        return;
+        //return;
     }
 
     function uploadjpg() {
@@ -109,11 +109,11 @@ function realupload(gcode, fname, callback) {
 
 
 setclick("btupload", function () {
-    begincompress(getvalue("engcode") + "\n" + getvalue("gcode"));
+    begincompress(getvalue("engcode") + "\n" + getvalue("gcode")+finishgcode);
     upload(getvalue("jobname") + ".gcode");
 });
 setclick("btjob5", function () {
-    begincompress(jobs.join("\n"));
+    begincompress(jobs.join("\n")+finishgcode);
     upload(getvalue("jobname") + ".gcode");
 });
 
@@ -204,7 +204,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     var jj, seg2, seg1, mr2;
     var maxz = -maxr * ve;
     var ftrav = getvalue("trav") * 60;
-    var ffeed = getvalue("feed") * 60;
+    var ffeed = getvalue("vcfeed") * 60;
     for (var i = 0; i < segsv.length; i++) {
         mr2 = 0; // d squared
         seg1 = segsv[i];
@@ -365,7 +365,7 @@ function drawvcarve() {
 }
 var cglines = [];
 var realofs=0;
-function clcarve(tofs, ofs1, clines) {
+function pocketcarve(tofs, ofs1, clines) {
     if (cmd == CMD_CNC) tofs = tofs * getvalue("clstep");
     if (tofs < 0.2) tofs = 0.2;
     if (ofs1 < 0.2) ofs1 = 0.2;
@@ -397,7 +397,7 @@ function clcarve(tofs, ofs1, clines) {
         //  var paths = [[{X:30,Y:30},{X:130,Y:30},{X:130,Y:130},{X:30,Y:130}],[{X:60,Y:60},{X:60,Y:100},{X:100,Y:100},{X:100,Y:60}]]; 
 
         var ofs = -(tofs);
-        var maxx = 400;
+        var maxx = 50;
         var last=0;
         while (maxx-- > 0) {
             // increase tool offset
@@ -414,10 +414,15 @@ function clcarve(tofs, ofs1, clines) {
             co.Execute(offsetted_paths, -Math.abs(delta));
             // if no more then break
             if (offsetted_paths.length <= 0) {
+				break;
 				if (last)break;
 				last=1;
-				ofs -= tofs*0.75;
+				ofs -= tofs*1.5;
 				continue;
+			}
+			// mask as not last
+			for (var k=0;k<glines.length;k++){
+				glines[k][6]=0;
 			}
 
             var ox = 0;
@@ -455,7 +460,7 @@ function clcarve(tofs, ofs1, clines) {
                     y = l.Y * 1.0 / scale;
                     newline.push([x, y, ds]);
                     //*/
-                    glines.push([newline, s * 0.02, cx / path.length, cy / path.length, deep]);
+                    glines.push([newline, s * 0.02, cx / path.length, cy / path.length, deep,delta,1]);
                 }
             }
         }
@@ -484,11 +489,12 @@ function pocketgcode() {
 
     var re = 1*((carvesty["repeat"] != undefined) ? carvesty["repeat"] : getvalue("carverep"));
     var re1 = 1*(getvalue("firstrep"));
-    if (re1<re)re1=re+1;
+    if (re1<re)re1=re/getnumber("clstep"); // try to auto the repeat number
     if (cmd==CMD_LASER)re1=re;
     var rz = carvedeep / re;
     var rz1 = carvedeep / re1;
-    var pup = "G0 F"+speedretract+" Z" + getvalue('safez') + "\n";
+    var zup=Math.min(getvalue('safez')*1,zretract);
+    var pup = "G0 F"+speedretract+" Z" + zup + "\n";
     var pup2 = "G0 F"+speedretract+" Z" + mround(-rz) + "\n";
     if (cmd==CMD_LASER){
         pup=getvalue('pdn') + "\n";
@@ -510,7 +516,7 @@ function pocketgcode() {
 
             var dx = cglines[i][2] - lx;
             var dy = cglines[i][3] - ly;
-            var dis = sqrt(dx * dx + dy * dy)*0.3 + cglines[i][1]; // distance + area size
+            var dis = -cglines[i][5]+(dx * dx + dy * dy)*10; // distance + area size
             //var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
 
             if ((cglines[i][1] > 0) && (dis < bg)) {
@@ -520,17 +526,28 @@ function pocketgcode() {
         }
         // smalles in cs
         if (cs >= 0) {
-            sglines.push([cglines[cs][0], cs + 1, cglines[cs][4]]);
+            // find the closest point
+			var lines=cglines[cs][0];
+			var shift=0;
+			var dmax=10000000;
+            for (var i=0;i<lines.length-1;i+=10){
+				var d=(sqr(lx - lines[i][0]) + sqr(ly - lines[i][1]));
+				if (d<dmax){
+					shift=i;
+					dmax=d;
+				}
+			}
+            sglines.push([arrayRotate(lines,shift), cs + 1, cglines[cs][4],cglines[cs][6]]);
             cglines[cs][1] = -cglines[cs][1];
-            lx = cglines[cs][2];
-            ly = cglines[cs][3];
+            lx = lines[0][0];
+            ly = lines[0][1];
         }
     }
 
     var ox=-1000;
     var oy=0;
     var lz=0;
-    var climbcut=$("cutccw").checked;
+    var climbcut=$("cutclimb").checked;
     for (var j = 0; j < sglines.length; j++) {
         gline = sglines[j][0];
         var _re = Math.ceil(sglines[j][2] / (j==0?rz1:rz));
@@ -546,9 +563,16 @@ function pocketgcode() {
                 cy = seg1[1];
                 
                 if (ni == 0) {
-                    var dd=(sqr(ox-cx)+sqr(oy-cy)>sqr(realofs*2));
-					gc += dd?pup:pup2;
-                    gc += "G0 F" + (dd?f1:f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
+                    var dd=((r==0) && (sqr(ox-cx)+sqr(oy-cy)>sqr(realofs*2))); // decide we need to move up z or not
+                    if (sglines[j][3]){
+                        // recalculate repeat and rz only for last/ inner most
+                        _re = Math.ceil(sglines[j][2] / rz1);
+                        _rz = sglines[j][2] / (_re);
+                        zz = -(r + 1) * _rz;
+
+                    }
+					gc += dd?pup:(r==0?pup2:"");
+                    gc += "G1 F" + (dd?f1:f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
                     if (dd)gc += "G0 Z0 F"+speedretract+"\n";
                     gc += pdn.replace("=cncz", mround(zz));
                 } else {
@@ -603,13 +627,14 @@ function drawpocket() {
     }
 }
 
-setclick("btvcarve", function () {
+function dobtvcarve () {
     var r = Math.max(sxmax, symax) / getvalue("vres");
     vcarve(getvalue("vdia") / 2, getvalue("vangle") * 1, r, veeline, 0.00002 * getvalue("vdia"), 0.01 * getvalue("vdia"));
-});
+}
+setclick("btvcarve", dobtvcarve);
 
 function dopocketengrave() {
-    clcarve(getoffset(), 0, conline);
+    pocketcarve(getoffset(), 0, conline);
     pocketgcode();
     drawpocket();
 }

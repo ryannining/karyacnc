@@ -87,27 +87,21 @@
 								<option value=2>Vcarve</option>
 								<option value=3>Pocket</option>
 							
-							</select></td></tr>							
-							<tr><td colspan=2>Pause at </td><td colspan=2><input id=pauseat class=saveit size=15></td></tr>
+							</select></td></tr>
+							<tr><td colspan=4><hr></td></tr>							
+							<tr><td colspan=2>Quality </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
+							<tr><td colspan=2>Zero on start </td><td colspan=2><input size=1 type=checkbox id=zerobefore checked class=saveit></td></tr>
 							<tr><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=5 value="0,0"> <input size=1 type=checkbox id=usestart checked class=saveit></td></tr>
-							<tr><td colspan=2>Marking Cut </td><td colspan=2><input id=markingcut class=saveit size=15></td></tr>
-							<tr><td colspan=2>Disable Cut </td><td colspan=2><input id=disablecut class=saveit size=15></td></tr>
-							<tr><td colspan=2>Disable Tab </td><td colspan=2><input id=disabletab class=saveit size=15></td></tr>
-							<tr><td colspan=2>Disable Ovc </td><td colspan=2><input id=disableovc class=saveit size=15></td></tr>
-							<tr><td colspan=2>Curve seg. </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
+							<tr><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="3"></td></tr>
 							<tr><td colspan=2>Tab every </td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
 							<tr><td colspan=2>Tab len </td><td colspan=2><input id=tablen class=saveit value='5' size=5></td></tr>
 							<tr><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
-							<tr><td colspan=2>To drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
-							<tr><td colspan=2>To DogBone </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
+							<tr><td colspan=2>Min. to drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
+							<tr><td colspan=2>Min. get DogBone </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
 							<tr><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=1 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr><td colspan=2>Lead in (plasma) </td><td colspan=2><input id=leadin class=saveit size=5 value="3"> <input size=1 type=checkbox id=useleadin class=saveit></td></tr>
 							<tr><td colspan=2>Spiral down </td><td colspan=2><input size=1 type=checkbox id=spiraldown checked class=saveit></td></tr>
-							<tr><td colspan=2>Zero on start </td><td colspan=2><input size=1 type=checkbox id=zerobefore checked class=saveit></td></tr>
-							<tr><td colspan=2>Drill first </td><td colspan=2><input size=1 type=checkbox id=drillfirst checked class=saveit></td></tr>
-							<tr><td colspan=2>Small first </td><td colspan=2><input size=1 type=checkbox id=smallfirst checked class=saveit></td></tr>
-							<tr><td colspan=2>Acp Drill first</td><td colspan=2><input size=1 type=checkbox id=acpmode checked class=saveit></td></tr>
-							<tr><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="3"></td></tr>
+							<tr><td colspan=2>Acp mode</td><td colspan=2><input size=1 type=checkbox id=acpmode checked class=saveit></td></tr>
 							
 							<tr><td>DogBone </td>
 								<td><input id=overcut type=checkbox checked size=2 class=saveit></td>
@@ -133,7 +127,7 @@
 							    <input id=rasteroutfeed class=saveit size=5 value=200><input id=rasteroutpw class=saveit size=2 value=100>%</td></tr>
 							<tr><td colspan=2>Burn feed</td><td colspan=2>
 							    <input id=burnfeed class=saveit size=3 value=40> 100 %</td></tr>
-							<tr><td colspan=2>Vcarve feed</td><td colspan=2>
+							<tr><td colspan=2>Pocket feed</td><td colspan=2>
 							    <input id=vcarvefeed class=saveit size=3 value=40><input id=vcarvepw class=saveit size=2 value=100>%</td></tr>
 							    
 							<tr><td colspan=2>Enable Engrave </td><td colspan=2><input size=1 type=checkbox id=enableraster checked class=saveit></td></tr>
@@ -145,8 +139,7 @@
 							<tr><td></td><td>Y Step </td><td id=ystep>...</td></tr>
 							<tr><td colspan=2>Enable stroke-width </td><td colspan=2><input size=1 type=checkbox id=strokeoffset checked class=saveit></td></tr>
 							<tr><td colspan=2>MODE 0</td><td colspan=2><input size=1 type=checkbox id=emode0 checked class=saveit></td></tr>
-							<tr><td colspan=4 align=left><b>PINK CNC Carving </b></td></tr>
-							<tr><td colspan=4 align=left>Feed using standar feed</td></tr>
+							<tr><td colspan=4 align=left><b>Engrave/Pocket setting </b></td></tr>
 							<tr><td colspan=2>Depth </td><td colspan=2><input size=1 id=carved value=3 class=saveit></td></tr>
 							<tr><td colspan=2>Repeat </td><td colspan=2><input size=1 id=carverep value=2 class=saveit></td></tr>
 							<tr><td colspan=2>First Repeat </td><td colspan=2><input size=1 id=firstrep value=3 class=saveit></td></tr>
@@ -154,7 +147,8 @@
 							<tr><td colspan=2>CL Step  </td><td colspan=2><input size=1 id=clstep value="0.8" class=saveit></td></tr>
 						</table>
 				</td></tr>
-				<tr style="background:chocolate"><td colspan=3><b style="color:white">Profile</b><select  id=profile><option value=set1>set1</option></select><input class=saveit id=profilename size=5><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
+				<tr style="background:chocolate"><td colspan=3 align=left><b style="color:white">Saved profile</b><select  id=profile><option value=set1>set1</option></select><br>
+				<b style="color:white">Profile name</b><input class=saveit id=profilename size=5><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
 				<tr style="background:lime"><td colspan=3>Preset <select id=material class=saveit>
 					<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
 					<option value="8,1,27,1500">Laser Akrilik 2mm</option>
@@ -210,15 +204,16 @@
 				<tr style="background:lime"><td>CNC Zdown</td><td colspan=2>CNC Tab Cutout</td></tr>
 				<tr><td><input id=zdown0 size=1 value=0 class=saveit> - <input id=zdown size=1 value=1 class=saveit>
 					</td><td colspan=2><input id=tabc value=0 size=3  class=saveit></td></tr>
-				<tr style="background:lime" ><td>Flip X <input id=flipx type=checkbox class=saveit>
-					</td><td>Rotate 90'<input id=rotate type=checkbox class=saveit></td></tr>
-				<tr><td colspan=1>Climb mill <input id=cutccw type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
+				<tr style="background:lime" ><td colspan=2>Flip X <input id=flipx type=checkbox class=saveit>
+					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit></td><td>Pow <input id=cutpw size=2 value=100 class=saveit>%</td></tr>
+				<tr><td colspan=1>Climb mill <input id=cutclimb type=checkbox class=saveit><td colspan=2>Burn paper <input id=burn1 type=checkbox class=saveit><button id=btrecode >Re-gcode</button></td></tr>
 				<tr><td colspan=3 align=left>
 					<hr><b>Pocket (<font color=#800080>Line is Purple</font>)</b><br>
 					<button id=btconengrave>Pocket</button><br>
 					<hr><b>V CARVING (<font color=#00c0c0>FILL is Aqua</font>)</b><br>
 					<b>Endmill:</b>&nbsp;
 					Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
+					Feed<input id=vcfeed class=saveit size=2 value=30>
 					<br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit>&nbsp;&nbsp;
 					<button id=btvcarve>VCarve</button><br>
 <hr>
@@ -257,6 +252,7 @@
 			<div id="myCanvas1div" style="width:600px;height:500px;overflow:scroll">
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
 			</div>
+			Dark Theme<input type=checkbox id=isdarktheme class=saveit><br>
 			<p style="background:yellow" id="area_dimension2"></p>
 			<br><button id=btsaveset style="display:none">Save Config</button>
 		</td>

@@ -118,13 +118,13 @@ function addgcode(g) {
         if (".0123456789-".indexOf(c) >= 0) {
             lv += c;
         }
-        if ((" ;MGXYZEFSTRIJK".indexOf(c) >= 0) || (i == g.length - 1)) {
+        if ((" ;MGXYZEFSTRIJKP".indexOf(c) >= 0) || (i == g.length - 1)) {
             if (lv) {
                 gk += lk;
                 gd[lk] = lv * 1;
                 lv = "";
             }
-            if ("MGXYZEFSTR".indexOf(c) >= 0) lk = c;
+            if ("MGXYZEFSTRP".indexOf(c) >= 0) lk = c;
         }
         if (c == ';') break;
     }
@@ -159,10 +159,14 @@ function addgcode(g) {
             case 3: // spindle on
                 h |= 0;
                 break;
+            case 5: // spindle off as M3 S0
+                h |= 0;
+                gd['S']=0;
+                break;
             case 109:
                 h |= 1 << 1;
                 break;
-            case 2:
+            case 2: // i think we dont need M2
                 h |= 2 << 1;
                 break; // final
             default:
