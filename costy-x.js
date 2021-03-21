@@ -1177,7 +1177,7 @@ function draw_leads(){
 		var l=leads[i];
 		ctx.moveTo((l[0] + maxofs) * dpm, (l[1] + maxofs) * dpm);
 		ctx.lineTo((l[2] + maxofs) * dpm,(l[3] + maxofs) * dpm);
-		ctx.lineTo((l[4] + maxofs) * dpm,(l[5] + maxofs) * dpm);
+		if (l[4])ctx.lineTo((l[4] + maxofs) * dpm,(l[5] + maxofs) * dpm);
 		
 	}
 	ctx.stroke();
@@ -1655,7 +1655,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var l1=getvalue("leadin"); // 2mm
 	
 	var leadmm=parseFloat(l1[0]);
-	var uselead=$("useleadin").checked && (leadmm<len);
+	var uselead=closed && $("useleadin").checked && (leadmm<len);
     
     if (uselead && firstlayer){
 		// get the vector of the first point
@@ -1665,7 +1665,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		var pp=p;
 		var d=0;
 		var ang1=parseFloat(l1[1])|| 40;
-		var ang2=parseFloat(l1[2]) || 90;
+		var ang2=parseFloat(l1[2]);
 		var p2=sqr(leadmm);
 		var nn=10;
         X9=null;
@@ -1689,9 +1689,11 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
             XLEAD=X0;
             YLEAD=Y0;
 			// lead out
-			var p=rotateV(0,0,leadmm*dx,leadmm*dy,ang2);
-			X9=p[0]+X1;  // stop
-			Y9=p[1]+Y1;
+			if (ang2){
+				var p=rotateV(0,0,leadmm*dx,leadmm*dy,ang2);
+				X9=p[0]+X1;  // stop
+				Y9=p[1]+Y1;
+			}
 			leads.push([X0,Y0,X1,Y1,X9,Y9]);
 		}
 	}

@@ -323,6 +323,8 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     var ly = 0;
     var oldz=-100;
     var oldf=-100;
+    var oldx=-100;
+    var oldy=-100;
     for (var i = 0; i < segsv.length; i++) {
         seg1 = segsv[i];
         rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
@@ -333,7 +335,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
         r = seg1[6] * dpm;
         if (seg1[2] == -1) {
             gc += "G0 Z4\n";
-            gc += "G0 F" + ftrav + " X" + mround(seg1[3]) + " Y" + mround(seg1[4]) + "\n";
+            gc += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
             gc += "G0 Z0\n";
             continue;
         }
@@ -342,14 +344,18 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
         var fs = seg1[10];
         //if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
         if (r > dstep) {
-			fpart="F" + mround(fs);
-			xpart=" X" + mround(seg1[3]);
-			ypart=" Y" + mround(seg1[4]);
-			zpart=" Z" + mround(seg1[5]);
+			fpart="F" + parseInt(fs);
+			xpart=" X" + mround2(seg1[3]);
+			ypart=" Y" + mround2(seg1[4]);
+			zpart=" Z" + mround2(seg1[5]);
+			if (oldx==seg1[3])xpart="";
+			if (oldy==seg1[4])ypart="";
 			if (oldz==seg1[5])zpart="";
 			if (oldf==fs)fpart="";
 			
 			gc += "G1 "+fpart + xpart + ypart + zpart + "\n";
+			oldx=seg1[3];
+			oldy=seg1[4];
 			oldz=seg1[5];
 			oldf=fs;
         }
