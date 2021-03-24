@@ -1016,6 +1016,7 @@ function doengrave() {
                                     tlx=ox;
                                     tly=xy1[1];
                                     if (j < pp) gc += pup;
+									engravetime += 0.8 * Math.abs(ox-fx) / (f2* 0.0167);
                                 }
                             }
                             if (drw && !r) {
@@ -1033,7 +1034,9 @@ function doengrave() {
 							if (LY!=xy1[1])gc += " Y" + mround2(xy1[1]);
 							gc+= "\n";
 							engravetime += 0.8 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[0])) / (f2* 0.0167);
-                        } else ox = oox1;
+                        } else {
+							ox = oox1;
+						}
                     }
                     if (slowdown) gc += "G1 F" + (f2) + "\n";
                 }
@@ -2110,8 +2113,9 @@ function gcode_verify(en = 0) {
                               "\nG1 Z1\nG0 Z0\n\nG0 Y" + mround(ymin) + "\n");
     autoprobe = "G30 S" + getvalue("alres") + " X" + mround(w * 10) + " Y" + mround(h * 10);
     drawengrave();
-    drawvcarve();
+    dobtvcarve();
     dopocketengrave();
+    drawvcarve();
     draw_leads();
     var menit = mround((pockettime + carvetime + totaltime + engravetime + travtime) / 60.0);
 	 if (cmd == CMD_CNC) {
@@ -2208,7 +2212,8 @@ function sortedgcode() {
                 var pts = gcodes[i][4];
                 var shift=0;
                 var flip=0;
-                var dis=1000000;
+                var dis=1000000-(sty.lchilds?(sty.lchilds-sty.childs)*10:0);
+                
                 var pstep=Math.floor(pts.length/100)+1;
                 var newx=0;
                 var newy=0;
@@ -2832,7 +2837,6 @@ function myFunction(scale1) {
     gcodepushcombined();
     sortedgcode();
     gcode_verify(1);
-    dobtvcarve();
 
 
 } //sfarsit myFunction

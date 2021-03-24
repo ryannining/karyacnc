@@ -180,8 +180,10 @@ function addgcode(g) {
 		
         var isX = gk.indexOf('X') + 1;
         var isY = gk.indexOf('Y') + 1;        
+        var isP = gk.indexOf('P') + 1;        
 		if (isX) h |= 1 << 4;
 		if (isY) h |= 1 << 5;
+		if (isP) h |= 1 << 7; // use E as P
 		 
         write(h, 1);
         write(s, 1);
@@ -193,6 +195,10 @@ function addgcode(g) {
 		if (isY){
 			var wx = Math.round(gd['Y'] * 0.01* xyScale);
 			write(wx + xyLimit, xySize);
+		}
+		if (isP){
+			var wx = Math.round(gd['P'] * 0.01);
+			write(wx, eSize);
 		}
 		
         console.log(ln + " M" + gd['M'] + " S" + s);
@@ -461,6 +467,7 @@ function decodealine() {
     var isE = 0;
     var isF = 0;
     var isS = 0;
+    var isP = 0;
     var M = 0;
     var G = 0;
     var X = 0;
@@ -468,6 +475,7 @@ function decodealine() {
     var Z = 0;
     var S = 0;
     var F = 0;
+    var P = 0;
     var h = read(1);
     var s = 0;
     if (h & 1) {
@@ -489,7 +497,25 @@ function decodealine() {
             isS = 1;
             S = s;
         }
-        decodes += "M" + M + " S" + S + "\n";
+        if (h & (1 << 4)) {
+            s = read(xySize);
+            isX = 1;
+            X = s;
+        }
+        if (h & (1 << 5)) {
+            s = read(xySize);
+            isY = 1;
+            Y = s;
+        }
+        if (h & (1 << 7)) {
+            s = read(eSize);
+            isP = 1;
+            P = s*100;
+        }
+        decodes += "M" + M;
+        if (isS) decodes+= " S" + S;
+        if (isP) decodes+= " P" + P;
+        decodes += "\n";
     } else {
         isG = 1;
         switch ((h >> 1) & 3) {

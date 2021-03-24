@@ -366,7 +366,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     }
     gc += "G0 Z4\n";
     gcodecarve = gc;
-    gcode_verify();
+    //gcode_verify();
 }
 
 function drawvcarve() {

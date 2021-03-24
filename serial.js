@@ -112,7 +112,7 @@ function hardstop() {
 var comtype = 0;
 // 0 serial, 1 websocket
 var egcodes = [];
-var debugs = 3;
+var debugs = 0;
 function checkwaitok(){
 	if (millis()-waitok>700)sendgcode(machinepos);
 }
@@ -170,6 +170,8 @@ function on__wait(){
     }
 }
 
+var pushedgcodes=[];
+var buffsize=128;
 function nextgcode() {
     if (comtype == 1 && !wsconnected) {
         //setTimeout(nextgcode,1000);
@@ -180,6 +182,7 @@ function nextgcode() {
         return;
     if (!running)
         return;
+    var nc=0;
     while (eline < egcodes.length) {
         var g = egcodes[eline];
         if (g.indexOf(";SHAPE") == 0) {
@@ -197,11 +200,22 @@ function nextgcode() {
             pause();
         if ((g) && (g[0] != ';') && (g[0] != '(')) {
             okwait = 1;
-            sendgcode(g.split(";")[0]);
-            $("progress1").value = eline * 100 / egcodes.length;
-            var bt = document.getElementById('btresume2');
-            bt.innerHTML = "Resume from " + eline;
-            return;
+            var rg=g.split(";")[0];
+            // calculate total buffer
+            buffl=pushedgcodes.reduce((a, b) => a + b, 0);
+            if (buffsize-buffl>rg.length){
+                pushedgcodes.push(rg.length);
+                sendgcode(rg);
+                sendgcode("");
+                $("progress1").value = eline * 100 / egcodes.length;
+                var bt = document.getElementById('btresume2');
+                bt.innerHTML = "Resume from " + eline;
+                nc++;
+            } else {
+                //console.log(nc);
+                eline--;
+                return;
+            }
         }
     }
     //sendgcode("G4");
@@ -234,6 +248,7 @@ function stopit() {
 
 function execute(gcodes) {
     shapefinish = "";
+    pushedgcodes=[];
     setvalue("shapes", "");
     currentshape = 0;
     etime = new Date();
@@ -341,6 +356,8 @@ var onReadCallback = function(s) {
         } else
             ss += s[i];
         if ((s[i] == "\n") || (s[i] == " ") || (s[i] == "*")) {
+            pushedgcodes.shift();
+            nextgcode();
             if (ineeprom > 0) { //EPR:3 145 0.000 X Home Pos
                 if (ineeprom == 20) eppos = lastw;
                 else if (ineeprom == 19) eeprom[eppos] = lastw;
@@ -396,8 +413,8 @@ var onReadCallback = function(s) {
                 okwait =0;
                 if ((lastwx.toUpperCase().indexOf('WAIT') >= 0)) {
 					on__wait();
-                }
-                nextgcode();
+                } 
+                
             }
         } else
             lastw = lastw + s[i];
@@ -584,6 +601,14 @@ setclick("btautolevel2", gcodefunc("G29 S0"));
 setclick("btmotoroff", gcodefunc("M84"));
 
 setevent("change", "cmode", modechange);
+function checkrep(e){
+    var a=getvalue("repeat");
+    if (a.indexOf("mm")>0){
+        setvalue("repeat",Math.ceil(getnumber("zdown")/parseFloat(a)));
+    }
+    
+}
+setevent("change", "repeat", checkrep);
 
 setevent("change", "material", changematerial);
 setevent("change", "profile", setprofile);
@@ -768,6 +793,17 @@ function updatestyle(k,va){
 		$("title2").style.background=va;
 	}
 }
+function updatewmode(){
+    dm=getvalue("wmode");
+    if (dm==1){
+        sheetRuleA.style.display="none";
+        $("vars3").style.marginLeft="230px";
+    }
+    if (dm==2){
+        sheetRuleA.style.display="";
+        $("vars3").style.marginLeft="330px";
+    }
+}
 function updateweb(sett){
 	for (var k in sett) {
 		var a = $(k);
@@ -780,6 +816,7 @@ function updateweb(sett){
 			updatestyle(k,sett[k]);
 		}
 	}
+    updatewmode();    
 }
 function updateprofile(){
     var p="";
@@ -836,6 +873,7 @@ function loadprofile(){
     if (name=="")name=getvalue("profile");
     setvalue("profilename",name);
     loadsettings(name);
+    sendgcode("m220 s100"); // reset speed
 }
 function saveprofile(){
     name=getvalue("profilename");
@@ -955,8 +993,6 @@ function startserver() {
 		$("portnum").innerHTML=port;
         var server = new http.Server();
         var wsServer = new http.WebSocketServer(server);
-        server.listen(port);
-        isServer = true;
 
         server.addEventListener('request', function(req) {
             var url = req.headers.url;
@@ -968,6 +1004,10 @@ function startserver() {
             // Serve the pages of this chrome application.
             req.serveUrl(url);
             return true;
+        });
+        // Listen for possible errors
+        server.addEventListener('error', function (event) {
+            $("title0").innerHTML='WebSocket error: ' + event;
         });
 
         // A list of connected websockets.
@@ -1019,20 +1059,28 @@ function startserver() {
             socket.send("DATA");
             return true;
         });
+        server.listen(port);
+        isServer = true;
+
     }
 }
 
-window.onresize = function() {
+
+function resizedisplay(){
 	var sc=parseFloat(getvalue("zoom1"));
-    var nw = Math.max(100, window.innerWidth - 765);
+    var nw = Math.max(100, window.innerWidth - 700);
     var v = $('myCanvas1');
     v.width = nw*sc;
-	nh=Math.max(300, 500 * nw / 600);
+	nh=window.innerHeight-200;
     v.height = nh*sc;
 	$('myCanvas1td').width=nw+50;
 	$('myCanvas1div').style.width=nw+50;
 	$('myCanvas1div').style.height=nh;
-    gcode_verify();
+    refreshgcode();
+
+}
+window.onresize = function() {
+    setTimeout(resizedisplay,600);
 }
 
 
@@ -1092,3 +1140,8 @@ var editorengcode = ace.edit("engcode");
 editorengcode.session.setMode("ace/mode/gcode");
 editorengcode.renderer.setShowGutter(false);
 //idleloop();
+
+var sheet = window.document.styleSheets[0];
+i=sheet.insertRule('.hideit2 { display: none; }', sheet.cssRules.length);
+var sheetRuleA=sheet.cssRules[i];
+setevent("change", "wmode", updatewmode);
