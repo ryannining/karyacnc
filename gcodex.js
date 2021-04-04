@@ -9,7 +9,8 @@ function mround4(x) {
 var packages = [];
 var compress = [];
 
-function write(w, s) {
+function write(w, s,isheader=0) {
+	
     if (s > 0) compress.push(w & 255);
     if (s > 1) compress.push((w >> 8) & 255);
     if (s > 2) compress.push((w >> 16) & 255);
@@ -102,6 +103,9 @@ var eLimit = datasize(eSize);
 var ln = 0;
 var warnoverflow = 0;
 var isF = 0;
+var lastheader=0;
+var repeatheader=0;
+var repeatsame=0;
 
 function addgcode(g) {
     // read gcode
@@ -168,6 +172,7 @@ function addgcode(g) {
                 break;
             case 2: // i think we dont need M2
                 h |= 2 << 1;
+                return;
                 break; // final
             default:
                 return; // not implemented
@@ -185,7 +190,7 @@ function addgcode(g) {
 		if (isY) h |= 1 << 5;
 		if (isP) h |= 1 << 7; // use E as P
 		 
-        write(h, 1);
+        write(h, 1,1);
         write(s, 1);
 		
 		if (isX){
@@ -305,7 +310,7 @@ function addgcode(g) {
         if (num == 0 && isF) {
             h = bh;
             h |= 1 << 3;
-            write(h, 1);
+            write(h, 1,1);
             write(F, 1);
         }
         for (var i = 1; i <= num; i++) {
@@ -327,7 +332,7 @@ function addgcode(g) {
             if (isY) h |= 1 << 5;
             if (isZ) h |= 1 << 6;
             if (isE) h |= 1 << 7;
-            write(h, 1);
+            write(h, 1,1);
             lh = h;
 
             if (isF) {
@@ -445,7 +450,7 @@ function begincompress(paste, callback1, callback2) {
     }
     h = 1;
     h |= 2 << 1;
-    write(h, 1);
+    write(h, 1,1);
     
     console.log("From "+totalgcode+" to "+compress.length);
     console.log("Ratio "+mround(compress.length/totalgcode));
