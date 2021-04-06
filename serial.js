@@ -623,9 +623,9 @@ setclick("btsetcut", function() {
  //   setvalue("disablecut", getvalue("shapes"));
 });
 
-setclick("btengrave", function() {
-    window.open("http://localhost:" + port + "/engrave", 'prn', 'width=700,height=500');
-});
+//setclick("btengrave", function() {
+    //window.open("http://localhost:" + port + "/engrave", 'prn', 'width=700,height=500');
+//});
 setclick("btresume2", function() {
     okwait = 0;
     var bt = document.getElementById('btresume2');
@@ -691,6 +691,14 @@ setclick("bthidden5", function() {
         d = 'block';
     hidd5 = !hidd5;
     $("vars3").style.display = d;
+});
+var hidd6 = true;
+setclick("btengrave", function() {
+    var d = 'none';
+    if (hidd6)
+        d = 'block';
+    hidd6 = !hidd6;
+    $("vars4").style.display = d;
 });
 var hidd2 = true;
 setclick("bthidden2", function() {

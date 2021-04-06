@@ -2043,6 +2043,13 @@ function gcode_verify(en = 0) {
             //setvalue("engcode","");	
         }
     }
+    
+    if (ink_images.length>0){
+		for (var i=0;i<ink_images.length;i++){
+			imagedither(ink_images[i][4],$("dithercanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
+		}
+	}
+    
 
     var c1 = $("rasteroutline").checked;
     for (var i = 0; i < sgcodes.length; i++) {
@@ -2082,6 +2089,7 @@ function gcode_verify(en = 0) {
     if (en) {
         if (ENGRAVE == 0) doengrave();
     }
+    
     travtime=jmltravel / speedtravel;
     sfinal += jmltravel;
     for (var i = 0; i < oldlines.length; i++) {
@@ -2117,7 +2125,7 @@ function gcode_verify(en = 0) {
     dopocketengrave();
     drawvcarve();
     draw_leads();
-    var menit = mround((pockettime + carvetime + totaltime + engravetime + travtime) / 60.0);
+    var menit = mround((pockettime + carvetime + totaltime + engravetime + travtime + bitmaptime) / 60.0);
 	 if (cmd == CMD_CNC) {
 	 	menit*=2; // realisticcally 1.5
 	 } else {
@@ -2834,6 +2842,7 @@ function myFunction(scale1) {
         var closed = (sqr(xincep-X1) + sqr(yincep - Y1))<mind;
         gcodepush(lenmm, X1, Y1, lenmm, line, closed);
     }
+    
     gcodepushcombined();
     sortedgcode();
     gcode_verify(1);
@@ -3060,6 +3069,7 @@ function intersects_p(a,b,c,d,p,q,r,s) {
 		
 var mind=sqr(0.1);
 
+var ink_images=[];
 function pathstoText1(gx) {
     var cmd = getvalue('cmode');
 
@@ -3070,6 +3080,7 @@ function pathstoText1(gx) {
     var scale = getvalue('scale') / 25.4;
     var cflipx = 1;
     var cflipy = 1;
+    ink_images=[];
 
     var c = 0;
     var sc = 0;
@@ -3110,6 +3121,7 @@ function pathstoText1(gx) {
         
 
     };
+    var inimg=0;
     var inpath = 0;
     var paths = [];
     var path = [];
@@ -3138,9 +3150,24 @@ function pathstoText1(gx) {
             sty["stroke-width"] = parseFloat(ss[3]);
 
 
-        } else
-            if (lns == "") {
-                if (inpath>1){
+        } else if (lns[0] == "I") {
+            var ss = lns.split(",");
+            //[P:fill:stroke:strikewidth\n]
+            inimg = 1;
+            imagex=ss[1];
+            imagey=ss[2];
+            imagew=ss[3];
+            imageh=ss[4];
+            
+
+
+        } else {        
+			if (lns == "") {
+				if (inimg){
+				    var image = new Image();
+					image.src = 'data:image/png;base64,'+imagedata;
+					ink_images.push([imagex*1,imagey*1,imagew*1,imageh*1,image]);
+				} else if (inpath>1){
                     flip=yellow
                     
 
@@ -3165,19 +3192,25 @@ function pathstoText1(gx) {
                     };                    
                 }
             } else {
+				if (inimg){
+					// save the image data here
+					imagedata=lns;
+				} else {
                 // X,Y
-                inpath++;
-                var ss = lns.split(",");
-                var x=parseFloat(ss[0]);
-                var y=parseFloat(ss[1]);
-                if (inpath==1){
-                    fx=x;
-                    fy=y;
-                }
-                path.push([x, y]);
-                ox=x;
-                oy=y;
+					inpath++;
+					var ss = lns.split(",");
+					var x=parseFloat(ss[0]);
+					var y=parseFloat(ss[1]);
+					if (inpath==1){
+						fx=x;
+						fy=y;
+					}
+					path.push([x, y]);
+					ox=x;
+					oy=y;
+				}
             }
+		}
 
     }
     

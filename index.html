@@ -165,7 +165,30 @@
                             <button class=hideit id=btvcarve>VCarve</button><br>
                         </td>
                         </tr></table>
-                        <br><button id=btengrave class=hideit2>Bitmap Engrave</button><button id=bthidden3>Show Gcode</button>
+                        <br><button id=btengrave class=hideit2>Bitmap Engrave</button>
+                        <table id=vars4 class=smallwindow style="margin-left:230px;">
+						<tr valign=top><td><table>
+							<tr ><td colspan=4 align=left><b>Bitmap Engraving</b></td></tr>
+							<tr ><td colspan=2>Max res</td><td colspan=2><input size=2 id=imgresmax value=0.2 class=saveit>mm</td></tr>
+							<tr ><td colspan=2>Invert</td><td colspan=2><input size=2 id=imginvert type=checkbox  class=saveit>mm</td></tr>
+							<tr><td colspan=2>Dither </td><td colspan=2><select id=dithermode class=saveit>
+								<option value=0 style="display:none">Grayscale</option>
+								<option value=1 selected>Floyd steinberg</option>
+								<option value=2>Sierra 2 row</option>
+								<option value=3>Black White</option>
+								<option value=4 style="display:none">Halftone</option>
+								</select>					
+							</td></tr>
+							<tr><td colspan=2>Gamma</td><td colspan=2><input id=gamma value=1 size=1 class=saveit></td></tr>
+							<tr><td colspan=2>Brightness</td><td colspan=2><input id=brightness value=0 size=1 class=saveit></td></tr>
+						</table></td>
+                        <td align=center>Sample Image<hr>
+                        <img id=thepic src="rose.jpg" width=100>
+                        </td>
+                        <td>Output Image<hr>
+                        <canvas id=dithercanv></canvas></td>
+                        </tr></table>
+                        <button id=bthidden3>Show Gcode</button>
 				</td></tr>
 				<tr style="background:chocolate"><td colspan=3 align=left><b style="color:white">Saved profile</b><select  id=profile><option value=set1>set1</option></select><br>
 				<b style="color:white">Profile name</b><input class=saveit id=profilename size=5><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
@@ -200,9 +223,9 @@
 					<select id=cmode  class=saveit>
 						<option value=1>Laser</option>
 						<option value=3 selected>CNC</option>
-						<option value=2 class=hideit2>Foam</option>
-						<option value=5 class=hideit2>Plasma</option>
-						<option value=4 class=hideit2>3D Wall</option>
+						<option value=2 class=hideit>Foam</option>
+						<option value=5 class=hideit>Plasma</option>
+						<option value=4 class=hideit>3D Wall</option>
 					</select> <br>
 					</td>
 				</tr>

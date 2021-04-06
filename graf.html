@@ -164,9 +164,9 @@ var floyd1=[7, 4,4,1];
 var memlimit=8000;
 var overshot=5;
 
-ditherit = function() {
-    var c = document.getElementById("myCanvas");
-    var img = document.getElementById("thepic");
+ditherit = function(imgpic,canv) {
+    var c = canv;//document.getElementById("myCanvas");
+    var img = imgpic;//document.getElementById("thepic");
 	udpi=$("usedpi").checked;
 	overshot=getvalue("over")*1;
     var scale = 25.4 / getvalue('mdpi');

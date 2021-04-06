@@ -785,3 +785,246 @@ function dopocketengrave() {
     drawpocket();
 }
 setclick("btconengrave", dopocketengrave);
+
+var bitmaptime=0;
+
+
+function imagedata_to_image(imagedata) {
+    var canvas = document.createElement('canvas');
+    var ctx = canvas.getContext('2d');
+    canvas.width = imagedata.width;
+    canvas.height = imagedata.height;
+    ctx.putImageData(imagedata, 0, 0);
+
+    var image = new Image();
+    image.src = canvas.toDataURL();
+    return image;
+}
+
+function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
+	var sierra2=[6,2 ,1,4,7,4,1 ,1,5,1];
+	var sierra2=[5, 3, 2, 4, 5, 4, 2, 2, 3, 2];
+	var floyd1=[7, 4,4,1];
+    var c = canv;//document.getElementById("myCanvas");
+    var img = imgpic;//document.getElementById("thepic");
+	overshot=getvalue("overshoot");
+    var maxpoint=getvalue("imgresmax");
+	mwidth=rwidth/maxpoint;
+	mheight=rheight/maxpoint;
+     	
+    c.width=mwidth;
+    c.height=mheight;
+    var ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0,c.width,c.height);
+    var bm = ctx.getImageData(0, 0, c.width, c.height);
+    // invert colors
+    var i,j;
+    var row=c.width*4;
+    var speed = getnumber('rasterfeed') * 60;
+    var pw = getnumber('rasterpw') * 0.01*255;
+	var metode=getvalue("dithermode")*1;
+	var dx,dy;
+	var c4x4=[191.25, 95.625, 159.375, 63.75, 15.9375, 255, 223.125, 111.5625, 127.5, 207.1875, 239.0625, 31.875, 47.8125, 143.4375, 79.6875, 175.3125];
+	dx=1;
+	dy=1;
+	if (metode==2){
+		dx=2;
+		dy=2;
+	}
+	if (metode==3){
+		dx=0;
+		dy=0;
+	}
+	// make it grayscale first
+	var waktu=0;
+	var w0=0;
+	var w1=0;
+	var inv=$("imginvert").checked;
+	var gamma=getvalue("gamma")*1.0;
+	var bright=getvalue("brightness")*1;
+	var mw=rwidth;
+	var mh=rheight;
+	var dotscale=mw/c.width;
+	
+	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
+	var gcode="M3 S"+Math.round(pw)+"\nG0 F"+speed+"\nG1 F"+speed+"\n";
+	bmd=[];
+	for (j = 0; j < c.height; j += 1) {
+    for (i = 0; i < c.width; i += 1) {
+    	var a=j*row;
+		a+=i*4;
+        oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
+		oldr=Math.min(255,oldr+bright)
+		if (inv)oldr=255-oldr;
+		oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+		alp=(bm.data[a+3])/255;
+		oldr=(oldr*(alp))+(255*(1-alp));
+
+		var a=j*c.width+i;		
+		bmd[a]=oldr;
+	}}
+	for (j = 0; j < c.height; j += 1) {
+    for (i = 0; i < c.width; i += 1) {
+		var a=j*c.width+i;		
+        oldr=bmd[a];
+        
+    	a=j*row+i*4;
+		bm.data[a]=oldr;
+		bm.data[a+1]=oldr;
+		bm.data[a+2]=oldr;
+		bm.data[a+3]=255;
+	}}
+	// dither it
+	if (metode<4){
+		var num=3;
+		var dv=num/256.0;
+		var mul=(255.0/(num-1));
+		var shf=1;//1.0*getvalue("shf");;
+		var bp=10;
+		var jk=0;
+		for (j = 0; j < c.height-dy; j += 1) {
+			gc="";
+			var skip=1;
+			
+			var pxstart=c.width;
+			var pxstop=0;
+			for (var i = dx; i < c.width-dx; i += 1) {
+				var a=j*row+i*4;
+				oldr=bm.data[a];
+				gr=0;
+				//if (
+				if (metode==0){
+					rmax=255;
+					newr=oldr+gr;
+					if (newr<4)newr=4;
+					if (newr>250)newr=250;
+					
+				} else if (metode<3){
+					rmax=255;
+					gr+=128;
+					newr=oldr>gr?255:0;
+					//newr=Math.floor(oldr*dv)*mul;
+					//if (newr>255)newr=255;
+				} else if (metode==3) {
+					rmax=255;
+					//newr=oldr+gr>=c4x4[(j%4*4+i%4)]?255:0;
+					newr=oldr+gr>128?255:0;
+				}
+				err=oldr-newr;
+				
+				cc=String.fromCharCode((rmax-newr)/10+97);
+				if (cc===undefined)cc='a';
+				if (cc=='a') w0++; else {
+					skip=0;w1++;
+					pxstart=Math.min(pxstart,i);
+					pxstop=Math.max(pxstop,i);
+				}
+				gc+=cc;
+				bm.data[a+0]=newr;
+				bm.data[a+1]=newr;
+				bm.data[a+2]=newr;
+				bm.data[a+3]=255;
+				if (metode==0){
+					// 7 3 5 1 floyd
+					err=err/16;
+					a1=a+4; bm.data[a1]+=err*7;
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*4;
+					a1=a;   bm.data[a1]+=err*4;
+					a1=a+4; bm.data[a1]+=err*1;
+				}
+				else if (metode==1){
+					// 7 3 5 1 floyd
+					em=floyd1;
+					err=err/16;
+					a1=a+4; bm.data[a1]+=err*em[0];
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*em[1];
+					a1=a;   bm.data[a1]+=err*em[2];
+					a1=a+4; bm.data[a1]+=err*em[3];
+				}
+				else if (metode==2){
+					// sierra 2 row
+					err=err/32;
+//					em=[5,2 ,2,4,5,4,2 ,2,3,2];
+					
+					em=sierra2;
+					a1=a+4; bm.data[a1]+=err*em[0];
+					a1=a+8; bm.data[a1]+=err*em[1];
+					a+=row;
+					a1=a-8; bm.data[a1]+=err*em[2];
+					a1=a-4; bm.data[a1]+=err*em[3];
+					a1=a;   bm.data[a1]+=err*em[4];
+					a1=a+4; bm.data[a1]+=err*em[5];
+					a1=a+8; bm.data[a1]+=err*em[6];
+					a+=row;
+					a1=a-4; bm.data[a1]+=err*em[7];
+					a1=a;   bm.data[a1]+=err*em[8];
+					a1=a+4; bm.data[a1]+=err*em[9];
+					
+				}
+			}
+			gc+="a";
+
+			var farx=0;
+			if (!skip){
+                pxstart=Math.max(0,pxstart-6);
+                pxstop=Math.min(gc.length-1,pxstop+6);
+                 
+				px1=mround(dotscale*pxstart+ofx);
+				px2=mround(dotscale*pxstop+ofx);
+				if (j &1){
+					dir=-1;
+					idx=pxstop;
+				}else {
+					dir=1;
+					idx=pxstart;
+				}
+				xstep=mw/gc.length;
+				zstep=zdown/25;
+				lv="a";
+				x=xstep*idx+ofx-dir*overshot;
+				gcode+="G0 X"+mround(x)+" Y"+mround((j)*ystep+ofy)+"\n";
+				gcodes="";
+				gctr=0;
+				lx=x;
+				for (var i=pxstart;i<=pxstop;i++){
+					v=gc[idx];
+					x=xstep*idx+ofx;
+					brk=Math.abs(lx-x)>150;
+					if (v!=lv || brk){
+						gctr++;
+						if (lv=='a'){
+							gcodes+="G0 X"+mround(x)+"\n";
+							if (brk)gcodes+="G1 X"+mround(x)+"\n";
+						} else {
+							gcodes+="G1 X"+mround(x)+"\n";
+							if (brk)gcodes+="G0 X"+mround(x)+"\n";
+						}
+						lv=v;
+					}
+					
+					idx+=dir;
+				}
+				gcode+=";REP:"+gctr+"\n"+gcodes;
+				waktu+=1.66*mw/speed;
+				jk++;
+			}
+		}
+	}
+	pc=100*w1/(w1+w0);
+	bitmaptime+=waktu;
+	gcode+="G0 X0 Y0\nM3 S0\n";
+	gc = getvalue("engcode") + gcode;
+    setvalue("engcode", gc);
+    ctx.putImageData(bm,0,0);
+    img=imagedata_to_image(bm);
+    // draw the engrave
+	var img1 = new Image();
+    img1.src = canv.toDataURL();
+    var c = $("myCanvas1");
+    var ctx = c.getContext("2d");
+    
+    ctx.drawImage(img1, (ofx+maxofs)*dpm, (ofy+maxofs)*dpm,rwidth*dpm,rheight*dpm);
+    
+};

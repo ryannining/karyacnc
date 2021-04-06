@@ -88,7 +88,7 @@ class laser_gcode(inkex.Effect):
     def export_path(self,paths,xmin,ymin):
         f=0
         if (self.options.directory!="") :
-            f = open(self.options.directory+self.options.file, "w")
+            f = open(self.options.directory+self.options.filename, "w")
         gcodes=[]
         for pp in paths:
             style=pp[0]
@@ -98,10 +98,21 @@ class laser_gcode(inkex.Effect):
                 s=str(p[0]-xmin)+","+str(p[1]-ymin)+"\n"
                 ss+=s
             ss+="\n"
-            gcodes.append(ss)    
             if (f):f.write(ss)
+            gcodes.append(ss)    
+        for i in self.images:
+            xlink = i.get('xlink:href')
+            if xlink.startswith('data:'):
+                data = xlink[5:]
+                (mimetype, data) = data.split(';', 1)
+                (base, data) = data.split(',', 1)
+                ss="I,"+str(float(i.get("x"))-xmin)+","
+                ss+=str(float(i.get("y"))-ymin)+","		
+                ss+=i.get("width")+","+i.get("height")+"\n"+data+"\n"
+                gcodes.append(ss)		
+                if (f):f.write(ss)
+        
         if (f):f.close()
-        #return
         if self.options.karyacnc:
             import socket
             def get_ip():
@@ -183,7 +194,7 @@ class laser_gcode(inkex.Effect):
     def get_info(self):
         self.selected_paths = {}
         #self.paths = {}
-        self.images= {}
+        self.images= []
         self.orientation_points = {}
         self.layers = [self.document.getroot()]
         self.Zcoordinates = {}
