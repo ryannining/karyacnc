@@ -137,7 +137,10 @@ class laser_gcode(inkex.Effect):
             try:    
                 ws = create_connection("ws://"+kip+":"+self.options.port+"/",3000)
                 for g in gcodes:
-                    ws.send(g)
+                    n = 5000
+                    chunks = [g[i:i+n] for i in range(0, len(g), n)]
+                    for c in chunks:
+                        ws.send(c)
                 ws.send(">REVECTOR2")
             finally:
                 ws.close() 

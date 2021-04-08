@@ -820,7 +820,8 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
     // invert colors
     var i,j;
     var row=c.width*4;
-    var speed = getnumber('rasterfeed') * 60;
+    var speed1 = getnumber('rasterfeed');
+    var speed = speed1 * 60;
     var pw = getnumber('rasterpw') * 0.01*255;
 	var metode=getvalue("dithermode")*1;
 	var dx,dy;
@@ -923,7 +924,7 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 				bm.data[a+0]=newr;
 				bm.data[a+1]=newr;
 				bm.data[a+2]=newr;
-				bm.data[a+3]=255;
+				bm.data[a+3]=newr?0:255;
 				if (metode==0){
 					// 7 3 5 1 floyd
 					err=err/16;
@@ -1007,7 +1008,7 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 					idx+=dir;
 				}
 				gcode+=";REP:"+gctr+"\n"+gcodes;
-				waktu+=1.66*mw/speed;
+				waktu+=1.66*(px2-px1)/speed1;
 				jk++;
 			}
 		}
@@ -1018,13 +1019,12 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 	gc = getvalue("engcode") + gcode;
     setvalue("engcode", gc);
     ctx.putImageData(bm,0,0);
-    img=imagedata_to_image(bm);
     // draw the engrave
 	var img1 = new Image();
     img1.src = canv.toDataURL();
-    var c = $("myCanvas1");
-    var ctx = c.getContext("2d");
-    
-    ctx.drawImage(img1, (ofx+maxofs)*dpm, (ofy+maxofs)*dpm,rwidth*dpm,rheight*dpm);
-    
+    img1.onload=function(){
+		var c = $("myCanvas1");
+		var ctx = c.getContext("2d");		
+		ctx.drawImage(img1, (ofx+maxofs)*dpm, (ofy+maxofs)*dpm,rwidth*dpm,rheight*dpm);
+	}
 };
