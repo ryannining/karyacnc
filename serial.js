@@ -773,12 +773,14 @@ function savesetting(name) {
     if (stotype == 1) {
         storage.setItem("settings", JSON.stringify(sett));
         storage.setItem("text1", text1);
+        storage.setItem("ink_images", JSON.stringify(ink_images));
         storage.setItem("gcstyle", JSON.stringify(gcstyle));
         storage.setItem("cuttabs", JSON.stringify(cuttabs));
     } else {
         storage.set({
             "settings": sett,
             "text1": text1,
+            "ink_images": ink_images,
             "gcstyle": gcstyle,
             "cuttabs": cuttabs,
 			"jobsettings":jobsettings
@@ -846,6 +848,9 @@ function loadsettings(name){
             storage.get("gcstyle", function(r) {
                 gcstyle = r.gcstyle;
             })
+            storage.get("ink_images", function(r) {
+                ink_images = r.ink_images;
+            })
             storage.get("cuttabs", function(r) {
                 cuttabs = r.cuttabs;
 				if (cuttabs==undefined)cuttabs=[];
@@ -863,6 +868,7 @@ function loadsettings(name){
             text1 = storage.text1;
             if (text1 == undefined)text1 = "";
             if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
+            if (storage.ink_images != undefined) ink_images = JSON.parse(storage.ink_images);
             if (storage.cuttabs != undefined) cuttabs = JSON.parse(storage.cuttabs);
             if (storage.settings != undefined) {
 			    updateweb(JSON.parse(storage.settings));

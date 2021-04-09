@@ -546,6 +546,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
     else area = 1;
     var lines;
     var sty=gcstyle[shapenum];
+    if (!sty)return;
     var parent=sty.parent;
     //area-=sty.deep*1000;
     if (closed) {
@@ -682,7 +683,7 @@ function drawengrave() {
 }
 var engrave1 = [];
 var engravetime = 0;
-
+var bitmaptime =0;
 
 var eangle=0;
 var radians = (Math.PI / 180) * eangle;
@@ -1033,7 +1034,7 @@ function doengrave() {
 							gc += "G0 X" + mround2(xy1[0]);
 							if (LY!=xy1[1])gc += " Y" + mround2(xy1[1]);
 							gc+= "\n";
-							engravetime += 0.8 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[0])) / (f2* 0.0167);
+							engravetime += 1.3 * Math.sqrt(sqr(xy0[0]-xy1[0])+sqr(xy0[1]-xy1[1])) / (f2* 0.0167);
                         } else {
 							ox = oox1;
 						}
@@ -2014,8 +2015,26 @@ function getRandomColor() {
     }
     return color;
 }
+var cache_ink_img=[];
+var cacheloaded=0;
 var autoprobe = "";
+function check_img_cache(){
+	cacheloaded++;
+	if (cacheloaded==ink_images.length) gcode_verify(1);
+}
 function gcode_verify(en = 0) {
+	// wait until all image cache loaded
+    if (cache_ink_img.length==0 && ink_images.length>0){
+		cacheloaded=0;
+		for (var i=0;i<ink_images.length;i++){
+			var image = new Image();
+			cache_ink_img.push([image,0]);
+			image.src = 'data:image/png;base64,'+ink_images[i][4];
+			image.onload=check_img_cache;
+		}
+		return;
+	}
+	
     veeline = [];
     conline = [];
     cglines = [];
@@ -2036,6 +2055,7 @@ function gcode_verify(en = 0) {
     $("myCanvas1div").style.background=ctx.fillStyle;
     ctx.fillRect(0, 0, c.width, c.height);
     engravetime = 0;
+    bitmaptime = 0;
     if (en) {
         if (ENGRAVE == 0) engrave = {};
         else {
@@ -2043,10 +2063,12 @@ function gcode_verify(en = 0) {
             //setvalue("engcode","");	
         }
     }
-    
-    if (ink_images.length>0){
+	
+    if (ink_images && ink_images.length>0){
 		for (var i=0;i<ink_images.length;i++){
-			imagedither(ink_images[i][4],$("dithercanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
+			if (cache_ink_img[i][0].complete){
+				imagedither(cache_ink_img[i][0],$("dithercanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
+			}
 		}
 	}
     
@@ -3072,6 +3094,7 @@ var mind=sqr(0.1);
 var ink_images=[];
 function pathstoText1(gx) {
     var cmd = getvalue('cmode');
+	cache_ink_img=[];	
 
     // try to support G2 and G3
     var join=$("enablejoin").checked;
@@ -3164,9 +3187,9 @@ function pathstoText1(gx) {
         } else {        
 			if (lns == "") {
 				if (inimg){
-				    var image = new Image();
-					image.src = 'data:image/png;base64,'+imagedata;
-					ink_images.push([imagex*1,imagey*1,imagew*1,imageh*1,image]);
+					//ink_images.push([imagex*1,imagey*1,imagew*1,imageh*1,imagedata]);
+					inimg=0;
+					
 				} else if (inpath>1){
                     flip=yellow
                     
@@ -3194,7 +3217,9 @@ function pathstoText1(gx) {
             } else {
 				if (inimg){
 					// save the image data here
-					imagedata=lns;
+					inimg=0;
+					ink_images.push([imagex*1,imagey*1,imagew*1,imageh*1,lns]);
+					
 				} else {
                 // X,Y
 					inpath++;
