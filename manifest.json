@@ -1,7 +1,7 @@
 {
   "name": "KaryaCNC",
-  "description": "CNC Laser Cutting Karya Controller software",
-  "version": "1.1",
+  "description": "CAM software for CNC/KaryaController",
+  "version": "1.0",
   "manifest_version": 2,
   "sockets": {
     "tcp": {
@@ -14,14 +14,15 @@
   },
   
   "icons": {
-    "128": "icon128.png"
+    "16": "serial.png",
+    "128": "serial.png"
   },
   "app": {
     "background": {
       "scripts": ["background.js"]
     }
   },
-  "content_security_policy": "script-src 'self' ; object-src 'self'",
+  "content_security_policy": "script-src 'self' 'unsafe-eval'; object-src 'self'",
   "permissions": [
    "serial","storage","http://*/upload","http://*/startprint","http://*/stopprint"
    ]

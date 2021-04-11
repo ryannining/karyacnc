@@ -1617,6 +1617,7 @@ var Y9;
 var X0=null;
 var Y0;
 var leads=[];
+var rampmoves=[]; // save the ramp moves to make a finish move
 function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip,shift,cutpos) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
@@ -1646,6 +1647,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     
 /////
     var len = Math.abs(data[0]);
+    if (_rampdown)dz=-len;
     var climb = flip;
     if ($("cutclimb").checked) climb = !climb;
                 
@@ -1825,6 +1827,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     }
     ll=lines.length;
     if (shift)ll++;
+    var rampcut=0;
+    rampmoves=[];
     for (var ci = -1; ci < ll; ci++) {
 		// if climb cut
 		i=getRealIndex(ci<0?0:ci,lines.length,climb,shift,closed);
@@ -1871,8 +1875,23 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         
 
         zz = z*1 + lenctr / len * dz;
+        if (_rampdown){
+			if (zz<z2){
+				// cut the lines and repeat
+				if (rampcut==0){
+					var lencut=(z2-lz)/(zz-lz);
+					var x=lx2+(x-lx2)*lencut;
+					var y=ly2+(y-ly2)*lencut;
+					rampcut=1;
+				}
+				zz=z2;
+			}
+			if (rampcut<=1){
+				rampmoves.push([x,y,zz]);
+			}
+		}
 
-        if (cmd == CMD_CNC) {
+        if (cmd == CMD_CNC && rampcut!=1) {
             if (1){
                 iscut = 0;
                 if ((cuttabz > zz)) {
@@ -1916,18 +1935,20 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         if (incut || iscut) gcode1(f2 * fm3, x, y);
         else gcode1(f2 * fm3, x, y, zz);
         
-        if (iscut) {
-            if (incut == 1) {
-                // move up fast
-                zz = cuttabz;
+        if (iscut || rampcut==1) {
+			if (rampcut!=1){
+				if (incut == 1) {
+					// move up fast
+					zz = cuttabz;
 
-                div = div + pdn.replace("=cncz", mround(cuttabz)) + '\nG1 F' + f2 + "\n";
-            } else {
-                // move back down
-                //div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \nG1 F'+f2+"\n";
-                div = div + pdn.replace("=cncz", mround(zz)) + '\nG1 F' + f2 + "\n";
-                //gcode1(f2 * fm, x, y,zz);
-            }
+					div = div + pdn.replace("=cncz", mround(cuttabz)) + '\nG1 F' + f2 + "\n";
+				} else {
+					// move back down
+					//div = div + pdn.replace("=cncz", mround(zlast)) + ' F350 \nG1 F'+f2+"\n";
+					div = div + pdn.replace("=cncz", mround(zz)) + '\nG1 F' + f2 + "\n";
+					//gcode1(f2 * fm, x, y,zz);
+				}
+			} else rampcut=2;
             ci--;
             lenctr -= pdis;
         } else {
@@ -1940,6 +1961,12 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     }
     // close the loop
     if (closed)gcode1(f2 * fm3, X1, Y1, zz);
+    if (_rampdown && lastlayer){
+		for (var i=0;i<rampmoves.length;i++){
+			var rm=rampmoves[i];
+			gcode1(f2 * fm3, rm[0], rm[1],zz);
+		}
+	}
     //close loop
     if (!lastlayer && (cmd == CMD_3D)) {
         // if 3d then move along some mm
@@ -2181,6 +2208,7 @@ function gcode_verify(en = 0) {
 }
 var acpengrave = 0;
 var cutpw;
+var _rampdown=0;
 function sortedgcode() {
     cachedcutpos=[];
     totaltime = 0;
@@ -2368,6 +2396,8 @@ function sortedgcode() {
         //s += "g0 f350 z" + mround(lastz)+"\n";
         cuttab += tabz;
         _spiraldown = $("spiraldown").checked;
+        _rampdown = $("rampdown").checked;
+        if (_rampdown)_spiraldown=1;
     } else {
         _spiraldown = 0;
     }
@@ -2492,7 +2522,7 @@ function sortedgcode() {
             if (fnl)climb=!climb;
             rcutpos=getcutpos(j,shift,climb);
             if ((_re * iscut > 0) && (cmd == CMD_LASER) && $("burn1").checked) {
-                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 1, snum, getvalue("burnfeed") * 60, 0,shift,rcutpos);
+                s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2,vcuttab, sgcodes[j][0][5], 1, 1, snum, getvalue("burnfeed") * 60, 0,shift,rcutpos);
             }
 
             // do pen up
@@ -2553,7 +2583,7 @@ function sortedgcode() {
                     //fff=-0.25*f2; // if burn then the first and the last must be faster
                 }
                 //if (i<=1)cncz2 += zdown*0.5;else 
-                if (spiraldown && (i<_re-1)) z2 = cncz2;
+                if ((spiraldown && (i<_re-1)) || _rampdown) z2 = cncz2;
                 else z2 = cncz;
                 if (acpengrave && iseng) cncz = z2 = _re * zdown;
                 sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb,shift,rcutpos);
