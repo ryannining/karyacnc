@@ -557,6 +557,7 @@ function area_Maxdis(cx,cy,liness2){
 var pockettime = 0;
 var already=[];
 function pocketgcode() {
+    //return;
     pockettime = 0;
     if (cglines.length == 0) return;
     var carvedeep = getnumber('carved');

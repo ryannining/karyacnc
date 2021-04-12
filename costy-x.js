@@ -2400,6 +2400,7 @@ function sortedgcode() {
         if (_rampdown)_spiraldown=1;
     } else {
         _spiraldown = 0;
+        _rampdown = 0;
     }
     var empty = 1;
     cuttabinside = 0;//!$("smallfirst").checked;
@@ -2583,7 +2584,7 @@ function sortedgcode() {
                     //fff=-0.25*f2; // if burn then the first and the last must be faster
                 }
                 //if (i<=1)cncz2 += zdown*0.5;else 
-                if ((spiraldown && (i<_re-1)) || _rampdown) z2 = cncz2;
+                if ((spiraldown && (i<_re-1)) || (_rampdown && sgcodes[j][0][0]<-cncz)) z2 = cncz2;
                 else z2 = cncz;
                 if (acpengrave && iseng) cncz = z2 = _re * zdown;
                 sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb,shift,rcutpos);
@@ -3464,14 +3465,17 @@ function pathstoText1(gx) {
         sty.issort=0;
         // skip checking if its engrave
         var parent=[];
-        if (!(/*sty.doEngrave|| sty.domarking || sty.dovcarv ||*/ sty.greenskip  || (!sty.closed))){
+        if (!(/*sty.doEngrave|| sty.domarking || sty.dovcarv ||*/  sty.greenskip  || (!sty.closed))){
 			sty.issort=1;
             var flip = paths[i][1];
             cx=paths[i][2];
             cy=paths[i][3];
             var l1=paths[i][4];
+            pocket1=sty.dopocket;
             for (ii in paths){
                 psty=paths[ii][9];
+                pocket2=psty.dopocket;
+                if (pocket1 && !pocket2) continue;
                 //if (psty.doEngrave|| psty.domarking || psty.dovcarv)continue;
                 if (i==ii || paths[ii][4]<l1 || (psty["stroke"]=="#00ff00" && psty["fill"]=="none") )continue;//|| (!psty.closed)) continue;
                 var d=sqr(cx-paths[ii][2])+sqr(cy-paths[ii][3]);
