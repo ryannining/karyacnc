@@ -849,8 +849,7 @@ function loadsettings(name){
                 gcstyle = r.gcstyle;
             })
             storage.get("ink_images", function(r) {
-                ink_images = r.ink_images ;
-                if (!ink_images)ink_images=[];
+                ink_images = r.ink_images;
             })
             storage.get("cuttabs", function(r) {
                 cuttabs = r.cuttabs;
@@ -874,7 +873,6 @@ function loadsettings(name){
             if (storage.settings != undefined) {
 			    updateweb(JSON.parse(storage.settings));
             if (jobsettings==undefined)jobsettings={};
-            if (!ink_images)ink_images=[];
             updateprofile();
             }
         }
