@@ -808,11 +808,10 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 	var floyd1=[7, 4,4,1];
     var c = canv;//document.getElementById("myCanvas");
     var img = imgpic;//document.getElementById("thepic");
-	overshot=getnumber("overshoot");
-    var maxpoint=getnumber("imgresmax");
-    var maxpointy=25.4/getnumber("rasterdpi");
+	overshot=getvalue("overshoot");
+    var maxpoint=getvalue("imgresmax");
 	mwidth=rwidth/maxpoint;
-	mheight=rheight/maxpointy;
+	mheight=rheight/maxpoint;
      	
     c.width=mwidth;
     c.height=mheight;

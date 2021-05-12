@@ -551,11 +551,15 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
     //area-=sty.deep*1000;
     if (closed) {
         var ofs1 = 0;
-        if ($("usefinish").checked) ofs1 = getnumber('finishline');
+        var linesx = prepare_line2(lenmm, line, 0)[0];
+        if (!sty.greenskip && $("usefinish").checked) ofs1 = getnumber('finishline');
         lines2 = prepare_line2(lenmm, line, ofs1);
         var lines = lines2[0];
         var clk = lines2[1];
-
+        if (lines.length==0){
+            ofs1=0;
+            lines=linesx;
+        }
         if (sty.greenskip) area += 500000; // the outer still need to be the last
         for (var i = 0; i < lines.length; i++) {
             var line1 = lines[i];
@@ -564,22 +568,21 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
             var x1 = line1[0][1];
             var y1 = line1[0][2];
              
-            gcodes.push([lenmm, "", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i]]);
+            gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i]]);
         }
         var nc=lines.length-1;
         if (ofs1) {
             // if do finish line 
-            lines = prepare_line2(lenmm, line, 0)[0];
-            for (var i = 0; i < lines.length; i++) {
-                var line1 = lines[i];
+            for (var i = 0; i < linesx.length; i++) {
+                var line1 = linesx[i];
                 var ar = area;
                 if (i > 0) ar = 1;
                 var x1 = line1[0][1];
                 var y1 = line1[0][2];
-                gcodes.push([lenmm, "F", x1, y1, lines[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i]]);
+                gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i]]);
                 // need to add the childs count for the parent
             }
-            nc+=lines.length;
+            nc+=linesx.length;
         }
         for (var pi in parent){
             gcstyle[parent[pi]].exchilds+=nc;
@@ -1541,7 +1544,6 @@ var ly;
 var cuttablen = 5.5;
 var lastspeed = 1;
 var tabcutspeed = 1;
-var spiraldown = 1;
 var totaltime = 0;
 var skipz = 0;
 function uptosafe(f){
@@ -1618,13 +1620,24 @@ var X0=null;
 var Y0;
 var leads=[];
 var rampmoves=[]; // save the ramp moves to make a finish move
+function getspindleoff(){
+    return M3+" S"+Math.floor(getnumber("spindleoffval")*2.55)+"\n";
+}
+function getspindleon(){
+    if (cmd == CMD_LASER) return M3+" S"+cutpw+"\n";
+    var P=" P"+parseInt(getnumber("dwelltime")*1000);
+    if (P==" P0")P="";
+    return M3+" S"+cutpw+P+"\n";
+}
+var fnl=0;
+var hasfnl=0;
 function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip,shift,cutpos) {
     // the idea is make a cutting tab in 4 posisiton,:
     //
     addz=getvalue("addz");
     if (lastlayer && addz>0) {
     	z2-=addz;
-        z-=addz;
+        //z-=addz;
         cuttabz-=addz;
     }    
     
@@ -1647,7 +1660,9 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     
 /////
     var len = Math.abs(data[0]);
-    if (_rampdown)dz=-len;
+    if (_rampdown){
+        dz=Math.min(z2-z,-len*0.3);
+    }
     var climb = flip;
     if ($("cutclimb").checked) climb = !climb;
                 
@@ -1739,10 +1754,11 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     var pw1 = 1;
     var pw2 = 0; //getvalue('pwm');
     var pup = getvalue('pup');
+    if (fnl)pup="";//G0 Z0\n";
     var pdn = getvalue('pdn');
     if ($("spindleoff").checked){
-        pup="M3 S0\n"+pup;
-        pdn="M3 S"+cutpw+"\n"+pdn;        
+        pup=(hasfnl?"":getspindleoff())+pup;
+        pdn=((firstlayer && !fnl)?getspindleon():"")+pdn;        
     }
     var f1 = speedtravel * 60;
     var rep = getinteger('repeat');
@@ -1801,13 +1817,14 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         //if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
         //div = div + pdn.replace("=cncz", mround(z)) + '\n';
     } else
-    if (cmd != CMD_3D) {
+    if (cmd != CMD_3D && !fnl) {
         //if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
         if (z<0 && firstlayer)div = div +"G0 Z0 F"+speedretract+"\n";
         if (firstlayer && uselead){
         	div += ";LEAD IN\n"
 			div += "G1 F"+f2+" Z"+mround(z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
 		} else {
+            if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z-2)) + '\n';
 			div += pdn.replace("=cncz", mround(z)) + '\n'+"G1 F"+f2+"\n";
 		}    
 	}
@@ -2159,7 +2176,7 @@ function gcode_verify(en = 0) {
     var f1 = speedtravel * 60;
     pup1 = getvalue("pup") + '\n';
     startgcode="M3";
-    finishgcode =($("spindleoff").checked)?"M3 S0\n":"";
+    finishgcode =getspindleoff();//($("spindleoff").checked)?getspindleoff():"";
     finishgcode += pup1+"\nG0 F"+mround(f1)+" X0 Y0\n";
     if (cmd==CMD_CNC)finishgcode+="G0 Z"+getvalue("finalz")+ '\nM5\n';
     if (cmd==CMD_LASER)finishgcode+=pup1;
@@ -2306,7 +2323,7 @@ function sortedgcode() {
                 } 
                 // we already use closest and the hierarchy , so no need area size
                 //dis+=(gcodes[i][6] - 1);
-                if (gcodes[i][1]=="F")dis+=10000; // finish line must be the last
+                if (gcodes[i][1]=="F")dis+=10; // finish line must be the last
                 dis+=newx*xs+newy*ys;
 
 				//var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
@@ -2370,11 +2387,11 @@ function sortedgcode() {
 
     if (cmd == CMD_LASER) {
         pup1 = "";
-        s = M3+ " S"+cutpw+"\nG0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
-        se = M3+ " S"+cutpw+"\n";
+        s = getspindleon()+"G0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+        se = getspindleon();
     } else {
-        s = M3+ " S"+cutpw+" P2000\nG1 F3000\n";
-        se = M3+ " S"+cutpw+" P2000\n";
+        s = getspindleon()+"G1 F3000\n";
+        se = getspindleon();
     }
 
     cncdeep0 = -getvalue("zdown");
@@ -2388,18 +2405,14 @@ function sortedgcode() {
     lastz = 0;
     var tabz = getnumber("tabc");
     cmd = getvalue('cmode');
-    var _spiraldown;
     cuttab = cncdeep;
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
         cncz -= lastz;
         //s += "g0 f350 z" + mround(lastz)+"\n";
         cuttab += tabz;
-        _spiraldown = $("spiraldown").checked;
         _rampdown = $("rampdown").checked;
-        if (_rampdown)_spiraldown=1;
     } else {
-        _spiraldown = 0;
         _rampdown = 0;
     }
     var empty = 1;
@@ -2416,7 +2429,9 @@ function sortedgcode() {
             if ((Math.abs(sgcodes[j][0][6]) < 2) && (cuttabinside)) vcuttab = cncdeep;
 
             snum = sgcodes[j][0][8];
+            hasfnl = sgcodes[j][0][1] == "D"; // "F" = finish line
             fnl = sgcodes[j][0][1] == "F"; // "F" = finish line
+            
             sty = gcstyle[snum];
             if (!sty.closed)vcuttab=cncdeep;
             //stro = sty["stroke"];
@@ -2444,7 +2459,6 @@ function sortedgcode() {
                 zdown = -1;
                 _re = 2;
             }
-            spiraldown = _spiraldown;
             var docarve = 0;
             var iscut = 1;
             var iseng = 0;
@@ -2455,7 +2469,6 @@ function sortedgcode() {
                 var _rz = getnumber("firstd");
 
                 if (sty.domarking) {
-                    spiraldown = 0;
                     f2 = getvalue('pltfeed') * 60;
                     pw = getvalue('pltpw') * 255*0.01;
                     pw=sty.markpower?sty.markpower:pw;
@@ -2478,7 +2491,6 @@ function sortedgcode() {
                             vcuttab = -1 * zdown; //+tabz;
                             zdown *= -1 / _re;
                             //zdown=cncz;
-                            spiraldown = 0;
                         }
                     } else _re = 0;
                     f2 = getvalue('rasteroutfeed') * 60;
@@ -2507,7 +2519,7 @@ function sortedgcode() {
             if (fnl) {
                 _re = 1;
                 var zdown = cncdeep;
-                f2 *= 0.7;
+                //f2 *= 0.7;
             }
             cncz = zdown;
             var cncz2 = 0;
@@ -2520,7 +2532,7 @@ function sortedgcode() {
             var shift = sgcodes[j][3];
             // do burn cutting
             var climb = sgcodes[j][2];
-            if (fnl)climb=!climb;
+            //if (fnl)climb=!climb;
             rcutpos=getcutpos(j,shift,climb);
             if ((_re * iscut > 0) && (cmd == CMD_LASER) && $("burn1").checked) {
                 s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2,vcuttab, sgcodes[j][0][5], 1, 1, snum, getvalue("burnfeed") * 60, 0,shift,rcutpos);
@@ -2528,9 +2540,10 @@ function sortedgcode() {
 
             // do pen up
             var ps = pup1 + "\n";
+            if (fnl)ps="";//G0 Z0\n";
             // acp mode make first hole
             var acp="";
-            if ($("spindleoff").checked)acp="M3 S0\n";
+            if ($("spindleoff").checked && !fnl)acp=getspindleoff();
             acp += ps;
             var isacp = 0;
             
@@ -2542,7 +2555,7 @@ function sortedgcode() {
                 _re=1;
                 iscut = 1;
             }             
-            if (getchecked("acpmode")) {
+            /*if (getchecked("acpmode")) {
                 var zf = zdown * _re;
                 if (!iseng) zf -= 1.5;
                 else zf -= 0.5;
@@ -2550,7 +2563,7 @@ function sortedgcode() {
                 acp = ps + "G0 X" + mround(lines[shift][1]) + " Y" + mround(lines[shift][2]) + " F" + (speedtravel * 60) + "\n";
                 acp += "G1 Z" + mround(zf) + " F600\n";
                 isacp = 1;
-            }
+            }*/
             if (_re > 0) {
                 empty = 0;
                 if (iseng &&sepcut) {
@@ -2571,7 +2584,8 @@ function sortedgcode() {
                 climb = climb ? 0 : 1;
             }
             var of2=f2;	
-            for (var i = 0; i < _re; i++) {	
+            for (var i = 0; i < _re; i++) {
+				if (_re>1 && hasfnl && i==_re-1)break;	
                 var fff = 0;	
                 f2=of2;	
                 if ((i==0) && (cmd == CMD_CNC)){	
@@ -2584,7 +2598,7 @@ function sortedgcode() {
                     //fff=-0.25*f2; // if burn then the first and the last must be faster
                 }
                 //if (i<=1)cncz2 += zdown*0.5;else 
-                if ((spiraldown && (i<_re-1)) || (_rampdown && sgcodes[j][0][0]<-cncz)) z2 = cncz2;
+                if (_rampdown) z2 = cncz2;
                 else z2 = cncz;
                 if (acpengrave && iseng) cncz = z2 = _re * zdown;
                 sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb,shift,rcutpos);
@@ -2601,9 +2615,6 @@ function sortedgcode() {
                 
             }
             // do last cutting
-            if (_re && spiraldown && !ismark) {
-                //s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 0, snum, f2, 0,shift,rcutpos);
-            }
             //s+=pup1+"\n\n";
         }
     }
@@ -3476,6 +3487,7 @@ function pathstoText1(gx) {
                 psty=paths[ii][9];
                 pocket2=psty.dopocket;
                 if (pocket1 && !pocket2) continue;
+                if (!pocket1 && pocket2) continue;
                 //if (psty.doEngrave|| psty.domarking || psty.dovcarv)continue;
                 if (i==ii || paths[ii][4]<l1 || (psty["stroke"]=="#00ff00" && psty["fill"]=="none") )continue;//|| (!psty.closed)) continue;
                 var d=sqr(cx-paths[ii][2])+sqr(cy-paths[ii][3]);

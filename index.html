@@ -102,11 +102,10 @@
 							<tr><td colspan=2>Min. area cenvert drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
 							<tr class=hideit2><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr class=hideit2><td colspan=2>Lead in (mm,Ain,Aout) </td><td colspan=2><input id=leadin class=saveit size=5 value="3,40,90"> <input size=2 type=checkbox id=useleadin class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Spiral down </td><td colspan=2><input size=2 type=checkbox id=spiraldown class=saveit></td></tr>
 							<tr class=hideit2><td colspan=2>Ramp down </td><td colspan=2><input size=2 type=checkbox id=rampdown class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Dwell </td><td colspan=2><input size=3 type=text id=dwelltime class=saveit value=0></td></tr>
+							<tr class=hideit2><td colspan=2>Dwell (s) </td><td colspan=2><input size=3 type=text id=dwelltime class=saveit value=0></td></tr>
 							<tr class=hideit2><td colspan=2>Acp mode</td><td colspan=2><input size=2 type=checkbox id=acpmode class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Spindle OFF-ON</td><td colspan=2><input size=2 type=checkbox id=spindleoff class=saveit></td></tr>
+							<tr class=hideit2><td colspan=2>Spindle OFF-ON</td><td colspan=2><input class=saveit id=spindleoffval size=2 value=0><input size=2 type=checkbox id=spindleoff class=saveit></td></tr>
 							<tr class=hideit2><td colspan=2>Add last Z</td><td colspan=2><input size=2 id=addz class=saveit value=0></td></tr>
 							
 							<tr><td colspan=2>DogBone min. area  </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
@@ -171,7 +170,7 @@
                         <table id=vars4 class=smallwindow style="margin-left:260px;">
 						<tr valign=top><td><table>
 							<tr ><td colspan=4 align=left><b>Bitmap Engraving</b></td></tr>
-							<tr ><td colspan=2>Max res X</td><td colspan=2><input size=2 id=imgresmax value=0.2 class=saveit>mm</td></tr>
+							<tr ><td colspan=2>Max res</td><td colspan=2><input size=2 id=imgresmax value=0.2 class=saveit>mm</td></tr>
 							<tr ><td colspan=2>Invert</td><td colspan=2><input size=2 id=imginvert type=checkbox  class=saveit>mm</td></tr>
 							<tr><td colspan=2>Dither </td><td colspan=2><select id=dithermode class=saveit>
 								<option value=0 style="display:none">Grayscale</option>
