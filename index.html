@@ -83,8 +83,8 @@
 					<tr>
 						<td colspan=3 align=left><button id=bthidden>Option</button>
 						<table id=vars class=smallwindow style="">
-							<tr class=hideit2><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="1" class=saveit></td></tr>
-							<tr class=hideit2><td colspan=3>As </td><td colspan=1>
+							<tr class=notsimple><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="1" class=saveit></td></tr>
+							<tr class=notsimple><td colspan=3>As </td><td colspan=1>
 							<select id=pasteas value="0" class=saveit>
 								<option value=0>Cutting</option>
 								<option value=1>Engrave</option>
@@ -92,72 +92,70 @@
 								<option value=3>Pocket</option>
 							
 							</select></td></tr>
-							<tr class=hideit2><td colspan=4><hr></td></tr>							
-							<tr class=hideit2><td colspan=2>Curve Quality </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
-							<tr class=hideit2><td colspan=2>Zero on start </td><td colspan=2><input size=2 type=checkbox id=zerobefore  class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=5 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="0"></td></tr>
-							<tr><td colspan=2>Auto tab in (mm,max tab)</td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
-							<tr class=hideit2><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
+							<tr class=notsimple><td colspan=4><hr></td></tr>							
+							<tr class=notsimple><td colspan=2>Curve Quality </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
+							<tr class=notsimple><td colspan=2>Zero on start </td><td colspan=2><input size=2 type=checkbox id=zerobefore  class=saveit></td></tr>
+							<tr class=notsimple><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=5 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
+							<tr class="notsimple notlaser"><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="0"></td></tr>
+							<tr class="notlaser notplasma"><td colspan=2>Auto tab in (mm,max tab)</td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
 							<tr><td colspan=2>Min. area cenvert drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
-							<tr class=hideit2><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Lead in (mm,Ain,Aout) </td><td colspan=2><input id=leadin class=saveit size=5 value="3,40,90"> <input size=2 type=checkbox id=useleadin class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Ramp down </td><td colspan=2><input size=2 type=checkbox id=rampdown class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Dwell (s) </td><td colspan=2><input size=3 type=text id=dwelltime class=saveit value=0></td></tr>
-							<tr class=hideit2><td colspan=2>Acp mode</td><td colspan=2><input size=2 type=checkbox id=acpmode class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Spindle OFF-ON</td><td colspan=2><input class=saveit id=spindleoffval size=2 value=0><input size=2 type=checkbox id=spindleoff class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Add last Z</td><td colspan=2><input size=2 id=addz class=saveit value=0></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
+							<tr class="notsimple notlaser notcnc"><td colspan=2>Lead in (mm,Ain,Aout) </td><td colspan=2><input id=leadin class=saveit size=5 value="3,40,90"> <input size=2 type=checkbox id=useleadin class=saveit></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Ramp down </td><td colspan=2><input size=2 type=checkbox id=rampdown class=saveit></td></tr>
+							<tr class="notsimple notlaser"><td colspan=2>Dwell (s) </td><td colspan=2><input size=3 type=text id=dwelltime class=saveit value=0></td></tr>
+							<tr class="notsimple notlaser"><td colspan=2>Acp mode</td><td colspan=2><input size=2 type=checkbox id=acpmode class=saveit></td></tr>
+							<tr class="notsimple notlaser"><td colspan=2>Spindle OFF-ON</td><td colspan=2><input class=saveit id=spindleoffval size=2 value=0><input size=2 type=checkbox id=spindleoff class=saveit></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Add last Z</td><td colspan=2><input size=2 id=addz class=saveit value=0></td></tr>
 							
-							<tr><td colspan=2>DogBone min. area  </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
-							<tr><td>DogBone </td>
+							<tr class="notlaser"><td colspan=2>DogBone min. area  </td><td colspan=2><input id=overcutmin class=saveit value='14' size=5></td></tr>
+							<tr class="notlaser"><td>DogBone </td>
 								<td><input id=overcut type=checkbox size=2 class=saveit></td>
-								<td class=hideit2>+overcut <input id=ovcmore value=0.2 size=3 class=saveit></td>
-								<td class=hideit2>Cos(angle) <input id=sharp value="-0.1" size=3 class=saveit>
+								<td class=notsimple>+overcut <input id=ovcmore value=0.2 size=3 class=saveit></td>
+								<td class=notsimple>Cos(angle) <input id=sharp value="-0.1" size=3 class=saveit>
                                 <input id=segment type=checkbox class="saveit hideit"></td>
 							</tr>
 							<tr><td colspan=2>First speed </td><td colspan=2><input id=feed1x class=saveit size=5 value="1">x</td></tr>
-							<tr class=hideit2><td colspan=4><hr></td></tr>
-							<tr class=hideit2><td colspan=2>Xsort <input id=xsort class=saveit size=5 value="0"></td><td colspan=2>Ysort <input id=ysort class=saveit size=5 value="0"></td></tr>
-							<tr class=hideit2><td colspan=4><hr></td></tr>
-							<tr class=hideit2><td colspan=2><button id=btrecode2 >Process</button></td><td colspan=2></td></tr>
+							<tr class=notsimple><td colspan=4><hr></td></tr>
+							<tr class=notsimple><td colspan=2>Xsort <input id=xsort class=saveit size=5 value="0"></td><td colspan=2>Ysort <input id=ysort class=saveit size=5 value="0"></td></tr>
+							<tr class=notsimple><td colspan=4><hr></td></tr>
+							<tr class=notsimple><td colspan=2><button id=btrecode2 >Process</button></td><td colspan=2></td></tr>
 						</table>
 						<button id=bthidden5>Advanced Option</button> 
 						<table id=vars3 class=smallwindow style="margin-left:230px;"><tr><td><table>
-							<tr class=hideit2><td colspan=4 align=left><b>INKSCAPE COLORING</b></td></tr>
-							<tr class=hideit2><td colspan=2>Combine segment </td><td colspan=2><input size=2 type=checkbox id=enablejoin class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Enable Color </td><td colspan=2><input size=2 type=checkbox id=enablecolor checked class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Separate Cut </td><td colspan=2><input size=2 type=checkbox id=separatecut checked class=saveit></td></tr>
-							<tr class=hideit2><td colspan=2>Smart Engrave </td><td colspan=2><input size=3 id=skiplength value=50 class=saveit>mm <input size=2 type=checkbox id=enablesmartraster class=saveit></td></tr>
+							<tr class=notsimple><td colspan=4 align=left><b>INKSCAPE COLORING</b></td></tr>
+							<tr class=notsimple><td colspan=2>Combine segment </td><td colspan=2><input size=2 type=checkbox id=enablejoin class=saveit></td></tr>
+							<tr class=notsimple><td colspan=2>Separate Cut </td><td colspan=2><input size=2 type=checkbox id=separatecut checked class=saveit></td></tr>
+							<tr class="notsimple notcnc notplasma"><td colspan=2>Smart Engrave </td><td colspan=2><input size=3 id=skiplength value=50 class=saveit>mm <input size=2 type=checkbox id=enablesmartraster class=saveit></td></tr>
 							
 							<tr><td colspan=2><font color=red><b>Red outline feed</b></font></td><td colspan=2>
-							    <input id=pltfeed class=saveit size=3 value=20><span  class=hideit2><input id=pltpw class=saveit size=2 value=100>%</span></td></tr>
-							<tr  class=hideit2><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2>
-							    <input id=rasterfeed class=saveit size=3 value=200><span  class=hideit2><input id=rasterpw class=saveit size=2 value=100>%</span></td></tr>
-							<tr  class=hideit2><td colspan=2>Blue engrave outline</td><td colspan=2>
-							    <input id=rasteroutfeed class=saveit size=5 value=200><span  class=hideit2><input id=rasteroutpw class=saveit size=2 value=100>%</span></td></tr>
-							<tr  class=hideit2><td colspan=2>Burn feed</td><td colspan=2>
+							    <input id=pltfeed class=saveit size=3 value=20><span  class=notsimple><input id=pltpw class=saveit size=2 value=100>%</span></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2>
+							    <input id=rasterfeed class=saveit size=3 value=200><span  class=notsimple><input id=rasterpw class=saveit size=2 value=100>%</span></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Blue engrave outline</td><td colspan=2>
+							    <input id=rasteroutfeed class=saveit size=5 value=200><span  class=notsimple><input id=rasteroutpw class=saveit size=2 value=100>%</span></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Burn feed</td><td colspan=2>
 							    <input id=burnfeed class=saveit size=3 value=40> 100 %</td></tr>
 							<tr><td colspan=2><font color=purple>Purple <b>Pocket</b> feed</font></td><td colspan=2>
-							    <input id=vcarvefeed class=saveit size=3 value=40><span  class=hideit2><input id=vcarvepw class=saveit size=2 value=100>%</span></td></tr>
+							    <input id=vcarvefeed class=saveit size=3 value=40><span  class=notsimple><input id=vcarvepw class=saveit size=2 value=100>%</span></td></tr>
 							    
-							<tr  class=hideit2><td colspan=2>Enable Engrave </td><td colspan=2><input size=2 type=checkbox id=enableraster checked class=saveit></td></tr>
-							<tr  class=hideit2><td colspan=2>Overshoot </td><td colspan=2><input size=2 id=overshoot size=3 value=5 class=saveit></td></tr>
-							<tr  class=hideit2><td colspan=2>Enable Outline </td><td colspan=2><input size=2 type=checkbox id=rasteroutline class=saveit></td></tr>
-							<tr  class=hideit2><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
-							<tr  class=hideit2><td colspan=2>Engrave Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
-							<tr  class=hideit2><td colspan=2>GrayInvert</td><td colspan=2><input size=2 type=checkbox id=grayinvert class=saveit></td></tr>
-							<tr  class=hideit2><td></td><td>Y Step </td><td id=ystep>...</td></tr>
-							<tr  class=hideit2><td colspan=2>Enable stroke-width </td><td colspan=2><input size=2 type=checkbox id=strokeoffset class=saveit></td></tr>
-							<tr  class=hideit2><td colspan=2>MODE 0</td><td colspan=2><input size=2 type=checkbox id=emode0 checked class=saveit></td></tr>
-							<tr><td colspan=4 align=left><b><font color=red>Engrave</font>/ <font color=purple>Pocket setting</font> </b></td></tr>
-							<tr><td colspan=2 class=hideit2>Safe Z Up</td><td colspan=2><input size=2 id=safez value="4" class=saveit>mm</td></tr>
-							<tr><td colspan=2>Total Depth</td><td colspan=2><input size=2 id=carved value=3 class=saveit>mm</td></tr>
-							<tr><td colspan=2>Side Step</td><td colspan=2><input size=2 id=clstep value="1" class=saveit>mm</td></tr>
-							<tr><td colspan=2>Slow pass</td><td colspan=2><input size=2 id=firstd value=1 class=saveit>mm</td></tr>
-							<tr class=hideit2><td colspan=2>Slow threshold</td><td colspan=2><input size=2 id=slowth value=10 class=saveit>x</td></tr>
-							<tr><td colspan=2>Fast pass</td><td colspan=2><input size=2 id=carvedp value=1 class=saveit>mm</td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Engrave </td><td colspan=2><input size=2 type=checkbox id=enableraster checked class=saveit></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Overshoot </td><td colspan=2><input size=2 id=overshoot size=3 value=5 class=saveit></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Outline </td><td colspan=2><input size=2 type=checkbox id=rasteroutline class=saveit></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Engrave Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>GrayInvert</td><td colspan=2><input size=2 type=checkbox id=grayinvert class=saveit></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td></td><td>Y Step </td><td id=ystep>...</td></tr>
+							<tr  class=notsimple><td colspan=2>Enable stroke-width </td><td colspan=2><input size=2 type=checkbox id=strokeoffset class=saveit></td></tr>
+							<tr class="notlaser notplasma"><td colspan=4 align=left><b><font color=red>Engrave</font>/ <font color=purple>Pocket setting</font> </b></td></tr>
+							<tr class="notlaser notplasma"><td colspan=2 class=notsimple>Safe Z Up</td><td colspan=2><input size=2 id=safez value="4" class=saveit>mm</td></tr>
+							<tr class="notlaser notplasma"><td colspan=2>Total Depth</td><td colspan=2><input size=2 id=carved value=3 class=saveit>mm</td></tr>
+							<tr class="notlaser notplasma"><td colspan=2>Side Step</td><td colspan=2><input size=2 id=clstep value="1" class=saveit>mm</td></tr>
+							<tr class="notlaser notplasma"><td colspan=2>Slow pass</td><td colspan=2><input size=2 id=firstd value=1 class=saveit>mm</td></tr>
+							<tr class="notlaser notplasma notsimple"><td colspan=2>Slow threshold</td><td colspan=2><input size=2 id=slowth value=10 class=saveit>x</td></tr>
+							<tr class="notlaser notplasma"><td colspan=2>Fast pass</td><td colspan=2><input size=2 id=carvedp value=1 class=saveit>mm</td></tr>
 						</table></td>
-                        <td align=left><img src="pocketinfo.png">
+                        <td align=left class="notlaser notplasma"><img src="pocketinfo.png">
                             <hr><b>V CARVING (<font color=#00FFFF style="background:black;margin:2px">Stroke is Aqua</font>)</b><br>
                             <b>Endmill:</b>&nbsp;
                             Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
@@ -166,7 +164,7 @@
                             <button class=hideit id=btvcarve>VCarve</button><br>
                         </td>
                         </tr></table>
-                        <br><button id=btengrave class=hideit2>Bitmap Engrave</button>
+                        <br><button id=btengrave class="notsimple notplasma">Bitmap Engrave</button>
                         <table id=vars4 class=smallwindow style="margin-left:260px;">
 						<tr valign=top><td><table>
 							<tr ><td colspan=4 align=left><b>Bitmap Engraving</b></td></tr>
@@ -189,11 +187,50 @@
                         <td>Output Image<hr>
                         <canvas id=dithercanv></canvas></td>
                         </tr></table>
+                        
+                        <table id=vars5 class=smallwindow style="margin-left:260px;">
+                        <tr valign=top ><td><b>Image setting</b>
+                            <table><tr valign=top align=left><td width=150>
+                            <tr><td>Res X<td><input id=egwidth value=200 size=3 class=saveit>
+                            <tr><td>Res Y<td><input id=egheight value=200 size=3 class=saveit>
+                            <tr><td>Gamma <td><input id=eggamma value=1 size=1 class=saveit>
+                            <tr><td>Normalize <td><input id=egnormal type=checkbox size=3 class=saveit>
+                            <tr><td>Flip X <td><input id=egflip type=checkbox size=3 class=saveit>
+
+                            <tr><td colspan=2><b>Gcode</b>
+                            <tr><td>Feed <td><input id=egspeed size=3 value="100" class=saveit>mm/s 
+                            <tr><td>Depth <td>up <input id=egzup value=3 size=3 class=saveit> down<input id=egzdown value=3 size=3 class=saveit>mm
+
+                            <tr><td>Cut from<td><select id=egfeedmethod class=saveit>
+                            <option value=2 selected>Center rectangular</option>
+                            </select>
+
+                            <tr><td colspan=2><br><b>Finishing</b>
+                            <tr><td colspan=2><i>Endmill setting</i>
+                            <tr><td>Bit <td><select id=egendmill class=saveit>
+                            <option value=1 selected>Ballnose</option>
+                            <option value=0>V bit</option>
+                            <option value=2>Flat</option>
+                            </select><br>
+                            <tr><td>Max Dia <td><input id=egdia value=3 size=2 class=saveit>
+                            <tr><td>V Angle <td><input id=egvangle value=90 size=2 class=saveit>
+
+                            <tr><td>First pass<td><input id=egrepeat1 value=4 size=3 class=saveit>x
+                            <tr><td>Pass<td><input id=egrepeat2 value=2 size=1 class=saveit>x
+
+
+                            </table>
+                            <td width=500>
+                            <b>Image</b>
+                            <hr>
+                            <canvas id="engrcanv" width="160" height="300" style="border:1px solid #d3d3d3;">
+                            Your browser does not support the HTML5 canvas tag.</canvas>
+                        </tr></table>
                         <button id=bthidden3>Show Gcode</button>
 				</td></tr>
 				<tr style="background:chocolate"><td colspan=3 align=left><b style="color:white">Saved profile</b><select  id=profile><option value=set1>set1</option></select><br>
 				<b style="color:white">Profile name</b><input class=saveit id=profilename size=5><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
-				<tr style="background:lime" class=hideit2><td colspan=3>Preset <select id=material class=saveit>
+				<tr style="background:lime" class=notsimple><td colspan=3>Preset <select id=material class=saveit>
 					<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
 					<option value="8,1,27,1500">Laser Akrilik 2mm</option>
 					<option value="8,1,32,1500">Laser Akrilik 2mm Warna</option>
@@ -232,7 +269,7 @@
 				</tr>
 				<tr><td colspan=2>Mat Price/cm2</td><td colspan=1><input id=matprice class=saveit value=32 size=4></td></tr>
 				<tr><td colspan=2>Cut Price/min</td><td colspan=1><input id=cutprice class=saveit value=1500 size=4></td></tr>
-				<tr><td colspan=2 ><span class=hideit2>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit>&nbsp;</span>Endmill &#248</td><td colspan=1> <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td>
+				<tr><td colspan=2 ><span class=notsimple>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit>&nbsp;</span>Endmill &#248</td><td colspan=1> <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td>
                     </tr>				
 
 				<tr style="background:lime"><td colspan=3>Settings for CUTTING (black outline)</td></tr>
@@ -244,18 +281,18 @@
 				</tr>
 
 				<tr style="background:lime"><td colspan=2>CNC Zdown</td><td colspan=1>Tab height, len</td></tr>
-				<tr><td colspan=2><span class= hideit2><input id=zdown0 size=2 value=0 class="saveit"> -</span> <input id=zdown size=2 value=1 class=saveit>
+				<tr><td colspan=2><span class= notsimple><input id=zdown0 size=2 value=0 class="saveit hideit"> -</span> <input id=zdown size=2 value=1 class=saveit>
 					</td><td colspan=1><input id=tabc value=0 size=3  class=saveit><input id=tablen class=saveit value='2' size=5></td></tr>
 
-				<tr class="tonoff hideit2" style="background:lime"><td colspan=2><span class=hideit2>Tools Off / </span>Z-Up</td><td colspan=1 ><span class=hideit2>Tools On/ </span>Z-Down</td></tr>
-				<tr class="tonoff hideit2" ><td colspan=2><input id=pup size=13 value="G0 F3000 Z10" class=saveit></td>
+				<tr class="tonoff notsimple" style="background:lime"><td colspan=2><span class=notsimple>Tools Off / </span>Z-Up</td><td colspan=1 ><span class=notsimple>Tools On/ </span>Z-Down</td></tr>
+				<tr class="tonoff notsimple" ><td colspan=2><input id=pup size=13 value="G0 F3000 Z10" class=saveit></td>
 					<td colspan=1><input id=pdn size=13 value="G0 F700 Z=cncz" class="saveit"></td>
 				</tr>
-				<tr style="background:lime" class=hideit2><td colspan=2>Flip X <input id=flipx type=checkbox class=saveit>
-					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit></td><td class=hideit2> Pow <input id=cutpw size=2 value=100 class=saveit>%</td></tr>
+				<tr style="background:lime" class=notsimple><td colspan=2>Flip X <input id=flipx type=checkbox class=saveit>
+					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit></td><td class=notsimple> Pow <input id=cutpw size=2 value=100 class=saveit>%</td></tr>
 				<tr valign=center>
-                    <td colspan=1><span class=hideit2>Climb mill <input id=cutclimb type=checkbox class=saveit></span>
-                    <td><span class=hideit2>pre Burn </span></td><td><input id=burn1 type=checkbox class="saveit hideit2" ><button id=btrecode >Process</button></td></tr>
+                    <td colspan=1><span class="notsimple notlaser notplasma">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
+                    <td><span class="notsimple notcnc notplasma">pre Burn </span></td><td ><input id=burn1 type=checkbox class="saveit notsimple notcnc notplasma" ><button id=btrecode >Process</button></td></tr>
             <hr>
             </tr>
             <tr><td colspan=3 align=left>
@@ -264,7 +301,7 @@
             <hr>
 			Graph scale <input id=zoom1 value=1 size=2 class=saveit><button id=btzoom>Scale</button>&nbsp;&nbsp;&nbsp;&nbsp;
 			<button id=btcopycanvas>Copy Canvas</button><br>
-			<span class=hideit2>
+			<span class=notsimple>
 			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.<br>
 			<textarea style="font-size: 10;width:100%;height:50px" id="applog"></textarea>
 			</span>
@@ -278,7 +315,7 @@
 		<textarea class=hideit style="font-size: 10;width:100%;height:50px" id=segm ></textarea></td>
 		<td>
 			<div  id=gcodepreview style="width:220px">
-			<span class=hideit2>
+			<span class=notsimple>
                 <button id=tracingbt>GCODE SENDER</button><B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
 			  </span>
               Cutting gcode
@@ -309,7 +346,7 @@
 				<option value=3>3X</option>
 			</select></div>
 			<table id=vars2 class=smallwindow>
-				<tr class=hideit2><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="230400" class=saveit></td></tr>
+				<tr class=notsimple><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="230400" class=saveit></td></tr>
 				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=14 class=saveit value="192.168.0.123"></td></tr>
 				<tr><td colspan=4><hr></td></tr>
 				<tr><td colspan=2>App WS PORT </td><td colspan=2><input id=wsport size=10 class=saveit value="8888"></td></tr>
@@ -320,13 +357,13 @@
 				<tr class=hideit><td colspan=2>Flip Y </td><td colspan=2><input type=checkbox id=cflipy size=10 class=saveit></td></tr>
                 <tr><td colspan=2>Display Mode </td><td colspan=2><select id=wmode class=saveit><option value=1 selected>CNC Simple</option><option value=2>Full</option></select></td></tr>
             </table><hr>
-			<div class=hideit2>
+			<div class=notsimple>
             <b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
 			<br><b>WebSocket</b></div> 
 			<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
 			<hr>
 
-			<table id=buttons class=hideit2>
+			<table id=buttons class="notsimple isConnected">
 				<tr><td>X,Y</td><td></td><td><button  id=btup><div class="arrow-up"></div></button></td><td></td><td>Z</td><td><button  id=btzup><div class="arrow-up"></button></td></tr>
 				<tr><td>
 					<select id=move value=50 class=saveit>
@@ -348,7 +385,7 @@
 					</td><td><button  id=btsethome>Z0</button>&nbsp;<button  id=btsethome3>Z2</button></td></tr>
 				<tr><td></td><td></td><td><button  id=btdn><div class="arrow-down"></button></td><td></td><td></td><td><button  id=btzdn><div class="arrow-down"></button></td></td></tr>
 			</table>
-			<div class=hideit2>
+			<div class="notsimple isConnected">
                 <button  id=bthit>HIT</button>
                 
                 <button  id=btsethome2>ZERO</button>
@@ -361,7 +398,7 @@
                 <br>
                 <input size=10 id=edgcode class=saveit><button id=btsend>Send</button>
             </div>
-            <div class=hideit2>
+            <div class="notsimple isConnected">
                 <b>My GCODE</b><br>
                 <button id=btinit class=hideit>Run Init</button>
                 <button id=btpreview>Preview</button>
@@ -369,15 +406,14 @@
                 <button id=btexecute2>Engrave</button>
                 <button id=btpause>Pause</button><br>
                 Cut after engrave <input size=2 type=checkbox id=engravecut checked class=saveit>
-                <br><input id=alres size=2 value=400><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
-                <button id=btmotoroff class=hideit>MOTOROFF</button>
+                <br><div class=hideit><input id=alres size=2 value=400><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
+                </div><button id=btmotoroff class=hideit>MOTOROFF</button>
             </div>
             <div id=machine_ws style="display:none">
                 <b>Upload Job</b><br>
                 <progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
-                <div class=hideit2>Jobs <select id=jobs class=saveit><option value="gcode">gcode</option></select><br></div>
-                Upload preview <input id=uploadpreview type=checkbox class=saveit> 
-                <br>Job name <input id=jobname size=10 class=saveit value='gcode'><br>
+                <div class=notsimple>Jobs <select id=jobs class=saveit><option value="gcode">gcode</option></select><br></div>
+                Job name <input id=jobname size=10 class=saveit value='gcode'><br>
                 <button id=btupload>Upload</button><button id=btuploadstart>Start</button>
                 <button id=btuploadstop>Stop</button><button id=btuploadpause>Pause</button><button id=btuploadresume>Resume</button>
                 <hr>
@@ -395,20 +431,20 @@
 				<button id=bt3Edn>Ext-Dn</button>
 				<hr>
 			</div>
-            <div class=hideit2>
+            <div class="notsimple isConnected">
                 <b>EEPROM</b><br>
                 <button  id=bt3eeprom>Read EEPROM</button><br>
                 <select id=eepromid>
                     
                 </select><input id=eepromval size=3><button  id=bt3seteeprom>Set EEPROM</button>
 			<hr></div>
-            <div class=hideit2>
+            <div class=notsimple>
                 <b id=jobinfo>JOBS</b><br>
                 <button id=btjob1>Cut -&gt; Job</button>
                 <button id=btjob2>Engr -&gt; Job</button>
                 <button id=btjob3>Clear Jobs</button>
-                <button id=btjob4>Run Jobs</button>
-                <button id=btjob5>Upload Jobs</button>
+                <button id=btjob4 class="isConnected">Run Jobs</button>
+                <button id=btjob5 class="isConnected">Upload Jobs</button>
                 <a id=download href="javascript:" ><button>Download</button></a>
 			</div>
 			

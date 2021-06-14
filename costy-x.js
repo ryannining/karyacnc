@@ -6,7 +6,7 @@
 var ENGRAVE = 0;
 var CMD_3D = 4;
 
-var CMD_PLASMA = 3;
+var CMD_PLASMA = 5;
 var CMD_CNC = 3;
 var CMD_FOAM = 2;
 var CMD_LASER = 1;
@@ -53,9 +53,24 @@ function getchecked(el) {
 function getvalue(el) {
     if (el == "gcode") return editorgcode.getValue();
     else if (el == "engcode") return editorengcode.getValue();
-    else if (el == "leadin") return $(el).value.split(",");
-    else if (el == "pup" || el == "pdn") return $(el).value.replaceAll(";","\n");
-    else return $(el).value;
+
+    var v=$(el).value;
+    
+    if (el == "leadin") return v.split(",");
+    else if (el == "pup") {
+        
+        if (v.trim()==""){
+            if (cmd == CMD_CNC)v="G0 F4000 Z10";
+        }
+        return v.replaceAll(";","\n");
+    }
+    else if (el == "pdn") {
+        if (v.trim()==""){
+            if (cmd == CMD_CNC)v="G0 F1500 Z=cncz";
+        }
+        return $(el).value.replaceAll(";","\n");
+    }
+    else return v;
 }
 var speedvals=[];	
 function getnumber(el){	
@@ -348,9 +363,7 @@ function prepare_line2(lenmm, lines, ofs1) {
     oshapenum = shapenum;
     if (sty == undefined) sty = defaultsty;
     if ($("strokeoffset").checked) ofs += sty["stroke-width"] * 1;
-    if ($("enablecolor").checked) {
-    		//stro=sty["stroke"] ;
-    }
+
     if (sty.dopocket || sty.dovcarve) ofs = 0;
     ofs *= 0.5;
     maxofs = Math.max(ofs, maxofs);
@@ -771,7 +784,7 @@ function doengrave() {
     
     var re = Math.ceil(getnumber("carved")/getnumber("carvedp"));
     var rep1 = Math.ceil(getnumber("carved")/getnumber("firstd"));
-    
+    if (cmd==CMD_LASER)re=rep1=1;
     carvedeep = getnumber("carved");
     var rz = carvedeep / re;
 	gc="";
@@ -1191,7 +1204,7 @@ function draw_leads(){
 }
 
 function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,warn,cutpos) {
-    cmd = getvalue('cmode');
+    //cmd = getvalue('cmode');
     cuttabz = getnumber("tabc");
 
     var olx=lx;
@@ -1277,15 +1290,15 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
     ly2 = ly;
     nc = 2;
     var pocketdeep = 0;
-    if ($("enablecolor").checked) {
-        var carvedeep = getnumber('carved');
-        stro = sty["stroke"];
-        fil = sty["stroke"];
 
-        if (sty.dopocket) {
-            pocketdeep = sty.strokedeep > 0 ? sty.strokedeep : carvedeep;
-        }
+    var carvedeep = getnumber('carved');
+    stro = sty["stroke"];
+    fil = sty["stroke"];
+
+    if (sty.dopocket) {
+        pocketdeep = sty.strokedeep > 0 ? sty.strokedeep : carvedeep;
     }
+
     var cll = false;
     if (closed && !plt) {
         cll = isClockwise(lines);
@@ -1649,19 +1662,25 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         z = 0;
         z2 = 0;
     }
-    var closed=data[7];
     var dz = z2 - z;
     
     fm = 0;
     var lines = data[4];
     if (lines.length == 0) return;
+    var isnotpoint=lines.length>1;
+    var closed=data[7] && isnotpoint;
 
 
     
 /////
     var len = Math.abs(data[0]);
-    if (_rampdown){
+    var _ramp=_rampdown;
+    if (!closed)_ramp=0;
+    if (_ramp){
         dz=Math.min(z2-z,-len*0.3);
+    } else {
+        dz=0;
+        z=z2;
     }
     var climb = flip;
     if ($("cutclimb").checked) climb = !climb;
@@ -1750,10 +1769,10 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     lz = z;
 
     // turn off tool and move up if needed
-    cmd = getvalue('cmode');
+    //cmd = getvalue('cmode');
     var pw1 = 1;
     var pw2 = 0; //getvalue('pwm');
-    var pup = getvalue('pup');
+    var pup = getvalue("pup");
     if (fnl)pup="";//G0 Z0\n";
     var pdn = getvalue('pdn');
     if ($("spindleoff").checked){
@@ -1781,7 +1800,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     if (sxmax < sxmin) return cdiv;
     // deactivate tools and move to cut position
     div = div + "\n;SHAPE #" + num + "\n";
-    if (!closed)div+=pup+"\n";
+    if (!closed && isnotpoint)div+=pup+"\n";
     if (cmd == CMD_3D) {
         z = -z; // if 3D then move up
         if (z <= layerheight) {
@@ -1892,7 +1911,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         
 
         zz = z*1 + lenctr / len * dz;
-        if (_rampdown){
+        if (_ramp){
 			if (zz<z2){
 				// cut the lines and repeat
 				if (rampcut==0){
@@ -1978,7 +1997,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     }
     // close the loop
     if (closed)gcode1(f2 * fm3, X1, Y1, zz);
-    if (_rampdown && lastlayer){
+    if (_ramp && lastlayer){
 		for (var i=0;i<rampmoves.length;i++){
 			var rm=rampmoves[i];
 			gcode1(f2 * fm3, rm[0], rm[1],zz);
@@ -2084,8 +2103,8 @@ function gcode_verify(en = 0) {
     cglines = [];
     already = [];
     var c = $("myCanvas1");
-    ENGRAVE = $("emode0").checked ? 0 : 1;
-    cmd = getvalue('cmode');
+    ENGRAVE = 0;//$("emode0").checked ? 0 : 1;
+    //cmd = getvalue('cmode');
     harga = getvalue('matprice');
     var hargacut = getvalue('cutprice');
     //alert(c);
@@ -2111,8 +2130,13 @@ function gcode_verify(en = 0) {
     if (ink_images && ink_images.length>0){
 		for (var i=0;i<ink_images.length;i++){
 			if (cache_ink_img[i][0].complete){
-				imagedither(cache_ink_img[i][0],$("dithercanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
-			}
+                if (cmd==CMD_LASER) {
+                    imagedither(cache_ink_img[i][0],$("dithercanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
+                }
+                if (cmd==CMD_CNC){
+                    cncengrave(cache_ink_img[i][0],$("engrcanv"),ink_images[i][0],ink_images[i][1],ink_images[i][2],ink_images[i][3]);
+                }
+            }
 		}
 	}
     
@@ -2354,22 +2378,22 @@ function sortedgcode() {
             if (!gcodes[cs][7]){
 				// segment path back to last point depend on how many repeat
                 var rep=re;
-                if ($("enablecolor").checked) {
-                    //stro = sty["stroke"];
-                    var _rz = (getnumber("carvedp"));
-                    if (sty.domarking) {
-                        zdown = getnumber("carved")
-                        rep = Math.ceil(zdown / _rz);
-                        rep = Math.max(rep,zdown / getnumber("firstd"));
-                    } else                
-                    if (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket){
-                        rep=0;       
-                    } else if (sty.greentravel) {
-                        rep=1;
-                    } else {
-                        if ($("burn1").checked)rep++;
-                    }                
-                }
+
+                //stro = sty["stroke"];
+                var _rz = (getnumber("carvedp"));
+                if (sty.domarking) {
+                    zdown = getnumber("carved")
+                    rep = Math.ceil(zdown / _rz);
+                    rep = Math.max(rep,zdown / getnumber("firstd"));
+                } else                
+                if (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket){
+                    rep=0;       
+                } else if (sty.greentravel) {
+                    rep=1;
+                } else {
+                    if ($("burn1").checked)rep++;
+                }                
+                
 				if (sflip)rep++;
 				//rep=1;
 				if (rep&1) {
@@ -2404,7 +2428,7 @@ function sortedgcode() {
     var cuttab = 0;
     lastz = 0;
     var tabz = getnumber("tabc");
-    cmd = getvalue('cmode');
+    //cmd = getvalue('cmode');
     cuttab = cncdeep;
     if (cmd == CMD_CNC) {
         lastz = layerheight * 0.7;
@@ -2463,59 +2487,59 @@ function sortedgcode() {
             var iscut = 1;
             var iseng = 0;
             var strokedeep = sty.strokedeep;
-            if ($("enablecolor").checked) {
-                //stro = sty["stroke"];
 
-                var _rz = getnumber("firstd");
+            //stro = sty["stroke"];
 
-                if (sty.domarking) {
-                    f2 = getvalue('pltfeed') * 60;
-                    pw = getvalue('pltpw') * 255*0.01;
-                    pw=sty.markpower?sty.markpower:pw;
-                    zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
-                    _re = Math.ceil(zdown / _rz);
-                    vcuttab = -1 * zdown; //+tabz;
-                    zdown *= -1 / _re;
-                    iscut = 0;
-                    iseng = 1;
-                    se+=M3+ " S"+parseInt(pw)+"\n";
-                }
-                if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
-                    if ($("rasteroutline").checked) {
-                        pw = getvalue('rasteroutpw') * 255*0.01;
-                        se+=M3+ " S"+parseInt(pw)+"\n";
-                        if (cmd == CMD_LASER) _re = 1;
-                        else {
-                            zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
-                            _re = Math.ceil(zdown / _rz);
-                            vcuttab = -1 * zdown; //+tabz;
-                            zdown *= -1 / _re;
-                            //zdown=cncz;
-                        }
-                    } else _re = 0;
-                    f2 = getvalue('rasteroutfeed') * 60;
-                    iscut = 0;
-                    iseng = 1;
-                }
-                if (sty.greenskip) {
-                    _re = 0;
-                    iscut = 0;
-                }
-                if (sty.greentravel) {
-                    _re = 0;
-                    iscut = 0;
-                    skipz=20;
-                }
-                if (sty.dopocket) {
-                    _re = 0;
-                    iscut = 0;
-                }
-                if (sty.dovcarve) { // cyan == V carve
-                    _re = 1;
-                    docarve = 1;
-                    iscut = 0;
-                }
+            var _rz = getnumber("firstd");
+
+            if (sty.domarking) {
+                f2 = getvalue('pltfeed') * 60;
+                pw = getvalue('pltpw') * 255*0.01;
+                pw=sty.markpower?sty.markpower:pw;
+                zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
+                _re = Math.ceil(zdown / _rz);
+                vcuttab = -1 * zdown; //+tabz;
+                zdown *= -1 / _re;
+                iscut = 0;
+                iseng = 1;
+                se+=M3+ " S"+parseInt(pw)+"\n";
             }
+            if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
+                if ($("rasteroutline").checked) {
+                    pw = getvalue('rasteroutpw') * 255*0.01;
+                    se+=M3+ " S"+parseInt(pw)+"\n";
+                    if (cmd == CMD_LASER) _re = 1;
+                    else {
+                        zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
+                        _re = Math.ceil(zdown / _rz);
+                        vcuttab = -1 * zdown; //+tabz;
+                        zdown *= -1 / _re;
+                        //zdown=cncz;
+                    }
+                } else _re = 0;
+                f2 = getvalue('rasteroutfeed') * 60;
+                iscut = 0;
+                iseng = 1;
+            }
+            if (sty.greenskip) {
+                _re = 0;
+                iscut = 0;
+            }
+            if (sty.greentravel) {
+                _re = 0;
+                iscut = 0;
+                skipz=20;
+            }
+            if (sty.dopocket) {
+                _re = 0;
+                iscut = 0;
+            }
+            if (sty.dovcarve) { // cyan == V carve
+                _re = 1;
+                docarve = 1;
+                iscut = 0;
+            }
+            
             if (fnl) {
                 _re = 1;
                 var zdown = cncdeep;
@@ -2732,8 +2756,8 @@ function myFunction(scale1) {
     speedplunge=getvalue('pdn');
     
 	if (speedplunge.indexOf("F")>0)speedplunge=speedplunge.split(" F")[1].split(" ")[0];
-    speedretract=getvalue('pup');
-    speedtravel=getnumber('trav');	
+    speedretract=getvalue("pup");
+    speedtravel=getnumber("trav");	
     speedfeed=getnumber("feed");
 	if (speedretract.indexOf("F")>0){
 		zretract=speedretract.split(" Z")[1].split(" ")[0];
@@ -2757,7 +2781,7 @@ function myFunction(scale1) {
     scalex = scale;
     scaley = scale;
 
-    cmd = getvalue('cmode');
+    //cmd = getvalue('cmode');
     theme=$("isdarktheme").checked?1:0;
     cuttablen = getnumber("tablen") + getnumber("offset");
     cutevery = getnumber("tabevery");
@@ -2766,8 +2790,8 @@ function myFunction(scale1) {
     
     var pw1 = 1;
     var pw2 = 0; //getvalue('pwm');
-    var pup = getvalue('pup');
-    var pdn = getvalue('pdn');
+    var pup = getvalue("pup");
+    var pdn = getvalue("pdn");
     var f1 = speedtravel * 60;
     var f2 = speedfeed * 60;
     var det = 50 * detail * getnumber('feed') / (60.0 * getnumber("smooth"));
@@ -3135,7 +3159,7 @@ var mind=sqr(0.1);
 
 var ink_images=[];
 function pathstoText1(gx) {
-    var cmd = getvalue('cmode');
+    //cmd = getvalue('cmode');
 	cache_ink_img=[];	
 
     // try to support G2 and G3

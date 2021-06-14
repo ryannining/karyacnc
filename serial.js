@@ -1,5 +1,6 @@
 //console.log("App Running");
 //
+var cmd=CMD_CNC;
 var finishgcode="";
 var machinezero="G92";
 var machinepos="M114";
@@ -453,6 +454,7 @@ var connect = function(path) {
 var onConnect = function(connectionInfo) {
     //console.log(connectionInfo);
     connectionId = connectionInfo.connectionId;
+    isConnectedCSS.style.display="";
 };
 
 var disconnect = function() {
@@ -463,6 +465,7 @@ var onDisconnect = function(result) {
     if (result) {//console.log("Disconnected from the serial port");
     } else {//console.log("Disconnect failed");
     }
+    isConnectedCSS.style.display="none";
 };
 
 //var setOnReadCallback = function(callback) {
@@ -519,32 +522,42 @@ function changematerial() {
         setvalue("tabc", 0);
 
     }
-
+    modechange();
 }
 
-function modechange() {
-    val = getvalue("cmode");
-    if (val == CMD_LASER) {
+function modechange(f=0) {
+    var oldmode=f?-1:cmd;
+    cmd = getvalue("cmode");
+    if (oldmode==cmd)return;
+    
+    notlaserCSS.style.display="";
+    notcncCSS.style.display="";
+    notplasmaCSS.style.display="";
+
+    if (cmd == CMD_LASER) {
+        notlaserCSS.style.display="none";
         setvalue("pup", "");
         setvalue("pdn", "M3 S255");
     }
-    if (val == CMD_FOAM) {
+    if (cmd == CMD_FOAM) {
         setvalue("pup", "");
         setvalue("pdn", "M3 S255");
     }
-    if (val == CMD_CNC) {
+    if (cmd == CMD_CNC) {
+        notcncCSS.style.display="none";
         setvalue("pup", "G0 F3000 Z15");
         setvalue("pdn", "G0 F1800 Z=cncz");
         //setvalue("feed", "3");
         //setvalue("zdown", "10");
     }
-    if (val == CMD_PLASMA) { // need to change !!
+    if (cmd == CMD_PLASMA) { // need to change !!
+        notplasmaCSS.style.display="none";
         setvalue("pup", "G0 F3000 Z15");
         setvalue("pdn", "G0 F1800 Z=cncz");
         //setvalue("feed", "3");
         //setvalue("zdown", "10");
     }
-    if (val == 4) {
+    if (cmd == 4) {
         setvalue("pup", "");
         setvalue("pdn", "");
         //setvalue("feed", "30");
@@ -694,11 +707,20 @@ setclick("bthidden5", function() {
 });
 var hidd6 = true;
 setclick("btengrave", function() {
-    var d = 'none';
-    if (hidd6)
-        d = 'block';
-    hidd6 = !hidd6;
-    $("vars4").style.display = d;
+    if (cmd==CMD_CNC){
+        //window.open("http://localhost:" + port + "/engrave", 'prn', 'width=700,height=500');
+        var d = 'none';
+        if (hidd6)
+            d = 'block';
+        hidd6 = !hidd6;
+        $("vars5").style.display = d;
+    } else {
+        var d = 'none';
+        if (hidd6)
+            d = 'block';
+        hidd6 = !hidd6;
+        $("vars4").style.display = d;
+    }
 });
 var hidd2 = true;
 setclick("bthidden2", function() {
@@ -806,11 +828,11 @@ function updatestyle(k,va){
 function updatewmode(){
     dm=getvalue("wmode");
     if (dm==1){
-        sheetRuleA.style.display="none";
+        notsimpleCSS.style.display="none";
         $("vars3").style.marginLeft="230px";
     }
     if (dm==2){
-        sheetRuleA.style.display="";
+        notsimpleCSS.style.display="";
         $("vars3").style.marginLeft="330px";
     }
 }
@@ -826,6 +848,7 @@ function updateweb(sett){
 			updatestyle(k,sett[k]);
 		}
 	}
+    modechange();
     updatewmode();    
 }
 function updateprofile(){
@@ -941,6 +964,7 @@ function connectwebsock() {
             wsconnected = 0;
 			reconnectwebsock();
 			hideId("machine_ws");
+            isConnectedCSS.style.display="none";
 
         }
         // back to serial if error.
@@ -956,6 +980,7 @@ function connectwebsock() {
 			showId("machine_ws");
 			resetflashbutton();
 			autoreconnect=1;
+            isConnectedCSS.style.display="";
         }
         ;
 
@@ -968,6 +993,7 @@ function connectwebsock() {
             // disable autoreconnect
 			if (autoreconnect)reconnectwebsock();
 			hideId("machine_ws");
+            isConnectedCSS.style.display="none";
         }
         ;
         idleloop();
@@ -1158,6 +1184,16 @@ editorengcode.renderer.setShowGutter(false);
 //idleloop();
 
 var sheet = window.document.styleSheets[0];
-i=sheet.insertRule('.hideit2 { display: none; }', sheet.cssRules.length);
-var sheetRuleA=sheet.cssRules[i];
+i=sheet.insertRule('.notsimple { display: none; }', sheet.cssRules.length);
+var notsimpleCSS=sheet.cssRules[i];
+i=sheet.insertRule('.notlaser {  }', sheet.cssRules.length);
+var notlaserCSS=sheet.cssRules[i];
+i=sheet.insertRule('.notcnc {  }', sheet.cssRules.length);
+var notcncCSS=sheet.cssRules[i];
+i=sheet.insertRule('.notplasma {  }', sheet.cssRules.length);
+var notplasmaCSS=sheet.cssRules[i];
+i=sheet.insertRule('.isConnected {display:none  }', sheet.cssRules.length);
+var isConnectedCSS=sheet.cssRules[i];
+
 setevent("change", "wmode", updatewmode);
+modechange(1);

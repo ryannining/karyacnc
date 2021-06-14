@@ -74,12 +74,7 @@ function upload(fn) {
     }), fn, uploadjpg);
 }
 function uploadpreview() {
-    if ($("uploadpreview").checked){
-        begincompress(getvalue("pgcode"));
-        realupload(new Blob([new Int8Array(compress).buffer], {
-            type: "text/plain"
-        }), "preview.gcode", 0);
-    }
+
 }
 
 
@@ -161,66 +156,76 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     carvetime = 0;
     gcodecarve = "";
     var pw = parseInt(getvalue('vcarvepw') * 255*0.01);
-    segmentation = function (path, rev) {
-        PL = path.length / 2;
+    segmentation = function (nd,path, rev) {
+        PL = path.length / 2-1;
         var x1, y1, x2, y2, i, dx, dy, L, ovx,ovy,vx, vy, px, py;
         L=0;
-        for (var p = 0; p <= PL; p++) {
+		var firstp;
+        for (var p = -1; p <= PL; p++) {
             i = p;
-			if (i==PL)i==0;
             if (rev) {
-                i = PL - i - 1;
+                i = PL - i-1;
             }
+            if (i<0)i=PL-i;
+            if (i==PL)i=0;
+            
             x2 = path[i * 2 + 0];
             y2 = path[i * 2 + 1];
-
-            if (p > 0) {
-				var OL=L;
-				if (p>1){ // if last L ok, interpolate from previous vector, but on same position
-					opx=px;
-					opy=py;
-				}
+			
+            if (p >=0) {
                 L = (sqrt(sqr(x2 - x1) + sqr(y2 - y1)));
                 if (L > 0) {
+					ovx = vx;
+					ovy = vy;
                     vx = (x2 - x1) / L;
                     vy = (y2 - y1) / L;
-                    L = Math.floor(L / step) + 1;
-                    dx = (x2 - x1) / L;
-                    dy = (y2 - y1) / L;
-
-                    for (var j = 0; j < L; j++) {
-                        px = x1 + (j + .5) * dx;
-                        py = y1 + (j + .5) * dy;
-						if (OL>0){ // if last L ok, interpolate from previous vector, but on same position
-							opx=(px-opx);
-							opy=(py-opy);
-							OL=sqrt(sqr(opx)+sqr(opy));
-							NL = Math.floor(OL / step) + 1;
-							ndx = (opx) / NL;
-							ndy = (opy) / NL;
-							opx/=OL;
-							opy/=OL;
-							
-							//for (var nj = NL; nj >0; nj--) {
-							nj=1;
-							segsv.push([px-(nj-0.5)*ndx, py-(nj-0.5)*ndy, s-1, 0, 0, 0, 0, opx, opy, 0, 0]); //
-							//}
-							if (p==PL)return;
-							OL=0; 						
+                    if (p>=0){
+						L = Math.floor(L / step) + 1;
+						dx = (x2 - x1) / L;
+						dy = (y2 - y1) / L;
+						
+						for (var j = 0; j < L; j++) {
+							px = x1 + (j + .5) * dx;
+							py = y1 + (j + .5) * dy;
+							if (j==0 && opx){ // if last L ok, interpolate from previous vector, but on same position
+								var dot = (vx*ovx) + (vy*ovy);
+								cross = (vx * ovy) - (ovx * vy);	
+								if (cross>0.3){
+									dpx=(px-opx);
+									dpy=(py-opy);
+									OL=sqrt(sqr(dpx)+sqr(dpy));
+									NL = Math.floor(OL / step) + 1;
+									ndx = (dpx) / NL;
+									ndy = (dpy) / NL;
+									dpx/=OL;
+									dpy/=OL;
+									
+									//for (var nj = NL; nj >0; nj--) 
+									//{
+									nj=1;
+									segsv.push([px-(nj-0.5)*ndx, py-(nj-0.5)*ndy, s-1, 0, 0, 0, 0, dpx, dpy, 0, 0,nd]); //
+									//}
+									if (p==PL){
+										//segsv.push(firstp);
+										//return;
+										
+									}
+								}				
+							}
+							//           x   y  id cx cy cz r             fs
+							if (j==0 && p==0) firstp=[px, py, s, 0, 0, 0, 0, vx, vy, 0, 0,nd];
+							segsv.push([px, py, s, 0, 0, 0, 0, vx, vy, 0, 0,nd]); // last 3 is to store data
 						}
-                        //           x   y  id cx cy cz r             fs
-                        segsv.push([px, py, s, 0, 0, 0, 0, vx, vy, 0, 0]); // last 3 is to store data
+						s++;
                     }
-                    s++;
-                    x1 = x2;
-                    y1 = y2;
+					opx = px;
+					opy = py;
                 }
-            } else {
-                x1 = x2;
-                y1 = y2;
-                segsv.push([x1, y1, -1, x1, y1, 0, 0, 0, 0, 0, 0]); // last 3 is to store data
             }
+			x1 = x2;
+			y1 = y2;
         }
+        //segsv.push(firstp);
     }
     var sc = 1;
     if ($("flipx").checked) sc = 0;
@@ -230,7 +235,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
         var sc = path[i][1];
         if ($("flipx").checked) sc = 0;
         if ($("flipve").checked) sc = !sc;
-        segmentation(path[i][0], sc);
+        segmentation(i,path[i][0], sc);
     }
     // create toolpath
     // s= number of line
@@ -241,6 +246,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     var maxz = -maxr * ve;
     var ftrav = getvalue("trav") * 60;
     var ffeed = getvalue("vcfeed") * 60;
+    var lnd=-1;
     for (var i = 0; i < segsv.length; i++) {
         mr2 = 0; // d squared
         seg1 = segsv[i];
@@ -267,7 +273,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
                 if ((seg1[2] == -1) || (seg1[2] == seg2[2]) || (seg2[9] > k3)) continue; // if on same line dont do it
                 n++;
                 r3 = sqr(cx - seg2[0]) + sqr(cy - seg2[1]);
-                if (r3 < k2) {
+                if (r3 <= k2) {
                     mr2 = r;
                     break;
                 }
@@ -277,7 +283,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
         var r1 = r;
         var r2 = r;
         var fs = ffeed;
-        if (r > 1) fs = ffeed / (r);
+        //if (r > 1) fs = ffeed / (r);
         if (!mr2) {
             cz = maxz;
         } else {
@@ -292,13 +298,13 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
                     break;
                 }
             }
-            //r1=r;
-            //r2=r;
+            r1=r;
+            r2=r;
 
             // for other type bit must be different
             cz = -r * ve;
-            if (r > 3) fs = 3*ffeed / (r);
-            ///*
+            //if (r > 3) fs = 3*ffeed / (r);
+            /*
             seg2[3] = cx;
             seg2[4] = cy;
             seg2[5] = cz;
@@ -333,10 +339,11 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
         lx = seg1[3];
         ly = seg1[4];
         r = seg1[6] * dpm;
-        if (seg1[2] == -1) {
+        if (lnd!=seg1[11]){
             gc += "G0 Z4\n";
             gc += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
             gc += "G0 Z0\n";
+            lnd=seg1[11];
             continue;
         }
         // F is depend on 2*phi*radius
@@ -375,15 +382,19 @@ function drawvcarve() {
     ctx.strokeStyle = "#0000ff";
     ctx.setLineDash([]);
     ctx.beginPath();
-    ctx.strokeStyle = "#aaaaaa";
+    ctx.strokeStyle = "#aaaaaa44";
+    var lnd=-1;
+    var skip=0;
     for (var i = 0; i < segsv.length; i++) {
         var seg1 = segsv[i];
         cx = (seg1[3] + maxofs) * dpm;
         cy = (seg1[4] + maxofs) * dpm;
-        r = seg1[6] * dpm;
-        if (seg1[2] == -1) {
+        var r = seg1[6] * dpm;
+        if (seg1[11] == lnd) {
+        	lnd=seg1[11];
             continue;
         }
+        //r=1;
         ctx.moveTo(cx + r, cy);
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
 
@@ -396,28 +407,34 @@ function drawvcarve() {
         cx = (seg1[3] + maxofs) * dpm;
         cy = (seg1[4] + maxofs) * dpm;
         r = seg1[6] * dpm;
-        if (seg1[2] == -1) {
+        if (seg1[11] != lnd) {
             ctx.moveTo(cx, cy);
+            skip=0;
+            lnd=seg1[11];
             continue;
         }
-        ctx.lineTo(cx, cy);
+        if (!skip)ctx.lineTo(cx, cy);
+        skip=0;
 
     }
     ctx.stroke();
     ctx.beginPath();
-    ctx.strokeStyle = "#00ffff";
+    ctx.strokeStyle = "#FFFF0088";
+    lnd=-1;
     for (var i = 0; i < segsv.length; i++) {
         var seg1 = segsv[i];
         cx = (seg1[0] + maxofs) * dpm;
         cy = (seg1[1] + maxofs) * dpm;
         r = seg1[6] * dpm;
-        if (seg1[2] == -1) {
+        if (seg1[11] != lnd) {
             ctx.moveTo(cx, cy);
+            lnd=seg1[11];
             continue;
         }
         ctx.lineTo(cx, cy);
     }
     ctx.stroke();
+
 }
 var cglines = [];
 var realofs=0;
@@ -578,7 +595,7 @@ function pocketgcode() {
     var re = Math.ceil(carvedeep/rz);
     var re1 = Math.ceil(carvedeep/rz1);
     if (re1<re)re1=Math.ceil(carvedeep/getnumber("clstep")); // try to auto the repeat number
-    if (cmd==CMD_LASER)re1=re;
+    if (cmd==CMD_LASER)re1=re=1;
     //var rz = carvedeep / re;
     //var rz1 = carvedeep / re1;
     var zup=Math.min(getvalue('safez')*1,zretract);
@@ -1029,3 +1046,313 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 		ctx.drawImage(img1, (ofx+maxofs)*dpm, (ofy+maxofs)*dpm,rwidth*dpm,rheight*dpm);
 	}
 };
+
+function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
+    var maxi=0;
+    var mini=255;
+    var bmd=[];
+    var bmdz=[];
+    var bmw=0;
+    var bmh=0;
+    var mw=0;
+    var mh=0;
+    var gcodes=[];
+    
+	var feedmethod=getvalue("egfeedmethod");
+	var endmill=getnumber("egendmill");
+	var r=getnumber("egdia")*0.5;
+    //ofx+=r;
+    //ofy+=r;
+	var feed=getnumber("egspeed")*60;
+    var skip=1;
+    var rep1=getnumber("egrepeat1");
+    var rep2=getnumber("egrepeat2");
+	var c = canv;
+	var img = imgpic;
+	
+	c.width=getnumber("egwidth");
+	c.height=getnumber("egheight");
+	var ctx = c.getContext("2d");
+	var flip=$("egflip").checked;
+	var d=0;//getvalue("dia")*0.75;
+	var dx=0;
+	var dy=0;
+	
+	ctx.fillStyle="#FFFFFF";
+	ctx.fillRect(0, 0, c.width, c.height);
+	ctx.drawImage(img, dx, dy,c.width,c.height);
+	//if ($("egsharpen").checked)sharpen(ctx,c.width,c.height,0.5);
+	
+	var bm = ctx.getImageData(0, 0, c.width, c.height);
+	// invert colors
+	bmw=c.width;
+	bmh=c.height;
+	var i,j;
+	var row=bmw*4;
+	// make it grayscale first
+	var gamma=getnumber("eggamma");
+	mw=rwidth*1.0;
+	mh=rheight*1.0;
+	var stepx=mw/bmw;
+	var stepy=mh/bmh;
+	//var mh=mw*c.height/c.width;
+	var dotscale=mw/bmw;
+	
+	var ystep=mh/bmh; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
+	bmd=[];
+	for (var j = 0; j < bmh; j += 1) {
+		for (var i = 0; i < bmw; i += 1) {
+			var a=j*row;
+			if (flip)a+=(row-i*4); else a+=i*4;
+			oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
+			oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+			//alp=(bm.data[a+3])/255.0;
+			//oldr=(oldr*(alp))+(255*(1-alp));
+
+			var a=j*bmw+i;
+			//oldr=255-oldr;
+			maxi=Math.max(maxi,oldr);
+			mini=Math.min(mini,oldr);
+			bmd[a]=oldr;
+			bmdz[a]=oldr;
+		}
+	}
+	var sc=255/(maxi-mini);
+	if (!$("egnormal").checked){
+		sc=1;
+		mini=0;
+	}
+	for (var j = 0; j < bmh; j += 1) {
+		for (var i = 0; i < bmw; i += 1) {
+			var a=j*bmw+i;		
+			oldr=(bmd[a]-mini)*sc;
+			bmd[a]=oldr;
+			a=j*row+i*4;
+			//oldr=255-oldr;
+			//bm.data[a]=oldr;
+			//bm.data[a+1]=oldr;
+			//bm.data[a+2]=oldr;
+			//bm.data[a+3]=255;
+		}
+	}
+	// dither it
+	
+	var zdown=getnumber("egzdown");
+	var zup=getnumber("egzup");
+    var zdelta=zdown+zup;
+	var waktu=0;
+	var w0=0;
+	var w1=0;
+	var row=bmw;
+
+	var stepx=mw/bmw;
+	var stepy=mh/bmh;
+
+	var r2=sqr(r);
+	var rx=r/stepx;
+	var ry=r/stepy;
+	var rd=[];
+	var ri=0;
+	var ve=1.0/Math.tan(getnumber("egvangle")*Math.PI/360);
+	var rv=ve*r;
+	// generate tool shape for ballnose
+	
+	for (var ji=-Math.ceil(ry);ji<=ry;ji++){
+		for (var ii=-Math.ceil(rx);ii<=rx;ii++){
+			// flat bit
+			//var addr=Math.floor(ji*row)+Math.floor(ii);
+			var addr=ji*row+ii;
+			if (endmill==2){
+				lr=sqr(ii*stepx)+sqr(ji*stepy);
+				if (lr<=r2)rd.push([addr,0,ii,ji]);
+			}			
+			// v bit
+			if (endmill==0){
+				lr=sqr(ii*stepx)+sqr(ji*stepy);
+				c2=sqrt(lr)*ve; //  0  1         2  3  4          5 
+				if (lr<=r2)rd.push([addr,c2,ii,ji]);
+			}			
+			// ballnose
+			if (endmill==1){
+				lr=sqr(ii*stepx)+sqr(ji*stepy);
+				c2=r2-(lr); //  0  1         2  3  4          5 
+				if (c2>=0)rd.push([addr,r-sqrt(c2),ii,ji]);
+			}			
+		}
+	}
+
+	zscale=zdelta/255.0;
+	gcodes=[];
+	var n=0;
+	var lx,ly,lz;
+	lz=0;
+	var totalz=0;
+	var total=mw*mh/stepy;
+	var zmline=[];
+	rx=0;
+	ry=0;
+	for (var j = 0; j < bmh; j += 1) {
+		var zmax=0;
+		for (var i = 0; i < bmw; i += 1) {
+			// lets check surrounding area
+			var cp=j*row+i;
+			var zm=1000;
+			for (var k=0;k<rd.length;k++){
+				var rdk=rd[k];
+				//skip if outside tool
+				if ((j+rdk[3]<0) || (j+rdk[3]>bmh) || 
+					(i+rdk[2]<0) || (i+rdk[2]>bmw) )continue;	
+				//
+				zp=(255-bmd[cp+rdk[0]])*zscale+rdk[1];
+				if (zp<zm)zm=zp;
+				
+			}
+			// if roughing then add up 1mm
+			if (skip>1)zm-=1;
+			if (zm>zmax)zmax=zm;
+			bmdz[cp]=zm;
+			totalz+=Math.abs(lz-zm);	
+			lz=zm;
+			a=cp*4;
+			oldr=zm/zscale;
+			bm.data[a]=255-oldr;
+			bm.data[a+1]=255-oldr;
+			bm.data[a+2]=255-oldr;
+			bm.data[a+3]=oldr<5?0:255;
+		}
+		zmline.push(zmax);
+	}
+
+	// from center rectangular ccw
+	if (feedmethod==2) {
+		var rep1=getnumber("egrepeat1");
+		var rep2=getnumber("egrepeat2");
+		var zm=0;
+		var sx=Math.ceil(bmw/2);
+		var sy=Math.ceil(bmh/2);
+		var w=0;
+		var wmin=Math.min(sx,sy);
+		var dy=Math.abs(sy-wmin);
+		var dx=Math.abs(sx-wmin);
+		var xp,yp;
+        var sfz=" Z"+getvalue("safez");
+        var pwr=" S"+Math.round(2.55*getvalue("vcarvepw"));
+		gcodes.push("M3 "+pwr+"\nG0 F2000 "+sfz+"\nG1 F"+feed+"\n");
+		var lz,lx,a,sxc,rep,oxp,oyp;
+        lz=0;
+        var moves=[];
+		storegcode=function (j,i,m,fp,ff){
+			if (i<0)i=0;
+			if (j<0)j=0;
+			if (i>=bmw)i=bmw-1;
+			if (j>=bmh)j=bmh-1;
+			//fp=1;
+			
+			a=j*bmw+i;		
+			xp=i*stepx+ofx;
+			yp=j*stepy+ofy;
+			// tolerance = 0.05mm 
+			zm=Math.round(bmdz[a]*zsc*40)*0.025;
+			if (ff){
+				//moves.push([xp,yp,zup- Math.min(lz,zm)]);
+				//gcodes.push("G0 Z"+mround(zup- Math.min(lz,zm))+"\nG0 X"+mround(xp+ofx)+" Y"+mround(yp+ofy));
+			}
+			//if (zm==undefined)zm=0;
+			//if (zm==NaN)zm=0;
+			var g1;
+			//if (m)g1="G1 Y"+mround(yp+ofy); else g1="G1 X"+mround(xp+ofx);
+			//gcodes.push(g1+" Z"+mround(-zm));return;
+
+			if ((lz!=zm) || fp){
+				if (oxp)moves.push([oxp,oyp,zup-lz]);//gcodes.push(lx+" Z"+mround(zup-lz));
+				//gcodes.push(g1+" Z"+mround(zup-zm));
+				moves.push([xp,yp,zup-zm]);
+				lz=zm;
+			}
+			oxp=xp;
+			oyp=yp;
+		}
+		var climb=1;
+		while (w<=wmin){
+		
+			//make rectangular by P = w
+			rep=rep2;
+			if (w==0)rep=rep1;
+			for (var r=0;r<rep;r++){
+				zsc=(r+1)/rep;
+				// climb mill
+				xp=(sx+(climb?+w+dx:-w-dx));//if (xp>=bmw)xp=bmw-1;
+				yp=(sy-w-dy);//if (yp<0)yp=0; 
+				if (w==0 && r==0)gcodes.push("G0 "+sfz+"\nG0 X"+mround(xp*stepx+ofx)+" Y"+mround(yp*stepy+ofy));
+				if (climb){
+					// top right to left top
+					lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx+w+dx));
+					// top left to bottom left 
+					lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
+					// botton left bottom right
+					lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
+					// bottom right to top right
+					lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
+				} else {
+					// top left to right top
+					lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx-w-dx));
+					// top right to bottom left 
+					lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
+					// botton right bottom left
+					lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
+					// bottom left to top left
+					lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
+				}
+			}
+			w++;
+		}
+	}	// generate gcode
+    ox=-100;
+    oy=-100;
+    oz=3;
+    var onair=0;
+    var lonair=0;
+    zup*=0.8;
+    for (var i=0;i<moves.length-1;i++){
+        var m=moves[i];
+        var gx="";
+        var gy="";
+        var gz="";
+        if (ox!=m[0])gx=" X"+mround(m[0]);
+        if (oy!=m[1])gy=" Y"+mround(m[1]);
+        if (oz!=m[2])gz=" Z"+mround(m[2]);
+        if (gx+gy+gz!=""){
+            onair=m[2]>zup;
+            if (!onair || (onair!=lonair)) {
+                if (onair!=lonair)gcodes.push("G1 "+gx+gy+" Z"+mround(oz));
+                gcodes.push("G1 "+gx+gy+gz);
+                ox=m[0];
+                oy=m[1];
+                oz=m[2];
+            }
+            lonair=onair;
+        }
+    
+    }
+
+	
+
+	ctx.putImageData(bm, 0, 0);
+	gcodes.push("G0 "+sfz+"\nM3 S0\n");
+	t=(total+totalz)/(feed/60);	
+	var s=gcodes.join("\n");
+	if (skip==1){
+        bitmaptime+=t;
+        gc = getvalue("engcode") + s;
+        setvalue("engcode", gc);
+
+        var img1 = new Image();
+        img1.src = canv.toDataURL();
+        img1.onload=function(){
+            var c = $("myCanvas1");
+            var ctx = c.getContext("2d");		
+            ctx.drawImage(img1, (ofx+maxofs)*dpm, (ofy+maxofs)*dpm,rwidth*dpm,rheight*dpm);
+        }
+            
+	}
+}

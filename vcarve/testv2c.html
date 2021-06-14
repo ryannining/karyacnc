@@ -31,6 +31,7 @@ function segmentation(path,rev){
 	ctx.beginPath();
 	var x1,y1,x2,y2;
 	PL=path.length/2;
+	L=0;
 	for (var p=0;p<PL;p++){
 		i=p;
 		ii=p+1;
@@ -43,7 +44,11 @@ function segmentation(path,rev){
 		x2=path[i*2+0]*scale+move;
 		y2=path[i*2+1]*scale+move;
 		if (p>0){
-
+			var OL=L;
+			if (p>1){ // if last L ok, interpolate from previous vector, but on same position
+				opx=px;
+				opy=py;
+			}
 			L=(sqrt(sqr(x2-x1)+sqr(y2-y1)));
 			if (L>0){
 				ctx.moveTo(x1,y1);
@@ -61,6 +66,23 @@ function segmentation(path,rev){
 					//ctx.moveTo(px,py);
 					//ctx.arc(px,py,1,0,2*Math.PI);
 					//ctx.stroke();
+					if (OL>0){ // if last L ok, interpolate from previous vector, but on same position
+							opx=(px-opx);
+							opy=(py-opy);
+							OL=sqrt(sqr(opx)+sqr(opy));
+							NL = Math.floor(OL / step) + 1;
+							ndx = (opx) / NL;
+							ndy = (opy) / NL;
+							opx/=OL;
+							opy/=OL;
+							
+							//for (var nj = NL; nj >0; nj--) {
+							nj=1;
+							segs.push([px-(nj-0.5)*ndx, py-(nj-0.5)*ndy, s-1, 0, 0, 0, 0, opx, opy, 0, 0]); //
+							//}
+							if (p==PL)return;
+							OL=0; 						
+						}
 					segs.push([px,py,s,0,0,0,0,vx,vy,0,0]); // last 3 is to store data
 				}
 				s++;
