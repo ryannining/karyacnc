@@ -1474,7 +1474,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         }
     
     }
-    var lastx,lasty;
+    var lastx,lasty,lastr;
 	var donerings=[];
     execgrup=function(ig){
 		var g=grups[ig];
@@ -1491,9 +1491,10 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	checkdis=function(ig){
 		var g=grups[ig];
 		var r1=moves[g[0]][3]-1;
-		var r2=moves[g[1]][3]-1;
+		//var r2=moves[g[1]][3]-1;
 		var maxdis=0;
-		for (var i=g[0];i<=g[1];i++){
+		if (donerings[donerings.length-1][3]<r1) return 1000000;
+		for (var i=g[0];i<=g[1];i+=3){
 				var m=moves[i];
 				var mindis=1000000;
 				for (var j=donerings.length-1;j>0;j-=3){
