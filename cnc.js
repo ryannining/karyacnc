@@ -1486,7 +1486,8 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	execgrup(0);
     // start from 1, grup no 0, always execute first
     var halfw=(rwidth+rheight)*15;
-    for (var i=1;i<grups.length;i++){
+    var cnt=grups.length-1;
+    while (cnt>0){
 		var dis=null;
 		var sel=-1;
 		for (var j=1;j<grups.length;j++){
@@ -1506,7 +1507,8 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		}
 		if (sel>0){
 			execgrup(sel);
-		}
+			cnt--;
+		} else lastr=100000;
 	}
 
 	
