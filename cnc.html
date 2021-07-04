@@ -1,0 +1,533 @@
+<html>
+
+<body id=body style='font-family:arial'>
+<div style='width:600px;background:#eeffaa;border-radius:10px;padding:10px;border:1px solid green;margin:auto;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);'>
+<style>
+#xdecode { 
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+    }
+</style>
+<table width=100%><tr valign=top><td>
+<div>LOAD GCODE AND PREVIEW</div><hr>
+<input type="file" id="inputfile"/><br>
+View angle<input id=angle value="0,55" size=5><button onclick="init2d(0);rendergcode();">View</button>
+<div>Preview:</div>
+<canvas id="myCanvas" width="200" height="200" style="border:1px solid #d3d3d3;"></canvas>
+<table width=200><tr><td>
+<td align=right>
+</table>
+<td>
+<div>UPLOAD TO MACHINE</div><hr>
+Machine IP <input id=wsip size=14 class=saveit value="">
+<div id=info>Info:</div>
+Job name <input id=jobname size=10 value=gcode><br>
+<button id=btclick onclick="upload()">Upload</button> <progress id=progress1 min="0" max="100" value="0" style="width:100px">0% complete</progress><br>
+
+
+</table>
+<hr>You can also just copy paste the Gcode Text here.
+</div>
+<script>
+var wsconnected=0;
+</script>
+<script src="websocket.js"></script>
+
+<script src="gcodex.js" type="text/javascript" charset="utf-8"></script>
+<script>
+
+
+var c = document.getElementById("myCanvas");
+var ctx = c.getContext("2d");
+
+
+function $(id) {
+    return document.getElementById(id);
+}
+function getvalue(el) {
+    return $(el).value;
+}
+
+function setvalue(el, val) {
+    $(el).value = val;
+}
+function log(text) {
+    $('log').value += text + '\n';
+}
+
+
+function setevent(ev, bt, act) {
+    $(bt).addEventListener(ev, act, false);
+}
+
+function setclick(bt, act) {
+    setevent("click", bt, act);
+}
+
+function replaceAll(str, find, replace) {
+    return str.replace(new RegExp(find, 'g'), replace);
+}
+var packages=[];
+var compress=[];
+function write(w,s){
+	if (s>0)compress.push(w & 255);
+	if (s>1)compress.push((w >> 8) & 255);
+	if (s>2)compress.push((w >> 16) & 255);	
+}
+var holdpos=0;
+function hold(){
+	holdpos=compress.length-1;
+}
+
+var sendg1="";
+function sendg(){
+	var s=prompt("GCODE Command",sendg1);
+	if (s) {
+		sendg1=s;
+		sendgcode(s);
+	}
+}
+function executedecode(){
+    var bt = document.getElementById('btexecute');
+    if (bt.innerHTML == "Print") {
+        execute(editor.getValue());
+        bt.innerHTML = "Stop";
+    } else {
+        stopit();
+        sendgcode("M2");
+    }
+}
+function pause() {
+    var bt = document.getElementById('btpause');
+    if (bt.innerHTML == "PAUSE") {
+        running = 0;
+        sendgcode("M3 S200 P10");
+        bt.innerHTML = "RESUME";
+    } else {
+        running = 1;
+        sendgcode("M3 S200");
+        nextgcode();
+        bt.innerHTML = "PAUSE";
+    }
+}
+function hardstop() {
+    sendgcode("M2");
+    sendgcode("G0 Z2 F5000");
+    sendgcode("G0 X0 Y0");
+    px=0;
+	py=0;
+	pz=2;
+    stopit();
+}
+
+function init2d(v){
+  //return;	
+  if (!v){
+	  v=(getvalue("angle")).split(",");
+	  zdeg=v[0]*1;
+	  xdeg=v[1]*1;
+  } else zdeg+=v;	
+  sinz=Math.sin(zdeg*0.0174533);
+  cosz=Math.cos(zdeg*0.0174533);
+  sinx=Math.sin(xdeg*0.0174533);
+  cosx=Math.cos(xdeg*0.0174533);
+}
+init2d(0);
+
+function transform(v3d){
+	var x2=v3d[0]*cosz-v3d[1]*sinz;
+	var y1=v3d[0]*sinz+v3d[1]*cosz;
+	
+	var y2=y1*cosx-v3d[2]*sinx;
+	var z2=y1*sinx+v3d[2]*cosx;
+	
+	return [x2,y2,z2];
+	
+}
+
+
+function rendergcode(){
+	if (overtex.lentgh==0)return;
+	xmax=-100000;
+	xmin=100000;
+	ymax=-100000;
+	ymin=100000;
+	zmax=-100000;
+	zmin=100000;
+	
+
+	var vertex=[];
+	lines=[];
+	var vc=[];
+	var lv=0;
+	// 3d to 2d transformation + lighting
+	for (var i=0;i<overtex.length;i++){
+		var ov=overtex[i];
+        //ov[3]=-ov[3];
+		var tr=transform(ov);
+		
+		var tx=tr[0];
+		var ty=tr[2];
+		// save bounding box
+
+		xmax=Math.max(xmax,tx);		
+		xmin=Math.min(xmin,tx);		
+		ymax=Math.max(ymax,ty);		
+		ymin=Math.min(ymin,ty);		
+		zmax=Math.max(zmax,tr[1]);		
+		zmin=Math.min(zmin,tr[1]);
+		// save vertex
+		vc=[tx,ty,-tr[1]];
+		vertex.push(vc);
+		if (ov[4]==1 && lv){
+			// cheap fast lighting
+			dx=lv[0]-vc[0];
+			dz=lv[1]-vc[1];
+			dy=lv[2]-vc[2];
+			
+			l=-ov[3];//Math.abs(150*dx/Math.sqrt(dx*dx+dy*dy));
+			// if there is extruder value then save the line
+			p=vertex.length-1;
+			zz=0;//-Math.min(vertex[p][2],vertex[p-1][2]);
+			lines.push([p-1,p,l,zz]);
+		}
+		lv=vc;
+	}
+	ctx.clearRect(0, 0, 200, 200);
+    ///*/ nice background
+	var grd=ctx.createLinearGradient(0,0,0,200);
+	grd.addColorStop(0,"#88bbFF");
+	grd.addColorStop(0.35,"white");
+	grd.addColorStop(0.55,"#eeaa33");
+	grd.addColorStop(1,"#bb7711");
+
+	ctx.fillStyle="white";
+	ctx.fillRect(0,0,200,200);
+	//*/
+  
+	//calculate scale
+	var zs=200.0/(zmax-zmin);
+	var xs=194.0/(xmax-xmin);
+	var ys=194.0/(ymax-ymin);
+	
+	var sc = Math.min(xs,ys);
+	
+	var xa=-xmin*xs+(97-0.5*(xmax-xmin)*sc);
+	var za=-zmin*zs;
+	var ya=-ymin*ys+(97-0.5*(ymax-ymin)*sc);
+	var rp=1;Math.floor(2000/(ozmax-ozmin))+1;
+	
+	// draw the bed grid
+	/*
+	var gmin=Math.floor(xmin/10)-15;
+	var gmax=Math.floor(xmax/10)+15;
+	
+	ctx.strokeStyle="rgba(255,0,0,0.25)";
+	for (var i=gmin;i<gmax;i++){
+		var v1=transform([i*10,ymin*14,0]);
+		var v2=transform([i*10,ymax*14,0]);
+		var x1=v1[0]*sc+xa+3;
+		var x2=v2[0]*sc+xa+3;
+		var y1=v1[2]*sc+ya+3;
+		var y2=v2[2]*sc+ya+3;
+		ctx.beginPath();
+		ctx.moveTo(x1, y1);
+		ctx.lineTo(x2, y2);
+		ctx.stroke();
+		
+		
+	}
+	var gmin=Math.floor(zmin/10)-15;
+	var gmax=Math.floor(zmax/10)+15;
+	
+	for (var i=gmin;i<gmax;i++){
+		var v1=transform([xmin*14,i*10,0]);
+		var v2=transform([xmax*14,i*10,0]);
+		var x1=v1[0]*sc+xa+3;
+		var x2=v2[0]*sc+xa+3;
+		var y1=v1[2]*sc+ya+3;
+		var y2=v2[2]*sc+ya+3;
+		ctx.beginPath();
+		ctx.moveTo(x1, y1);
+		ctx.lineTo(x2, y2);
+		ctx.stroke();
+		
+		
+	}
+	*/
+	
+	// actual rendering
+	var front=[];
+	for (var i=1;i<lines.length-1;i++){
+		var v1=vertex[lines[i][0]];
+		var v2=vertex[lines[i][1]];
+		// light color
+		ll=getColor(lines[i][2]+v1[2]*zs+za);
+		// transform to canvas size
+		var x1=v1[0]*sc+xa+3;
+		var x2=v2[0]*sc+xa+3;
+		var y1=v1[1]*sc+ya+3;
+		var y2=v2[1]*sc+ya+3;
+		for (var j=0;j<rp;j++){
+			ctx.beginPath();
+			ctx.strokeStyle=ll;
+			ctx.moveTo(x1, y1-j);
+			ctx.lineTo(x2, y2-j);
+			ctx.stroke();
+		}
+		
+	}
+    ctx.font = "11px Arial";
+    ctx.fillStyle = "white";
+    sx = mround((oxmax - oxmin) / 10);
+    sy = mround((oymax - oymin) / 10);
+    sz = mround((ozmax - ozmin) / 10);
+	gram=filament/(333*eScale);
+mtr=mround(filament/(eScale*1000));
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm, E: "+mtr+"mt",3,11);
+	ctx.fillText("W:" + mround(gram) + " gr, Time:"+mround(printtime/55+1)+"m", 3, 23);
+    ctx.fillStyle = "black";
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm, E: "+mtr+"mt",2,10);
+	ctx.fillText("W:" + mround(gram) + " gr, Time:"+mround(printtime/55+1)+"m", 2, 22);
+	
+}
+
+var sp=0;
+var pv=0;
+var cs="";
+function showProgress(){
+}
+
+var t0=performance.now();
+function aftercompress(){
+	var t1=performance.now();
+	c1=mround((t1-t0)/1000);
+	lines.sort(function (b,a){return a[3]-b[3];})
+	rendergcode();
+	t0=performance.now();
+	c2=mround((t0-t1)/1000);
+	
+	$("info").innerHTML=mround(totalgcode/1000)+" > "+mround(compress.length/1000)+" Kbyte<br>Ratio "+mround(totalgcode/compress.length)+"<br>Compress "+c1+"seconds"+"<br>Render "+c2+"seconds";
+	//progressBar.value=0;
+	var s="";
+	for (var i=0;i<compress.length;i++){s+=String.fromCharCode(compress[i]);}
+	cs=JSON.stringify(s);
+}
+function urlopen(s){
+  var xhr = new XMLHttpRequest();
+  xhr.open( "GET","/"+s,true);
+  xhr.onload = function(e) {alert(xhr.response);};
+  xhr.send();
+}
+function startprint(){
+  urlopen("startprint");
+}
+function stopprint(){
+  urlopen("stopprint");
+}
+function pauseprint(){
+  urlopen("pauseprint");
+}
+function resumeprint(){
+  urlopen("resumeprint");
+}
+function heating(){
+  urlopen("heating");
+}
+function cooling(){
+  urlopen("cooling");
+}
+function homing(){
+  urlopen("home");
+}
+
+var mbody=document.getElementById("body");
+var gcode="";
+function myFunction(v) {
+	if (document.activeElement==$("decode"))return;
+	gcode=v.clipboardData.getData('text/plain');
+	if (gcode){
+		t0=performance.now();
+		begincompress(gcode,showProgress,aftercompress);
+		//$("gcode").innerHTML=s;
+	}
+}
+
+function decode2(){
+	editor.setValue(decode(),-1);
+}
+mbody.addEventListener("paste", myFunction);
+mbody.ondrop = function(e) {
+    this.className = '';
+    e.preventDefault();
+
+    var file = e.dataTransfer.files[0],
+        reader = new FileReader();
+		reader.onload = function(event) {
+        begincompress(event.target.result,showProgress,aftercompress);
+    };
+    console.log(file);
+    reader.readAsText(file);
+
+    return false;
+}
+mbody.ondragover = function() {
+    return false;
+};
+mbody.ondragend = function() {
+    return false;
+};
+
+var wemosd1=1;
+var uploadimage=1;
+function upload(){
+	var fn=getvalue("jobname")+".gcode";
+	function uploadjpg(){
+		if (!uploadimage)return;
+		c=$("myCanvas");
+		c.toBlob(function(blob){
+			realupload(blob,fn+".jpg",0);
+			},"image/jpeg",0.4);
+	}
+	realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),fn,uploadjpg);
+}
+
+function realupload(gcode,fname,callback) {
+    var xhr = new XMLHttpRequest();
+    form = new FormData();
+    form.append("file1", gcode, fname);
+
+
+    xhr.open(
+        "POST",
+        "http://"+getvalue("wsip")+"/upload",
+        true
+    );
+
+	//xhr.setRequestHeader('Access-Control-Allow-Headers', '*');
+    //xhr.setRequestHeader('Content-type', 'application/ecmascript');
+    //xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
+	
+    var progressBar = $('progress1');
+    xhr.onload = function(e) {
+        progressBar.value = 0;
+        if (!wemosd1) alert(xhr.response);
+		//resetflashbutton();
+		if (callback)callback();
+    };
+    // Listen to the upload progress.
+    xhr.upload.onprogress = function(e) {
+        if (e.lengthComputable) {
+            progressBar.value = (e.loaded / e.total) * 100;
+            progressBar.textContent = progressBar.value; // Fallback for unsupported browsers.
+        }
+    };
+    xhr.send(form);
+}
+
+function oldrealupload(gcode,jpg) {
+  var xhr = new XMLHttpRequest();
+  form = new FormData();
+  if (!wemosd1){
+	  sx = mround((oxmax - oxmin) / 100);
+	  sy = mround((oymax - oymin) / 100);
+	  sz = mround((ozmax - ozmin) / 100);
+	  gram=filament/(333*eMul);
+
+	  form.append("info",$("uinfo").innerHTML);
+	  form.append("fname",$("fname").value);
+	  form.append("kat",$("ukategori").value);
+	  form.append("sx",sx);
+	  form.append("sy",sy);
+	  form.append("sz",sz);
+	  form.append("se",mround(filament/(1000*eMul)));
+	  form.append("tp",mround(printtime));
+	  form.append("gram",mround(gram));
+	  form.append("file2",jpg,"jpeg.jpg");
+	}
+  form.append("file1",gcode,"gcode.gcode");
+  
+  
+  xhr.open(
+            "POST",
+            "/upload",
+            true
+        );
+  var progressBar = $('progress1');
+  xhr.onload = function(e) {
+	progressBar.value = 0;if(!wemosd1)alert(xhr.response);
+  };
+  // Listen to the upload progress.
+  xhr.upload.onprogress = function(e) {
+		if (e.lengthComputable) {
+		  progressBar.value = (e.loaded / e.total) * 100;
+		  progressBar.textContent = progressBar.value; // Fallback for unsupported browsers.
+		}
+  };
+
+  xhr.send(form);
+}
+function oldupload(){
+	c=$("myCanvas");
+	c.toBlob(function(blob){
+		realupload(new Blob([new Int8Array(compress).buffer],{type:"text/plain"}),blob);
+		},"image/jpeg",0.15);
+}
+
+function printhub(){
+	var gid=prompt("Please enter object #ID");
+	var bt=$("btload");
+	if (gid){
+		bt.innerHTML=='Loading.';
+		var oReq = new XMLHttpRequest();
+		oReq.open("GET", "http://karyahub3d.xyz/download?act=Download&gid="+gid, true);
+		oReq.responseType = "arraybuffer";
+
+	  oReq.onprogress = function(e) {
+			if (bt.innerText=='Loading...')bt.innerText=='Loading.';else bt.innerText=='Loading...';
+	  };
+		oReq.onload = function (oEvent) {
+			bt.innerText=='Load GCODE';
+		  var arrayBuffer = oReq.response; // Note: not oReq.responseText
+		  if (arrayBuffer) {
+			var byteArray = new Uint8Array(arrayBuffer);
+			compress=byteArray;
+			decode2();
+			begincompress(decodes,showProgress,aftercompress);
+		  }
+		};
+
+		oReq.send(null);	
+	}
+}
+var control = document.getElementById("inputfile"); 
+    control.addEventListener("change", function(event){ 
+        var reader = new FileReader();      
+        reader.onload = function(event){
+            var contents = event.target.result;  
+            begincompress(contents,showProgress,aftercompress);   
+            //document.getElementById('putcontentshere').value = contents;            
+        };      
+        reader.onerror = function(event){
+            console.error("File could not be read! Code " + event.target.error.code);
+        };      
+        console.log("Filename: " + control.files[0].name);
+        reader.readAsText(control.files[0]);        
+    }, false);
+
+
+
+
+
+var cs="";
+compress=[];
+//for (var i=0;i<cs.length;i++){compress.push(cs.charCodeAt(i));}
+//decode();begincompress(editor.getValue());
+
+</script>
+
+</body>
+</html>

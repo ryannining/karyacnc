@@ -1076,6 +1076,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	var feedmethod=getvalue("egfeedmethod");
 	var endmill=getnumber("egendmill");
 	var r=getnumber("egdia")*0.5;
+	var toolr=r;
     //ofx+=r;
     //ofy+=r;
 	var feed=getnumber("egspeed")*60;
@@ -1296,7 +1297,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         if (zm==NaN)zm=sfzv;
 
         if ((lz!=zm) || fp){
-            if (oxp)moves.push([oxp,oyp,zup-lz]);//gcodes.push(lx+" Z"+mround(zup-lz));
+            //if (oxp)moves.push([oxp,oyp,zup-lz,sr]);//gcodes.push(lx+" Z"+mround(zup-lz));
             //gcodes.push(g1+" Z"+mround(zup-zm));
             moves.push([xp,yp,zup-zm,sr]);
             lz=zm;
@@ -1315,15 +1316,16 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         moves.push([ofx,ofy,sfzv]);
         x1=ofx+xc*stepx;
         y1=ofy+yc*stepy;
-        moves.push([x1,y1,sfzv]);
-        moves.push([x1,y1,-zc/2]);
-        moves.push([x1,y1,0]);
-        moves.push([x1,y1,-zc]);
+        moves.push([x1,y1,sfzv,0]);
+        moves.push([x1,y1,-zc/2,0]);
+        moves.push([x1,y1,0,0]);
+        moves.push([x1,y1,-zc,0]);
         var stepmin=Math.min(stepx,stepy);
         var steps=3*wmax+1;
         var adap=getnumber("egminstep");
         var lastring;
         var lastsc=0;
+        var rings=[];
         for (var ri=1;ri<steps;ri++){
             // keliling dengan jari2 dari ri-1 ke ri
             stepde=2*Math.PI;
@@ -1390,6 +1392,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
                 sr=ri;
                 storegcode(yp,xp,1,1,0);
 			}
+			rings[ri]=nowring;
             lastring=nowring;
 			w++;
             lastsc=stepsc;
@@ -1440,7 +1443,8 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	// collect grup of moves separated by travel
 	var grups=[];
 	var grup=[];
-	var start=[];
+	var start=0;
+	var lasti=0;
 	zup=zup*0.9;
     for (var i=0;i<moves.length-1;i++){
         var m=moves[i];
@@ -1455,60 +1459,84 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
             if (!onair || (onair!=lonair)) {
                 if (onair!=lonair){
 					if (grup.length>4){
-						grups.push([start,[ox,oy],0,grup]);
+						grups.push([start,lasti,0,grup]);
 					}
 					grup=["G0 "+gx+gy+" Z"+mround(oz)];
-					start=[m[0],m[1],m[3]];
+					start=i;
                 }
                 grup.push("G1 "+gx+gy+gz);
                 ox=m[0];
                 oy=m[1];
                 oz=m[2];
+                lasti=i;
             }
             lonair=onair;
         }
     
     }
-    var lastx,lasty,lastr;
+    var lastx,lasty;
+	var donerings=[];
     execgrup=function(ig){
 		var g=grups[ig];
 		g[2]=1; // mark as done
-		st=g[0];
-		lastx=g[1][0];
-		lasty=g[1][1];
-		lastr=st[2]; // last ring
+		var st=moves[g[0]];
+		lastx=moves[g[1]][0];
+		lasty=moves[g[1]][1];
 		
 		gcodes.push("G0 "+sfz);
 		gcodes.push("G0 X"+mround(st[0])+" Y"+mround(st[1]));
 		gcodes.push(g[3].join("\n")); 
+		for (var i=g[0];i<=g[1];i++)donerings.push(moves[i]);
 	}
-	
+	checkdis=function(ig){
+		var g=grups[ig];
+		var r1=moves[g[0]][3]-2;
+		var r2=moves[g[1]][3]-2;
+		var maxdis=0;
+		for (var i=g[0];i<=g[1];i++){
+				var m=moves[i];
+				var mindis=1000000;
+				for (var j=donerings.length-1;j>0;j--){
+					var d=donerings[j];
+					if (d[3]>=r1){
+						var dis=sqr(m[0]-d[0])+sqr(m[1]-d[1]);
+						mindis=Math.min(dis,mindis);
+					} else break;
+				}
+				maxdis=Math.max(maxdis,mindis);
+		} 
+		return sqrt(maxdis);
+	}
 	execgrup(0);
-    // start from 1, grup no 0, always execute first
-    var halfw=(rwidth+rheight)*15;
-    var cnt=grups.length-1;
-    while (cnt>0){
-		var dis=null;
-		var sel=-1;
-		for (var j=1;j<grups.length;j++){
-			var g=grups[j];
-			if (g[2]==1)continue; // already run
-			cdis=100*sqrt(sqr(lastx-g[1][0])+sqr(lasty-g[1][1]));
-			var rn=g[0][2];
-			if (rn==lastr)cdis+=10000000; // urgent
-			if (rn==lastr+1 )cdis+=cdis<(halfw)?100:10000000; // semi urgent
-			if (rn>lastr+1)continue; // skip
-			if (rn<lastr)cdis+=rn*100000; // sort
-			
-			if (dis==null || cdis<dis){
-				sel=j;
-				dis=cdis;
+    var sortgrup=1;
+
+	if (sortgrup) {
+		// start from 1, grup no 0, always execute first
+		var cnt=grups.length-1;
+		while (cnt>0){
+			var dis=null;
+			var sel=-1;
+			for (var j=1;j<grups.length;j++){
+				var g=grups[j];
+				var m0=moves[g[0]];
+				var m1=moves[g[1]];
+
+				if (g[2]==1)continue; // already run
+				cdis=0;//sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+				// check if this ok
+				cdis+=10*checkdis(j);
+				if (dis==null || cdis<dis){
+					sel=j;
+					dis=cdis;
+				}
+			}
+			if (sel>0){
+				execgrup(sel);
+				cnt--;
 			}
 		}
-		if (sel>0){
-			execgrup(sel);
-			cnt--;
-		} else lastr=100000;
+	} else {
+		for (var i=1;i<grups.length;i++)execgrup(i);
 	}
 
 	
