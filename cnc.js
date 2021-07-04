@@ -1329,7 +1329,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         for (var ri=1;ri<steps;ri++){
             // keliling dengan jari2 dari ri-1 ke ri
             stepde=2*Math.PI;
-            stepsc=Math.ceil(1.25*ri*stepde);
+            stepsc=Math.ceil(1*ri*stepde);
             stepde/=stepsc;
             deg=0;
             if (isclimb)stepde=-stepde;
@@ -1340,7 +1340,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 			for (var j=0;j<stepsc;j++){ 
 				zsc=1;
                 var lr;
-                if (ri<6)
+                if (ri<3)
                     r=(ri-1)+j/stepsc;
                 else {
                     lr=lastring[Math.floor(lastsc*j/stepsc)]
@@ -1352,7 +1352,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
                 zp=Math.round(getzi(xp,yp)*40)*0.025;
                 
                 
-                if (ri>5) {
+                if (ri>2) {
                     // compare with previous ring if to deep reduce
                     var dz=Math.abs(lr[2]-zp);
                     if (zp<-zup)r=1; else
@@ -1490,13 +1490,13 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	}
 	checkdis=function(ig){
 		var g=grups[ig];
-		var r1=moves[g[0]][3]-2;
-		var r2=moves[g[1]][3]-2;
+		var r1=moves[g[0]][3]-1;
+		var r2=moves[g[1]][3]-1;
 		var maxdis=0;
 		for (var i=g[0];i<=g[1];i++){
 				var m=moves[i];
 				var mindis=1000000;
-				for (var j=donerings.length-1;j>0;j--){
+				for (var j=donerings.length-1;j>0;j-=3){
 					var d=donerings[j];
 					if (d[3]>=r1){
 						var dis=sqr(m[0]-d[0])+sqr(m[1]-d[1]);
