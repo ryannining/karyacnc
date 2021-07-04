@@ -1130,7 +1130,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 
 			var a=j*bmw+i;
 			//oldr=255-oldr;
-			maxi=Math.max(maxi,oldr);
+			if (oldr<254)maxi=Math.max(maxi,oldr);
 			mini=Math.min(mini,oldr);
 			bmd[a]=oldr;
 			bmdz[a]=oldr;

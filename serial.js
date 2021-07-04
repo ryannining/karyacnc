@@ -22,6 +22,9 @@ var gcstyle = [];
 var preview=0;
 var waitok=0;
 var waitokH=0;
+var karya_ready=0;
+var hasCOM=0;
+
 function millis(){
 	var date = new Date(); 
 	return date.getTime();
@@ -941,7 +944,7 @@ function connectwebsock() {
         ws.close();
 		return;
     }
-    h = getvalue("wsip");
+    h = getcncip();
     if (h) {
         var lastcomtype = comtype;
         comtype = 1;
@@ -1118,8 +1121,9 @@ function resizedisplay(){
 	$('myCanvas1td').width=nw+50;
 	$('myCanvas1div').style.width=nw+50;
 	$('myCanvas1div').style.height=nh;
-    refreshgcode();
-
+    if ($("regcodeX").checked)karya_ready=1;
+    if (karya_ready)refreshgcode();
+    karya_ready=1;
 }
 window.onresize = function() {
     setTimeout(resizedisplay,600);
@@ -1134,10 +1138,11 @@ setTimeout(function() {
     //if (h)setvalue("wsip",h);
     startserver();
     window.onresize();
-    if (text1)
-        refreshgcode();
+    //if (text1) refreshgcode();
+    
     hideId("gcodepreview");
     hideId("gcodeinit");
+    karya_ready=0;
 }, 2000);
 
 setclick("btzoom", window.onresize);
@@ -1172,6 +1177,9 @@ setclick("btjob4", function() {
 	executegcodes(jobs.join("\n"));
 });
 
+window.addEventListener('DOMContentLoaded', (event) => {
+    //karya_ready=1;
+});
 
 var editorgcode = ace.edit("gcode");
 //editorgcode.setReadOnly(true);
@@ -1194,6 +1202,8 @@ i=sheet.insertRule('.notplasma {  }', sheet.cssRules.length);
 var notplasmaCSS=sheet.cssRules[i];
 i=sheet.insertRule('.isConnected {display:none  }', sheet.cssRules.length);
 var isConnectedCSS=sheet.cssRules[i];
+i=sheet.insertRule('.mustCOM {'+(hasCOM?"":"display:none")+'  }', sheet.cssRules.length);
+var ismustCOMCSS=sheet.cssRules[i];
 
 setevent("change", "wmode", updatewmode);
 modechange(1);
