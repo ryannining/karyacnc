@@ -1,30 +1,41 @@
 function replaceAll(str, find, replace) {
     return str.replace(new RegExp(find, 'g'), replace);
 }
-
-function urlopen(s) {
+function getcncip(){
+    var cncip=getvalue("wsip");
+    if ($("wsdirect").checked) cncip="192.168.4.1"; 
+    if (cncip.split(".").length==2)cncip="192.168."+cncip;
+    return cncip;
+}
+function urlopen(s,cb_ok,cb_err) {
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", "http://" + getvalue("wsip") + "/" + s, true);
+    xhr.open("GET", "http://" + getcncip() + "/" + s, true);
     xhr.onload = function (e) {
         //alert(xhr.response);
         $("alert1").innerHTML = w;
-
+        if (cb_ok)cb_ok();
     };
+    xhr.addEventListener('error', function (e) {
+            $("alert1").innerHTML="ERROR";
+            if (cb_err)cb_err();
+        });
     xhr.send();
 }
 
 function startprint() {
     //urlopen("startprint");
-    urlopen("startjob?jobname=/" + getvalue("jobname") + ".gcode");
-    hideId("btuploadstart");
-    hideId("btuploadresume");
-    showId2("btuploadstop");
-    showId2("btuploadpause");
-    stopinfo = 1;
-    etime = new Date();
-    console.log("Start " + etime);
-    setvalue("applog", getvalue("applog") + "Start " + etime + "\n");
-    waitforwait=1;
+    urlopen("startjob?jobname=/" + getvalue("jobname") + ".gcode",
+    function(){
+        hideId("btuploadstart");
+        hideId("btuploadresume");
+        showId2("btuploadstop");
+        showId2("btuploadpause");
+        stopinfo = 1;
+        etime = new Date();
+        console.log("Start " + etime);
+        setvalue("applog", getvalue("applog") + "Start " + etime + "\n");
+        waitforwait=1;
+    },null);
 }
 
 function pauseprint() {
@@ -86,7 +97,7 @@ function realupload(gcode, fname, callback) {
 
     xhr.open(
         "POST",
-        "http://" + getvalue("wsip") + "/upload",
+        "http://" + getcncip() + "/upload",
         true
     );
 
@@ -95,6 +106,10 @@ function realupload(gcode, fname, callback) {
     //xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
 
     var progressBar = $('progress1');
+    xhr.addEventListener('error', function (e) {
+            progressBar.value = 100;
+            $("alert1").innerHTML="Upload ERROR";
+        });
     xhr.onload = function (e) {
         progressBar.value = 0;
         if (!wemosd1) alert(xhr.response);
@@ -158,16 +173,16 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
     var pw = parseInt(getvalue('vcarvepw') * 255*0.01);
     segmentation = function (nd,path, rev) {
         PL = path.length / 2-1;
-        var x1, y1, x2, y2, i, dx, dy, L, ovx,ovy,vx, vy, px, py;
+        var x1, y1, x2, y2, i, dx, dy, L, opx,opy,ovx,ovy,vx, vy, px, py;
         L=0;
 		var firstp;
-        for (var p = -1; p <= PL; p++) {
+        for (var p = -1; p <= PL+1; p++) {
             i = p;
             if (rev) {
-                i = PL - i-1;
+                i = PL - i;
             }
             if (i<0)i=PL-i;
-            if (i==PL)i=0;
+            if (i>=PL)i-=PL;
             
             x2 = path[i * 2 + 0];
             y2 = path[i * 2 + 1];
@@ -190,7 +205,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 							if (j==0 && opx){ // if last L ok, interpolate from previous vector, but on same position
 								var dot = (vx*ovx) + (vy*ovy);
 								cross = (vx * ovy) - (ovx * vy);	
-								if (cross>0.3){
+								if (Math.abs(cross)>0.5){
 									dpx=(px-opx);
 									dpy=(py-opy);
 									OL=sqrt(sqr(dpx)+sqr(dpy));
@@ -205,16 +220,16 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 									nj=1;
 									segsv.push([px-(nj-0.5)*ndx, py-(nj-0.5)*ndy, s-1, 0, 0, 0, 0, dpx, dpy, 0, 0,nd]); //
 									//}
-									if (p==PL){
-										//segsv.push(firstp);
-										//return;
-										
-									}
 								}				
 							}
+							if (p>PL){
+								segsv.push(firstp);
+								return;
+								
+							}
 							//           x   y  id cx cy cz r             fs
-							if (j==0 && p==0) firstp=[px, py, s, 0, 0, 0, 0, vx, vy, 0, 0,nd];
-							segsv.push([px, py, s, 0, 0, 0, 0, vx, vy, 0, 0,nd]); // last 3 is to store data
+							if (j==0 && !firstp) firstp=segsv[segsv.length-1];
+							if (p>0)segsv.push([px, py, s, 0, 0, 0, 0, vx, vy, 0, 0,nd]); // last 3 is to store data
 						}
 						s++;
                     }
@@ -225,7 +240,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			x1 = x2;
 			y1 = y2;
         }
-        //segsv.push(firstp);
+        segsv.push(firstp);
     }
     var sc = 1;
     if ($("flipx").checked) sc = 0;
@@ -691,7 +706,7 @@ function pocketgcode() {
     var oy=0;
     var lz=0;
     var la=0;
-    var climbcut=$("cutclimb").checked;
+    var climbcut=$("carveclimb").checked;
     already=[];
     for (var j = 0; j < sglines.length; j++) {
         gline = sglines[j][0];
@@ -1072,6 +1087,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	
 	c.width=getnumber("egwidth");
 	c.height=getnumber("egheight");
+    var isclimb=getchecked("egclimb");
 	var ctx = c.getContext("2d");
 	var flip=$("egflip").checked;
 	var d=0;//getvalue("dia")*0.75;
@@ -1085,6 +1101,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	
 	var bm = ctx.getImageData(0, 0, c.width, c.height);
 	// invert colors
+    var isinvert=getchecked("eginvert");
 	bmw=c.width;
 	bmh=c.height;
 	var i,j;
@@ -1105,7 +1122,9 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 			var a=j*row;
 			if (flip)a+=(row-i*4); else a+=i*4;
 			oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
-			oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+            if (isinvert)oldr=255-oldr;
+            oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+            
 			//alp=(bm.data[a+3])/255.0;
 			//oldr=(oldr*(alp))+(255*(1-alp));
 
@@ -1222,57 +1241,163 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		}
 		zmline.push(zmax);
 	}
+    getz=function (ix,iy){
+        if (ix<0 || iy<0 || ix>=bmw || iy>=bmh )return -1;
+        return bmdz[iy*bmw+ix];
+    }
+    getzi=function(x,y){
+        var ix=Math.floor(x);
+        var iy=Math.floor(y);
+        var rx=x-ix;
+        var ry=y-iy;
+        var z1=getz(ix,iy);
+        if (rx<0.001 && ry<0.001) return z1; 
+        var z2=getz(ix+1,iy);
+        // interpolate
+        z1=z2*rx+z1*(1-rx);
+        
+        var z3=getz(ix,iy+1);
+        var z4=getz(ix+1,iy+1);
+        // interpolate
+        z3=z4*rx+z3*(1-rx);
+        // interpolate
+        z1=z3*ry+z1*(1-ry);
+        return z1;
+    }
 
 	// from center rectangular ccw
-	if (feedmethod==2) {
-		var rep1=getnumber("egrepeat1");
-		var rep2=getnumber("egrepeat2");
-		var zm=0;
-		var sx=Math.ceil(bmw/2);
-		var sy=Math.ceil(bmh/2);
-		var w=0;
-		var wmin=Math.min(sx,sy);
-		var dy=Math.abs(sy-wmin);
-		var dx=Math.abs(sx-wmin);
-		var xp,yp;
-        var sfz=" Z"+getvalue("safez");
-        var pwr=" S"+Math.round(2.55*getvalue("vcarvepw"));
-		gcodes.push("M3 "+pwr+"\nG0 F2000 "+sfz+"\nG1 F"+feed+"\n");
-		var lz,lx,a,sxc,rep,oxp,oyp;
-        lz=0;
-        var moves=[];
-		storegcode=function (j,i,m,fp,ff){
-			if (i<0)i=0;
-			if (j<0)j=0;
-			if (i>=bmw)i=bmw-1;
-			if (j>=bmh)j=bmh-1;
-			//fp=1;
-			
-			a=j*bmw+i;		
-			xp=i*stepx+ofx;
-			yp=j*stepy+ofy;
-			// tolerance = 0.05mm 
-			zm=Math.round(bmdz[a]*zsc*40)*0.025;
-			if (ff){
-				//moves.push([xp,yp,zup- Math.min(lz,zm)]);
-				//gcodes.push("G0 Z"+mround(zup- Math.min(lz,zm))+"\nG0 X"+mround(xp+ofx)+" Y"+mround(yp+ofy));
-			}
-			//if (zm==undefined)zm=0;
-			//if (zm==NaN)zm=0;
-			var g1;
-			//if (m)g1="G1 Y"+mround(yp+ofy); else g1="G1 X"+mround(xp+ofx);
-			//gcodes.push(g1+" Z"+mround(-zm));return;
+    var rep1=getnumber("egrepeat1");
+    var rep2=getnumber("egrepeat2");
+    var zm=0;
+    var sx=Math.ceil(bmw/2);
+    var sy=Math.ceil(bmh/2);
+    var w=0;
+    var wmin=Math.min(sx,sy);
+    var dy=Math.abs(sy-wmin);
+    var dx=Math.abs(sx-wmin);
+    var xp,yp;
+    var sfzv=getvalue("safez");
+    var sfz=" Z"+sfzv;
+    var pwr=" S"+Math.round(2.55*getvalue("vcarvepw"));
+    gcodes.push("M3 "+pwr+"\nG0 F"+mround2(60*getnumber("trav"))+" "+sfz+"\nG1 F"+feed+"\n");
+    var lz,lx,a,sxc,rep,oxp,oyp;
+    lz=0;
+    var moves=[];
+    var climb=1;
+    var sr=0;
+    storegcode=function (j,i,m,fp,ff,zp=null){
+	
+        xp=i*stepx+ofx;
+        yp=j*stepy+ofy;
+        // tolerance = 0.05mm 
+        
+        zm=zp==null?Math.round(getzi(i,j)*40)*0.025:zp;
 
-			if ((lz!=zm) || fp){
-				if (oxp)moves.push([oxp,oyp,zup-lz]);//gcodes.push(lx+" Z"+mround(zup-lz));
-				//gcodes.push(g1+" Z"+mround(zup-zm));
-				moves.push([xp,yp,zup-zm]);
-				lz=zm;
+        if (zm==NaN)zm=sfzv;
+
+        if ((lz!=zm) || fp){
+            if (oxp)moves.push([oxp,oyp,zup-lz]);//gcodes.push(lx+" Z"+mround(zup-lz));
+            //gcodes.push(g1+" Z"+mround(zup-zm));
+            moves.push([xp,yp,zup-zm,sr]);
+            lz=zm;
+        }
+        oxp=xp;
+        oyp=yp;
+    }
+    zup*=0.8;
+	if (feedmethod==3) {
+        // maximum radius to cover the image
+        var wmax=sqrt(sqr(sx)+sqr(sy));
+        w=0;
+        var xc=sx;
+        var yc=sy;
+        var zc=getzi(xc,yc);
+        moves.push([ofx,ofy,sfzv]);
+        x1=ofx+xc*stepx;
+        y1=ofy+yc*stepy;
+        moves.push([x1,y1,sfzv]);
+        moves.push([x1,y1,-zc/2]);
+        moves.push([x1,y1,0]);
+        moves.push([x1,y1,-zc]);
+        var stepmin=Math.min(stepx,stepy);
+        var steps=3*wmax+1;
+        var adap=getnumber("egminstep");
+        var lastring;
+        var lastsc=0;
+        for (var ri=1;ri<steps;ri++){
+            // keliling dengan jari2 dari ri-1 ke ri
+            stepde=2*Math.PI;
+            stepsc=Math.ceil(1.25*ri*stepde);
+            stepde/=stepsc;
+            deg=0;
+            if (isclimb)stepde=-stepde;
+            var nowring=[];
+            // first pass is get the radius from center
+            var radi=[];
+            var isin=0;
+			for (var j=0;j<stepsc;j++){ 
+				zsc=1;
+                var lr;
+                if (ri<6)
+                    r=(ri-1)+j/stepsc;
+                else {
+                    lr=lastring[Math.floor(lastsc*j/stepsc)]
+                    r=lr[3]+1;
+                }
+                // check first R
+				xp=(sx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
+				yp=(sy+r*Math.sin(deg)); //if (yp<0)yp=0;
+                zp=Math.round(getzi(xp,yp)*40)*0.025;
+                
+                
+                if (ri>5) {
+                    // compare with previous ring if to deep reduce
+                    var dz=Math.abs(lr[2]-zp);
+                    if (zp<-zup)r=1; else
+                    {
+                        if (dz>0.8){
+                            r=0;
+                        } else {
+                            r=sqrt(1-sqr(dz));
+                        }
+                    }
+                    r=Math.max(r,adap)+lr[3];
+					//r=r*1.2;
+                }
+                radi.push(r);
+                deg+=stepde;
+
 			}
-			oxp=xp;
-			oyp=yp;
+            // smooth the radius
+
+            getr=function (n,rs,df){
+                if (n>=stepsc)n-=stepsc;
+                if (n<0)n+=stepsc;
+                return radi[n]*rs;
+            }
+            deg=0;
+            for (var j=0;j<stepsc;j++){
+                var r1=radi[j];
+                var r=r1+getr(j-1,0.5,r1)+getr(j-2,0.3,r1)+getr(j-3,0.15,r1)
+                        +getr(j+1,0.5,r1)+getr(j+2,0.3,r1)+getr(j+3,0.15,r1) ;
+                r/=2.9;
+				xp=(sx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
+				yp=(sy+r*Math.sin(deg)); //if (yp<0)yp=0;
+                if (xp>=0 && xp<bmw  && yp>=0 && yp<bmh) isin=1;
+                zp=Math.round(getzi(xp,yp)*40)*0.025;
+                deg+=stepde;
+                nowring.push([xp,yp,zp,r,zp]);
+                sr=ri;
+                storegcode(yp,xp,1,1,0);
+			}
+            lastring=nowring;
+			w++;
+            lastsc=stepsc;
+            if (!isin)break;
 		}
-		var climb=1;
+	}	// generate gcode
+	if (feedmethod==2) {
+		
 		while (w<=wmin){
 		
 			//make rectangular by P = w
@@ -1312,7 +1437,11 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
     oz=3;
     var onair=0;
     var lonair=0;
-    zup*=0.8;
+	// collect grup of moves separated by travel
+	var grups=[];
+	var grup=[];
+	var start=[];
+	zup=zup*0.9;
     for (var i=0;i<moves.length-1;i++){
         var m=moves[i];
         var gx="";
@@ -1324,8 +1453,14 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         if (gx+gy+gz!=""){
             onair=m[2]>zup;
             if (!onair || (onair!=lonair)) {
-                if (onair!=lonair)gcodes.push("G1 "+gx+gy+" Z"+mround(oz));
-                gcodes.push("G1 "+gx+gy+gz);
+                if (onair!=lonair){
+					if (grup.length>4){
+						grups.push([start,[ox,oy],0,grup]);
+					}
+					grup=["G0 "+gx+gy+" Z"+mround(oz)];
+					start=[m[0],m[1],m[3]];
+                }
+                grup.push("G1 "+gx+gy+gz);
                 ox=m[0];
                 oy=m[1];
                 oz=m[2];
@@ -1334,6 +1469,45 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         }
     
     }
+    var lastx,lasty,lastr;
+    execgrup=function(ig){
+		var g=grups[ig];
+		g[2]=1; // mark as done
+		st=g[0];
+		lastx=g[1][0];
+		lasty=g[1][1];
+		lastr=st[2]; // last ring
+		
+		gcodes.push("G0 "+sfz);
+		gcodes.push("G0 X"+mround(st[0])+" Y"+mround(st[1]));
+		gcodes.push(g[3].join("\n")); 
+	}
+	
+	execgrup(0);
+    // start from 1, grup no 0, always execute first
+    var halfw=(rwidth+rheight)*15;
+    for (var i=1;i<grups.length;i++){
+		var dis=null;
+		var sel=-1;
+		for (var j=1;j<grups.length;j++){
+			var g=grups[j];
+			if (g[2]==1)continue; // already run
+			cdis=100*sqrt(sqr(lastx-g[1][0])+sqr(lasty-g[1][1]));
+			var rn=g[0][2];
+			if (rn==lastr)cdis+=10000000; // urgent
+			if (rn==lastr+1 )cdis+=cdis<(halfw)?100:10000000; // semi urgent
+			if (rn>lastr+1)continue; // skip
+			if (rn<lastr)cdis+=rn*100000; // sort
+			
+			if (dis==null || cdis<dis){
+				sel=j;
+				dis=cdis;
+			}
+		}
+		if (sel>0){
+			execgrup(sel);
+		}
+	}
 
 	
 

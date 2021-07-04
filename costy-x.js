@@ -1202,7 +1202,7 @@ function draw_leads(){
 	}
 	ctx.stroke();
 }
-
+var firstline=0;
 function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,warn,cutpos) {
     //cmd = getvalue('cmode');
     cuttabz = getnumber("tabc");
@@ -1284,6 +1284,18 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum,flip,shift,war
     var lenctr = 0;
     var iscut = 0;
     ctx.beginPath();
+    if (firstline){
+        firstline=0;
+        lx=(lx + maxofs) * dpm;
+        ly=(ly + maxofs) * dpm;
+        ctx.setLineDash([]);
+        ctx.moveTo(lx-15, ly);
+        ctx.lineTo(lx+15, ly);
+        ctx.moveTo(lx, ly-15);
+        ctx.lineTo(lx, ly+15);
+        ctx.strokeStyle = "#FFFF00";
+        ctx.stroke();
+    }
     ctx.setLineDash([]);
     ctx.moveTo(lx, ly);
     lx2 = lx;
@@ -1777,7 +1789,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     var pdn = getvalue('pdn');
     if ($("spindleoff").checked){
         pup=(hasfnl?"":getspindleoff())+pup;
-        pdn=((firstlayer && !fnl)?getspindleon():"")+pdn;        
+        pdn=((!closed || (firstlayer && !fnl ))?getspindleon():"")+pdn;        
     }
     var f1 = speedtravel * 60;
     var rep = getinteger('repeat');
@@ -2110,6 +2122,18 @@ function gcode_verify(en = 0) {
     //alert(c);
     lx = 0;
     ly = 0;
+    var mz="";
+    var fz="";
+    var f1 = speedtravel * 60;
+   
+    if ($("usestart").checked){
+        var ss=getvalue("startat").split(",");
+        lx=ss[0]*1;
+        ly=ss[1]*1;
+        mz="G92 X"+mround2(lx)+" Y"+mround2(ly)+"\n";
+        fz="G0 F"+mround(f1)+" X"+mround2(lx)+" Y"+mround2(ly)+"\n";
+    }
+    firstline=1;
     jmltravel = 0;
     var ctx = c.getContext("2d");
     var sfinal = 0;
@@ -2197,11 +2221,10 @@ function gcode_verify(en = 0) {
     mat = text.options[text.selectedIndex].innerText;
     sc = 1;
     if ($("flipx").checked) sc = -1;
-    var f1 = speedtravel * 60;
     pup1 = getvalue("pup") + '\n';
     startgcode="M3";
     finishgcode =getspindleoff();//($("spindleoff").checked)?getspindleoff():"";
-    finishgcode += pup1+"\nG0 F"+mround(f1)+" X0 Y0\n";
+    finishgcode += pup1+fz?fz:("\nG0 F"+mround(f1)+" X0 Y0\n");
     if (cmd==CMD_CNC)finishgcode+="G0 Z"+getvalue("finalz")+ '\nM5\n';
     if (cmd==CMD_LASER)finishgcode+=pup1;
     setvalue("pgcode", pup1 + M3+ " S255\nG0 F12000 X" + mround(sc * xmin) + " Y" + mround(ymin) + 
@@ -2223,7 +2246,7 @@ function gcode_verify(en = 0) {
     //var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
     var re = getvalue("repeat");
     //menit = menit * re;
-    var g = getvalue("engcode") + gcodecarve;
+    var g = mz+getvalue("engcode") + gcodecarve;
 
     if (g) setvalue("engcode", g + pup1);//m3 s0\n");
 
@@ -2267,6 +2290,11 @@ function sortedgcode() {
     var sm = -1;
     var lx = 0;
     var ly = 0;
+    if ($("usestart").checked){
+        var ss=getvalue("startat").split(",");
+        lx=ss[0]*1;
+        ly=ss[1]*1;
+    }
     e1 = 0;
     sortit = 1;
 	var cs=-1;
@@ -2644,9 +2672,9 @@ function sortedgcode() {
     }
     xystart = [0, 0];
     if ($("usestart").checked) xystart = getvalue("startat").split(",");
-    var mz = "G92 Z0 X" + xystart[0] + " Y" + xystart[1] + "\n";
+    var mz = "G92 X" + xystart[0] + " Y" + xystart[1] + "\n";
     if (isgrbl) mz = machinezero;
-    if ($("zerobefore").checked) s = mz + "\n" + s;
+    if ($("usestart").checked) s = mz + "\n" + s;
     s = s + getvalue("pup");
     var f1 = speedtravel * 60;
     //s = s + '\nG0 F' + f1 + ' Y' + xystart[1] + ' \n G0 X' + xystart[1] + '\n';
@@ -3219,6 +3247,9 @@ function pathstoText1(gx) {
     var fx=0;
     var fy=0;
     var cx,cy;
+    var xzero=0;
+    var yzero=0;
+    var czero=0;
     var sum=0;
     var ln=0;
     var yellow,dyellow,outer;
@@ -3354,9 +3385,27 @@ function pathstoText1(gx) {
         var sty=paths[i][9];
         var stro=sty["stroke"];
         var cuttab = (stro == "#800000");
+        var centerpos = (stro == "#008080");
         if (cuttab){
 			var cp=paths[i][0];
 			if (cp.length>=2) cuttabs.push([cp[0],cp[cp.length-1]]);
+            continue;
+        }        
+        if (centerpos){
+            var ps=paths[i][0];
+            var sx=0;
+            var sy=0;
+            
+            for (j in ps){
+                var p=ps[j];
+                sx+=p[0];
+                sy+=p[1];
+            }
+            if (ps.length>0){
+                xzero+=sx;
+                yzero+=sy;
+                czero+=ps.length;                
+            }
             continue;
         }        
         if (paths[i][0].length>0){
@@ -3572,6 +3621,12 @@ function pathstoText1(gx) {
             }
         }
     }
+
+    if (czero>0){
+        xzero/=czero;
+        yzero/=czero;
+    }
+    setvalue("startat",mround2(xzero)+","+mround2(yzero));
     t1 += '" stroke="none" fill="black" fill-rule="evenodd"/></svg>';
     sty=defaultsty;
     sty.num=gcstyle.length;

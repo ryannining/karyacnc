@@ -94,12 +94,11 @@
 							</select></td></tr>
 							<tr class=notsimple><td colspan=4><hr></td></tr>							
 							<tr class=notsimple><td colspan=2>Curve Quality </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
-							<tr class=notsimple><td colspan=2>Zero on start </td><td colspan=2><input size=2 type=checkbox id=zerobefore  class=saveit></td></tr>
-							<tr class=notsimple><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=5 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
+							<tr class=notsimple><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=12 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
 							<tr class="notsimple notlaser"><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="0"></td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Auto tab in (mm,max tab)</td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
-							<tr><td colspan=2>Min. area cenvert drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Min area convert drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr class="notsimple notlaser notcnc"><td colspan=2>Lead in (mm,Ain,Aout) </td><td colspan=2><input id=leadin class=saveit size=5 value="3,40,90"> <input size=2 type=checkbox id=useleadin class=saveit></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Ramp down </td><td colspan=2><input size=2 type=checkbox id=rampdown class=saveit></td></tr>
@@ -154,6 +153,7 @@
 							<tr class="notlaser notplasma"><td colspan=2>Slow pass</td><td colspan=2><input size=2 id=firstd value=1 class=saveit>mm</td></tr>
 							<tr class="notlaser notplasma notsimple"><td colspan=2>Slow threshold</td><td colspan=2><input size=2 id=slowth value=10 class=saveit>x</td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Fast pass</td><td colspan=2><input size=2 id=carvedp value=1 class=saveit>mm</td></tr>
+							<tr class="notlaser notplasma notsimple"><td colspan=2>Climb cut</td><td colspan=2><input type=checkbox id=carveclimb checked class=saveit></td></tr>
 						</table></td>
                         <td align=left class="notlaser notplasma"><img src="pocketinfo.png">
                             <hr><b>V CARVING (<font color=#00FFFF style="background:black;margin:2px">Stroke is Aqua</font>)</b><br>
@@ -178,8 +178,8 @@
 								<option value=4 style="display:none">Halftone</option>
 								</select>					
 							</td></tr>
-							<tr><td colspan=2>Gamma</td><td colspan=2><input id=gamma value=1 size=1 class=saveit></td></tr>
-							<tr><td colspan=2>Brightness</td><td colspan=2><input id=brightness value=0 size=1 class=saveit></td></tr>
+							<tr><td colspan=2>Gamma</td><td colspan=2><input id=gamma value=1 size=3 class=saveit></td></tr>
+							<tr><td colspan=2>Brightness</td><td colspan=2><input id=brightness value=0 size=3 class=saveit></td></tr>
 						</table></td>
                         <td align=center>Sample Image<hr>
                         <img id=thepic src="rose.jpg" width=100>
@@ -193,7 +193,9 @@
                             <table><tr valign=top align=left><td width=150>
                             <tr><td>Res X<td><input id=egwidth value=200 size=3 class=saveit>
                             <tr><td>Res Y<td><input id=egheight value=200 size=3 class=saveit>
-                            <tr><td>Gamma <td><input id=eggamma value=1 size=1 class=saveit>
+                            <tr><td>Gamma <td><input id=eggamma value=1 size=3 class=saveit>
+                            <tr><td>Invert <td><input id=eginvert type=checkbox size=3 class=saveit>
+                            <tr><td>Climb <td><input id=egclimb type=checkbox size=3 class=saveit>
                             <tr><td>Normalize <td><input id=egnormal type=checkbox size=3 class=saveit>
                             <tr><td>Flip X <td><input id=egflip type=checkbox size=3 class=saveit>
 
@@ -202,7 +204,8 @@
                             <tr><td>Depth <td>up <input id=egzup value=3 size=3 class=saveit> down<input id=egzdown value=3 size=3 class=saveit>mm
 
                             <tr><td>Cut from<td><select id=egfeedmethod class=saveit>
-                            <option value=2 selected>Center rectangular</option>
+                            <option value=2 selected>Rectangular</option>
+                            <option value=3 selected>Spiral adaptive</option>
                             </select>
 
                             <tr><td colspan=2><br><b>Finishing</b>
@@ -217,6 +220,7 @@
 
                             <tr><td>First pass<td><input id=egrepeat1 value=4 size=3 class=saveit>x
                             <tr><td>Pass<td><input id=egrepeat2 value=2 size=1 class=saveit>x
+                            <tr><td>Adaptive step<td><input id=egminstep value=0.2 size=3 class=saveit>x
 
 
                             </table>
@@ -229,7 +233,7 @@
                         <button id=bthidden3>Show Gcode</button>
 				</td></tr>
 				<tr style="background:chocolate"><td colspan=3 align=left><b style="color:white">Saved profile</b><select  id=profile><option value=set1>set1</option></select><br>
-				<b style="color:white">Profile name</b><input class=saveit id=profilename size=5><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
+				<b style="color:white">Profile name</b><input class=saveit id=profilename size=8><button id=btloadp>Load</button><button id=btsavep>Save</button></td></tr>
 				<tr style="background:lime" class=notsimple><td colspan=3>Preset <select id=material class=saveit>
 					<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
 					<option value="8,1,27,1500">Laser Akrilik 2mm</option>
@@ -346,8 +350,9 @@
 				<option value=3>3X</option>
 			</select></div>
 			<table id=vars2 class=smallwindow>
-				<tr class=notsimple><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="230400" class=saveit></td></tr>
-				<tr><td colspan=2>Board IP </td><td colspan=2><input id=wsip size=14 class=saveit value="192.168.0.123"></td></tr>
+				<tr class="notsimple mustCOM"><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="230400" class=saveit></td></tr>
+				<tr><td colspan=2>Board IP 192.168.</td><td colspan=2><input id=wsip size=14 class=saveit value="0.123"></td></tr>
+				<tr><td colspan=2>Direct to CNC </td><td colspan=2>192.168.4.1<input type=checkbox id=wsdirect class=saveit></td></tr>
 				<tr><td colspan=4><hr></td></tr>
 				<tr><td colspan=2>App WS PORT </td><td colspan=2><input id=wsport size=10 class=saveit value="8888"></td></tr>
 				<tr><td colspan=2>Window Color </td><td colspan=2><input id=wcolor size=10 class=saveit value="lightgreen"></td></tr>
@@ -356,12 +361,15 @@
 				<tr class=hideit><td colspan=2 >Flip X </td><td colspan=2><input type=checkbox id=cflipx size=10 class=saveit checked></td></tr>
 				<tr class=hideit><td colspan=2>Flip Y </td><td colspan=2><input type=checkbox id=cflipy size=10 class=saveit></td></tr>
                 <tr><td colspan=2>Display Mode </td><td colspan=2><select id=wmode class=saveit><option value=1 selected>CNC Simple</option><option value=2>Full</option></select></td></tr>
+                <tr><td colspan=2><i>Re-Gcode</i> on restart ?</td><td colspan=2><input id=regcodeX class=saveit type=checkbox></td></tr>
             </table><hr>
-			<div class=notsimple>
+			<div class="notsimple mustCOM">
             <b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
-			<br><b>WebSocket</b></div> 
+			</div>
+            <div class="mustSOCK">
+            <b>WebSocket</b>
 			<div id=status>Status:not connected </div><button id=wsconnect>Connect</button>
-			<hr>
+			</div><hr>
 
 			<table id=buttons class="notsimple isConnected">
 				<tr><td>X,Y</td><td></td><td><button  id=btup><div class="arrow-up"></div></button></td><td></td><td>Z</td><td><button  id=btzup><div class="arrow-up"></button></td></tr>

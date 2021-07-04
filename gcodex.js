@@ -103,6 +103,9 @@ var ln = 0;
 var warnoverflow = 0;
 var isF = 0;
 var repeatsame=0;
+var xsub=0;
+var ysub=0;
+var zsub=0;
 function addgcode(g) {
     // read gcode
     ln++;
@@ -141,6 +144,7 @@ function addgcode(g) {
     var x = 0;
     // generic Gcode motion process before compress
     arccw=0;
+    var is92=0;
     if (gk.indexOf('G') + 1) {
         switch (gd['G']) {
             case 90: // absolute
@@ -148,6 +152,9 @@ function addgcode(g) {
                 break;
             case 91:
                 isRel = 1;
+                break;
+            case 92: // absolute
+                is92 = 1;
                 break;
             case 2:
                 arccw=1;
@@ -234,6 +241,11 @@ function addgcode(g) {
                 h |= 2 << 1;
                 cntg28--;
                 break;
+            case 92:
+                xsub=0;
+                ysub=0;
+                zsub=0;
+                break;
             case 192:
                 h |= 3 << 1;
                 ole = 0;
@@ -262,27 +274,40 @@ function addgcode(g) {
             //else F0 = lf;
         }
         if (isX) {
-            X = Math.round(gd['X'] * xyScale); // up to resolution 0.005mm max move is 64mm
-            if (isRel) X += lx;
-            dx = X - lx;
-            if (X != lx) lx = X;
-            else isX = 0;
+            if (is92) {
+                xsub=gd['X']* xyScale;
+            } else {
+                X = Math.round(gd['X'] * xyScale -xsub); // up to resolution 0.005mm max move is 64mm
+                if (isRel) X += lx;
+                dx = X - lx;
+                if (X != lx) lx = X;
+                else isX = 0;
+            }
             //if (Math.abs(X)>31000)warnoverflow=1;
         }
         if (isY) {
-            Y = Math.round(gd['Y'] * xyScale);
-            if (isRel) Y += ly;
-            dy = Y - ly;
-            if (Y != ly) ly = Y;
-            else isY = 0;
+            if (is92) {
+                ysub=gd['Y']* xyScale;
+            } else {
+                Y = Math.round(gd['Y'] * xyScale-ysub);
+                if (isRel) Y += ly;
+                dy = Y - ly;
+                if (Y != ly) ly = Y;
+                else isY = 0;
+            }
             //if (Math.abs(Y)>31000)warnoverflow=1;
         }
         if (isZ) { // i think z is not to precise is ok, DZ is max 0.1 on 3d printer anyway
-            Z = Math.round(gd['Z'] * zScale); // so i am thinking use 1 byte for dz
-            if (isRel) Z += lz; // max move is 12mm, minimum 0.1
-            dz = Z - lz;
-            if (Z != lz) lz = Z; // else isZ=0;
+            if (is92) {
+                zsub=gd['Z']* zScale;
+            } else {
+                Z = Math.round(gd['Z'] * zScale - zsub); // so i am thinking use 1 byte for dz
+                if (isRel) Z += lz; // max move is 12mm, minimum 0.1
+                dz = Z - lz;
+                if (Z != lz) lz = Z; // else isZ=0;
+            }
         }
+        if (is92)return;
         if (isE) {
             E = Math.round(gd['E'] * eScale); // E need to be precise on 3d printer
             if (isRel) E += le; // max move 2.4mm, minimum 0.02
@@ -357,7 +382,7 @@ function addgcode(g) {
         // save the vertex
         if ((gd['G'] <= 1)) {
             // 3d XYZ to 2D transform
-            overtex.push([lx/xyScale, ly/xyScale, lz/zScale, isE]);
+            overtex.push([lx/xyScale, ly/xyScale, lz/zScale, isE,gd['G']]);
             // add printtime
             printtime += Math.sqrt((dx * dx + dy * dy ) / (xyScale*xyScale)) / lf;
         }
@@ -420,6 +445,9 @@ function begincompress(paste, callback1, callback2) {
     oymin = 100000;
     ozmax = -100000;
     ozmin = 100000;
+    xsub=0;
+    ysub=0;
+    zsub=0;
     filament = 0;
     eE = ole = lx = ly = lz = le = lf = 0;
     F1 = 0;
