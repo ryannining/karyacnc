@@ -3380,17 +3380,24 @@ function pathstoText1(gx) {
     yma = -1000000;
     ymi = 1000000;
 
-
+    engravebounds=[];
     for (var i in paths){
         var sty=paths[i][9];
         var stro=sty["stroke"];
         var cuttab = (stro == "#800000");
         var centerpos = (stro == "#008080");
+        var engravebound = (stro == "#ffff00");
         if (cuttab){
 			var cp=paths[i][0];
 			if (cp.length>=2) cuttabs.push([cp[0],cp[cp.length-1]]);
             continue;
-        }        
+        }
+        if (engravebound){
+            engravebounds.push(paths[i][0]);
+            sty["stroke"]="#00FF00";
+            sty.greenskip=1;
+            continue;
+        }
         if (centerpos){
             var ps=paths[i][0];
             var sx=0;
@@ -3539,7 +3546,7 @@ function pathstoText1(gx) {
         sty.flip=paths[i][1];
         
 
-        sty.greenskip = sty.cuttab || (stro == "#00ff00") || (fill == "#00ff00");
+        sty.greenskip = sty.greenskip || sty.cuttab || (stro == "#00ff00") || (fill == "#00ff00");
         sty.greentravel = (stro == "#008000") || (fill == "#008000");
         sty.strokedee=0;
         if ((cmd==CMD_CNC)) 

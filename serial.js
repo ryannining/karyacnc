@@ -24,6 +24,7 @@ var waitok=0;
 var waitokH=0;
 var karya_ready=0;
 var hasCOM=0;
+var engravebounds=[];
 
 function millis(){
 	var date = new Date(); 
@@ -801,6 +802,7 @@ function savesetting(name) {
         storage.setItem("ink_images", JSON.stringify(ink_images));
         storage.setItem("gcstyle", JSON.stringify(gcstyle));
         storage.setItem("cuttabs", JSON.stringify(cuttabs));
+        storage.setItem("ebounds", JSON.stringify(enrgavebounds));
     } else {
         storage.set({
             "settings": sett,
@@ -808,6 +810,7 @@ function savesetting(name) {
             "ink_images": ink_images,
             "gcstyle": gcstyle,
             "cuttabs": cuttabs,
+            "ebounds": engravebounds,
 			"jobsettings":jobsettings
         });
     }
@@ -882,6 +885,10 @@ function loadsettings(name){
                 cuttabs = r.cuttabs;
 				if (cuttabs==undefined)cuttabs=[];
             })
+            storage.get("ebounds", function(r) {
+                engravebounds = r.ebounds;
+				if (engravebounds==undefined)engravebounds=[];
+            })
             storage.get("settings", function(r) {
 			    updateweb(r.settings);
             });
@@ -897,6 +904,7 @@ function loadsettings(name){
             if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
             if (storage.ink_images != undefined) ink_images = JSON.parse(storage.ink_images);
             if (storage.cuttabs != undefined) cuttabs = JSON.parse(storage.cuttabs);
+            if (storage.ebounds != undefined) engravebounds = JSON.parse(storage.ebounds);
             if (storage.settings != undefined) {
 			    updateweb(JSON.parse(storage.settings));
             if (jobsettings==undefined)jobsettings={};

@@ -1062,6 +1062,7 @@ function imagedither(imgpic,canv,ofx,ofy,rwidth,rheight) {
 	}
 };
 
+
 function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
     var maxi=0;
     var mini=255;
@@ -1113,6 +1114,8 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	mh=rheight*1.0;
 	var stepx=mw/bmw;
 	var stepy=mh/bmh;
+    $("vstepx").innerHTML=mround2(stepx)+"mm";
+    $("vstepy").innerHTML=mround2(stepy)+"mm";
 	//var mh=mw*c.height/c.width;
 	var dotscale=mw/bmw;
 	
@@ -1124,20 +1127,21 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 			if (flip)a+=(row-i*4); else a+=i*4;
 			oldr=(0.3*bm.data[a] + 0.5*bm.data[a+1] +0.2*bm.data[a+2]);
             if (isinvert)oldr=255-oldr;
-            oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 255;
+            oldr = Math.pow((oldr / 255.0) , (1.0 / gamma)) * 254;
             
 			//alp=(bm.data[a+3])/255.0;
 			//oldr=(oldr*(alp))+(255*(1-alp));
 
 			var a=j*bmw+i;
 			//oldr=255-oldr;
-			if (oldr<254)maxi=Math.max(maxi,oldr);
+			//if (oldr<254)
+            maxi=Math.max(maxi,oldr);
 			mini=Math.min(mini,oldr);
 			bmd[a]=oldr;
 			bmdz[a]=oldr;
 		}
 	}
-	var sc=255/(maxi-mini);
+	var sc=254/(maxi-mini);
 	if (!$("egnormal").checked){
 		sc=1;
 		mini=0;
@@ -1215,19 +1219,31 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		var zmax=0;
 		for (var i = 0; i < bmw; i += 1) {
 			// lets check surrounding area
-			var cp=j*row+i;
-			var zm=1000;
-			for (var k=0;k<rd.length;k++){
-				var rdk=rd[k];
-				//skip if outside tool
-				if ((j+rdk[3]<0) || (j+rdk[3]>bmh) || 
-					(i+rdk[2]<0) || (i+rdk[2]>bmw) )continue;	
-				//
-				zp=(255-bmd[cp+rdk[0]])*zscale+rdk[1];
-				if (zp<zm)zm=zp;
-				
-			}
-			// if roughing then add up 1mm
+            var isin=1;
+            if (engravebounds.length){
+                var xp=i*stepx+ofx;
+                var yp=j*stepy+ofy;
+                isin=false;
+                for (var b=0;b<engravebounds.length;b++){
+                    if (engravebounds[b].lenth>2)isin=isInside(xp,yp,engravebounds[b]);
+                    if (isin)break;
+                }
+            }
+            var cp=j*row+i;
+            var zm=1000;
+            if (isin){
+                for (var k=0;k<rd.length;k++){
+                    var rdk=rd[k];
+                    //skip if outside tool
+                    if ((j+rdk[3]<0) || (j+rdk[3]>bmh) || 
+                        (i+rdk[2]<0) || (i+rdk[2]>bmw) )continue;	
+                    //
+                    zp=(255-bmd[cp+rdk[0]])*zscale+rdk[1];
+                    if (zp<zm)zm=zp;
+                    
+                }
+                // if roughing then add up 1mm
+            } else zm=-1;
 			if (skip>1)zm-=1;
 			if (zm>zmax)zmax=zm;
 			bmdz[cp]=zm;
@@ -1238,7 +1254,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 			bm.data[a]=255-oldr;
 			bm.data[a+1]=255-oldr;
 			bm.data[a+2]=255-oldr;
-			bm.data[a+3]=oldr<5?0:255;
+			bm.data[a+3]=oldr==0?0:255;
 		}
 		zmline.push(zmax);
 	}
@@ -1305,102 +1321,142 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         oxp=xp;
         oyp=yp;
     }
-    zup*=0.8;
-	if (feedmethod==3) {
+    //zup*=0.8;
+    var sortgrup=1;
+    var adap=feedmethod==3?getnumber("egminstep"):0;
+
+	if (feedmethod==3 || feedmethod==4  || feedmethod==5) {
         // maximum radius to cover the image
-        var wmax=sqrt(sqr(sx)+sqr(sy));
+        var centers=[];
+        if (engravebounds.length)
+        {
+            // calculate multiple centers
+            for (var cti=0;cti<engravebounds.length;cti++){
+                var p=engravebounds[cti];
+                var tx=0;
+                var ty=0;
+                var xmin=10000;var xmax=-10000;
+                var ymin=10000;var ymax=-10000;
+                for (var ip=0;ip<p.length;ip++){
+                    xmin=Math.min(p[ip][0],xmin);
+                    ymin=Math.min(p[ip][1],ymin);
+                    xmax=Math.max(p[ip][0],xmax);
+                    ymax=Math.max(p[ip][1],ymax);
+                    tx+=p[ip][0];
+                    ty+=p[ip][1];
+                    
+                }
+                xmax-=xmin;
+                ymax-=ymin;
+                xmax=Math.max(xmax/stepx,ymax/stepy)        
+                tx=(tx/p.length-ofx)/stepx;
+                ty=(ty/p.length-ofy)/stepy;
+                centers.push([tx,ty,xmax]);
+            }
+        }
+        else centers.push([sx,sy,sqrt(sqr(sx)+sqr(sy))]);
         w=0;
-        var xc=sx;
-        var yc=sy;
-        var zc=getzi(xc,yc);
-        moves.push([ofx,ofy,sfzv]);
-        x1=ofx+xc*stepx;
-        y1=ofy+yc*stepy;
-        moves.push([x1,y1,sfzv,0]);
-        moves.push([x1,y1,-zc/2,0]);
-        moves.push([x1,y1,0,0]);
-        moves.push([x1,y1,-zc,0]);
-        var stepmin=Math.min(stepx,stepy);
-        var steps=3*wmax+1;
-        var adap=getnumber("egminstep");
+        var tx1=0.1*bmw;
+        var ty1=0.1*bmh;
+        var tx2=0.9*bmw;
+        var ty2=0.9*bmh;
         var lastring;
         var lastsc=0;
         var rings=[];
-        for (var ri=1;ri<steps;ri++){
-            // keliling dengan jari2 dari ri-1 ke ri
-            stepde=2*Math.PI;
-            stepsc=Math.ceil(1*ri*stepde);
-            stepde/=stepsc;
-            deg=0;
-            if (isclimb)stepde=-stepde;
-            var nowring=[];
-            // first pass is get the radius from center
-            var radi=[];
-            var isin=0;
-			for (var j=0;j<stepsc;j++){ 
-				zsc=1;
-                var lr;
-                if (ri<3)
-                    r=(ri-1)+j/stepsc;
-                else {
-                    lr=lastring[Math.floor(lastsc*j/stepsc)]
-                    r=lr[3]+1;
-                }
-                // check first R
-				xp=(sx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
-				yp=(sy+r*Math.sin(deg)); //if (yp<0)yp=0;
-                zp=Math.round(getzi(xp,yp)*40)*0.025;
-                
-                
-                if (ri>2) {
-                    // compare with previous ring if to deep reduce
-                    var dz=Math.abs(lr[2]-zp);
-                    if (zp<-zup)r=1; else
-                    {
-                        if (dz>0.8){
-                            r=0;
-                        } else {
-                            r=sqrt(1-sqr(dz));
-                        }
+        for (var cti=0;cti<centers.length;cti++){
+            var wmax=centers[cti][2];
+            var csx=centers[cti][0];
+            var csy=centers[cti][1];
+            var zc=getzi(csx,csy);
+            moves.push([ofx,ofy,sfzv]);
+            x1=ofx+csx*stepx;
+            y1=ofy+csy*stepy;
+            moves.push([x1,y1,sfzv,0]);
+            moves.push([x1,y1,-zc/2,0]);
+            moves.push([x1,y1,0,0]);
+            moves.push([x1,y1,-zc,0]);
+            var stepmin=Math.min(stepx,stepy);
+            var steps=3*wmax+1;
+            
+            for (var ri=1;ri<steps;ri++){
+                // keliling dengan jari2 dari ri-1 ke ri
+                stepde=2*Math.PI;
+                stepsc=Math.ceil(1*ri*stepde);
+                stepde/=stepsc;
+                deg=0;
+                if (isclimb)stepde=-stepde;
+                var nowring=[];
+                // first pass is get the radius from center
+                var radi=[];
+                var isin=0;
+                for (var j=0;j<stepsc;j++){ 
+                    zsc=1;
+                    var lr;
+                    if (ri<3 || adap==0)
+                        r=(ri-1)+j/stepsc;
+                    else {
+                        lr=lastring[Math.floor(lastsc*j/stepsc)]
+                        r=lr[3]+1;
                     }
-                    r=Math.max(r,adap)+lr[3];
-					//r=r*1.2;
+                    // check first R
+                    xp=(csx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
+                    yp=(csy+r*Math.sin(deg)); //if (yp<0)yp=0;
+                    zp=Math.round(getzi(xp,yp)*40)*0.025;
+                    
+                    
+                    if (ri>2 && adap>0 && (xp>tx1 && xp <tx2 && yp>ty1 && yp<ty2)) {
+                        // compare with previous ring if to deep reduce
+                        var dz=Math.abs(lr[2]-zp);
+                        if (zp<-zup)r=1; else
+                        {
+                            if (dz>0.8){
+                                r=0;
+                            } else {
+                                r=sqrt(1-sqr(dz));
+                            }
+                        }
+                        r=Math.max(r,adap)+lr[3];
+                        //r=r*1.2;
+                    }
+                    radi.push(r);
+                    deg+=stepde;
+
                 }
-                radi.push(r);
-                deg+=stepde;
+                // smooth the radius
 
-			}
-            // smooth the radius
-
-            getr=function (n,rs,df){
-                if (n>=stepsc)n-=stepsc;
-                if (n<0)n+=stepsc;
-                return radi[n]*rs;
+                getr=function (n,rs,df){
+                    if (n>=stepsc)n-=stepsc;
+                    if (n<0)n+=stepsc;
+                    return radi[n]*rs;
+                }
+                deg=0;
+                for (var j=0;j<stepsc;j++){
+                    var r1=radi[j];
+                    if (adap>0){
+                        var r=r1+getr(j-1,0.5,r1)+getr(j-2,0.3,r1)+getr(j-3,0.15,r1)
+                                +getr(j+1,0.5,r1)+getr(j+2,0.3,r1)+getr(j+3,0.15,r1) ;
+                        r/=2.9;
+                    }
+                    xp=(csx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
+                    yp=(csy+r*Math.sin(deg)); //if (yp<0)yp=0;
+                    zp=Math.round(getzi(xp,yp)*40)*0.025;
+                    //if (xp>=0 && xp<bmw  && yp>=0 && yp<bmh)
+                    if (zp<zup)isin=1;
+                    deg+=stepde;
+                    nowring.push([xp,yp,zp,r,zp]);
+                    sr=w;
+                    storegcode(yp,xp,1,1,0);
+                }
+                rings[w]=nowring;
+                lastring=nowring;
+                lastsc=stepsc;
+                if (!isin)break;
+                w++;
             }
-            deg=0;
-            for (var j=0;j<stepsc;j++){
-                var r1=radi[j];
-                var r=r1+getr(j-1,0.5,r1)+getr(j-2,0.3,r1)+getr(j-3,0.15,r1)
-                        +getr(j+1,0.5,r1)+getr(j+2,0.3,r1)+getr(j+3,0.15,r1) ;
-                r/=2.9;
-				xp=(sx+r*Math.cos(deg));//if (xp>=bmw)xp=bmw-1;
-				yp=(sy+r*Math.sin(deg)); //if (yp<0)yp=0;
-                if (xp>=0 && xp<bmw  && yp>=0 && yp<bmh) isin=1;
-                zp=Math.round(getzi(xp,yp)*40)*0.025;
-                deg+=stepde;
-                nowring.push([xp,yp,zp,r,zp]);
-                sr=ri;
-                storegcode(yp,xp,1,1,0);
-			}
-			rings[ri]=nowring;
-            lastring=nowring;
-			w++;
-            lastsc=stepsc;
-            if (!isin)break;
 		}
 	}	// generate gcode
 	if (feedmethod==2) {
-		
+		sortgrup=0;
 		while (w<=wmin){
 		
 			//make rectangular by P = w
@@ -1509,7 +1565,6 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		return sqrt(maxdis);
 	}
 	execgrup(0);
-    var sortgrup=1;
 
 	if (sortgrup) {
 		// start from 1, grup no 0, always execute first
@@ -1523,7 +1578,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 				var m1=moves[g[1]];
 
 				if (g[2]==1)continue; // already run
-				cdis=0;//sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+				cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
 				// check if this ok
 				cdis+=10*checkdis(j);
 				if (dis==null || cdis<dis){

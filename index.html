@@ -191,8 +191,8 @@
                         <table id=vars5 class=smallwindow style="margin-left:260px;">
                         <tr valign=top ><td><b>Image setting</b>
                             <table><tr valign=top align=left><td width=150>
-                            <tr><td>Res X<td><input id=egwidth value=200 size=3 class=saveit>
-                            <tr><td>Res Y<td><input id=egheight value=200 size=3 class=saveit>
+                            <tr><td>Res X<td><span id=vstepx></span><input id=egwidth value=200 size=3 class=saveit>
+                            <tr><td>Res Y<td><span id=vstepy></span><input id=egheight value=200 size=3 class=saveit>
                             <tr><td>Gamma <td><input id=eggamma value=1 size=3 class=saveit>
                             <tr><td>Invert <td><input id=eginvert type=checkbox size=3 class=saveit>
                             <tr><td>Climb <td><input id=egclimb type=checkbox size=3 class=saveit>
@@ -205,7 +205,8 @@
 
                             <tr><td>Cut from<td><select id=egfeedmethod class=saveit>
                             <option value=2 selected>Rectangular</option>
-                            <option value=3 selected>Spiral adaptive</option>
+                            <option value=3 selected>Spiral Adaptive</option>
+                            <option value=4 selected>Spiral Fix</option>
                             </select>
 
                             <tr><td colspan=2><br><b>Finishing</b>
