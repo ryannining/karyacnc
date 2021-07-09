@@ -3393,8 +3393,10 @@ function pathstoText1(gx) {
             continue;
         }
         if (engravebound){
-            engravebounds.push(paths[i][0]);
-            sty["stroke"]="#00FF00";
+			var pa=paths[i][0];
+            if (pa.length>2)engravebounds.push(pa);
+            else engravebounds.push([(pa[0][0]+pa[1][0])/2,(pa[0][1]+pa[1][1])/2]);
+			sty["stroke"]="#00FF00";
             sty.greenskip=1;
             continue;
         }

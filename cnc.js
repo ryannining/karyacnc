@@ -1225,7 +1225,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
                 var yp=j*stepy+ofy;
                 isin=false;
                 for (var b=0;b<engravebounds.length;b++){
-                    if (engravebounds[b].lenth>2)isin=isInside(xp,yp,engravebounds[b]);
+                    if (engravebounds[b].length>2)isin=isInside(xp,yp,engravebounds[b]);
                     if (isin)break;
                 }
             }
@@ -1332,26 +1332,39 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
         {
             // calculate multiple centers
             for (var cti=0;cti<engravebounds.length;cti++){
+				
                 var p=engravebounds[cti];
-                var tx=0;
-                var ty=0;
-                var xmin=10000;var xmax=-10000;
-                var ymin=10000;var ymax=-10000;
-                for (var ip=0;ip<p.length;ip++){
-                    xmin=Math.min(p[ip][0],xmin);
-                    ymin=Math.min(p[ip][1],ymin);
-                    xmax=Math.max(p[ip][0],xmax);
-                    ymax=Math.max(p[ip][1],ymax);
-                    tx+=p[ip][0];
-                    ty+=p[ip][1];
-                    
-                }
-                xmax-=xmin;
-                ymax-=ymin;
-                xmax=Math.max(xmax/stepx,ymax/stepy)        
-                tx=(tx/p.length-ofx)/stepx;
-                ty=(ty/p.length-ofy)/stepy;
-                centers.push([tx,ty,xmax]);
+                if (p.length>2){
+					var tx=0;
+					var ty=0;
+					var xmin=10000;var xmax=-10000;
+					var ymin=10000;var ymax=-10000;
+					for (var ip=0;ip<p.length;ip++){
+						xmin=Math.min(p[ip][0],xmin);
+						ymin=Math.min(p[ip][1],ymin);
+						xmax=Math.max(p[ip][0],xmax);
+						ymax=Math.max(p[ip][1],ymax);
+						tx+=p[ip][0];
+						ty+=p[ip][1];
+						
+					}
+					xmax-=xmin;
+					ymax-=ymin;
+					xmax=Math.max(xmax/stepx,ymax/stepy)        
+					tx=(tx/p.length-ofx)/stepx;
+					ty=(ty/p.length-ofy)/stepy;
+					ctr=[tx,ty,xmax];
+					for (var ctix=0;ctix<engravebounds.length;ctix++){
+						var px=engravebounds[ctix];
+						if (px.length==2){
+							if (isInside(px[0],px[1],p)){
+									ctr[0]=(px[0]-ofx)/stepx;
+									ctr[1]=(px[1]-ofy)/stepy;
+							}
+						}
+					}
+					centers.push(ctr);
+				}
             }
         }
         else centers.push([sx,sy,sqrt(sqr(sx)+sqr(sy))]);
@@ -1441,7 +1454,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
                     yp=(csy+r*Math.sin(deg)); //if (yp<0)yp=0;
                     zp=Math.round(getzi(xp,yp)*40)*0.025;
                     //if (xp>=0 && xp<bmw  && yp>=0 && yp<bmh)
-                    if (zp<zup)isin=1;
+                    if (-zp<zup)isin=1;
                     deg+=stepde;
                     nowring.push([xp,yp,zp,r,zp]);
                     sr=w;
@@ -1564,37 +1577,39 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		} 
 		return sqrt(maxdis);
 	}
-	execgrup(0);
+	if (grups.length>0) {
+		execgrup(0);
 
-	if (sortgrup) {
-		// start from 1, grup no 0, always execute first
-		var cnt=grups.length-1;
-		while (cnt>0){
-			var dis=null;
-			var sel=-1;
-			for (var j=1;j<grups.length;j++){
-				var g=grups[j];
-				var m0=moves[g[0]];
-				var m1=moves[g[1]];
+		if (sortgrup) {
+			// start from 1, grup no 0, always execute first
+			var cnt=grups.length-1;
+			while (cnt>0){
+				var dis=null;
+				var sel=-1;
+				for (var j=1;j<grups.length;j++){
+					var g=grups[j];
+					var m0=moves[g[0]];
+					var m1=moves[g[1]];
+			var m1=moves[g[1]];
 
-				if (g[2]==1)continue; // already run
-				cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
-				// check if this ok
-				cdis+=10*checkdis(j);
-				if (dis==null || cdis<dis){
-					sel=j;
-					dis=cdis;
+					if (g[2]==1)continue; // already run
+					cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+					// check if this ok
+					cdis+=10*checkdis(j);
+					if (dis==null || cdis<dis){
+						sel=j;
+						dis=cdis;
+					}
+				}
+				if (sel>0){
+					execgrup(sel);
+					cnt--;
 				}
 			}
-			if (sel>0){
-				execgrup(sel);
-				cnt--;
-			}
+		} else {
+			for (var i=1;i<grups.length;i++)execgrup(i);
 		}
-	} else {
-		for (var i=1;i<grups.length;i++)execgrup(i);
 	}
-
 	
 
 	ctx.putImageData(bm, 0, 0);
