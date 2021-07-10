@@ -1090,6 +1090,7 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 	c.width=getnumber("egwidth");
 	c.height=getnumber("egheight");
     var isclimb=getchecked("egclimb");
+    var canreverse=getchecked("egreverse");
 	var ctx = c.getContext("2d");
 	var flip=$("egflip").checked;
 	var d=0;//getvalue("dia")*0.75;
@@ -1545,16 +1546,18 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
     }
     var lastx,lasty,lastr;
 	var donerings=[];
-    execgrup=function(ig){
+    execgrup=function(ig,flip){
 		var g=grups[ig];
 		g[2]=1; // mark as done
-		var st=moves[g[0]];
-		lastx=moves[g[1]][0];
-		lasty=moves[g[1]][1];
+		var st=flip?moves[g[1]]:moves[g[0]];
+		var en=flip?moves[g[0]]:moves[g[1]];
+		lastx=en[0];
+		lasty=en[1];
 		
 		gcodes.push("G0 "+sfz);
 		gcodes.push("G0 X"+mround(st[0])+" Y"+mround(st[1]));
-		gcodes.push(g[3].join("\n")); 
+		if (flip)g[3].reverse();
+        gcodes.push(g[3].join("\n")); 
 		for (var i=g[0];i<=g[1];i++)donerings.push(moves[i]);
 	}
 	checkdis=function(ig){
@@ -1586,23 +1589,29 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 			while (cnt>0){
 				var dis=null;
 				var sel=-1;
+                var flip=0;
 				for (var j=1;j<grups.length;j++){
 					var g=grups[j];
 					var m0=moves[g[0]];
 					var m1=moves[g[1]];
-			var m1=moves[g[1]];
+                    var m1=moves[g[1]];
 
 					if (g[2]==1)continue; // already run
-					cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+                    var isflip=0; 
+					if (canreverse) {
+                        cdis=sqrt(sqr(lastx-m1[0])+sqr(lasty-m1[1]));
+                        isflip=1;
+                    } else cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
 					// check if this ok
 					cdis+=10*checkdis(j);
 					if (dis==null || cdis<dis){
 						sel=j;
+                        flip=isflip;
 						dis=cdis;
 					}
 				}
 				if (sel>0){
-					execgrup(sel);
+					execgrup(sel,flip);
 					cnt--;
 				}
 			}
