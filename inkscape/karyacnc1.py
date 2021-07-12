@@ -87,6 +87,8 @@ class laser_gcode(inkex.Effect):
       
     def export_path(self,paths,xmin,ymin):
         f=0
+        #xmin=0
+        #ymin=0
         if (self.options.directory!="") :
             f = open(self.options.directory+self.options.filename, "w")
         gcodes=[]
@@ -100,14 +102,26 @@ class laser_gcode(inkex.Effect):
             ss+="\n"
             if (f):f.write(ss)
             gcodes.append(ss)    
+        if (xmin>9000):
+            for i in self.images:
+                xlink = i.get('xlink:href')
+                if xlink.startswith('data:'):
+                    xx=float(i.get("x"))
+                    yy=float(i.get("y"))
+                    xmin=min(xmin,xx)
+                    ymin=min(ymin,yy)
+
         for i in self.images:
             xlink = i.get('xlink:href')
             if xlink.startswith('data:'):
                 data = xlink[5:]
                 (mimetype, data) = data.split(';', 1)
                 (base, data) = data.split(',', 1)
-                ss="I,"+str(float(i.get("x"))-xmin)+","
-                ss+=str(float(i.get("y"))-ymin)+","		
+                xx=float(i.get("x"))
+                yy=float(i.get("y"))
+                
+                ss="I,"+str(xx-xmin)+","
+                ss+=str(yy-ymin)+","		
                 ss+=i.get("width")+","+i.get("height")+"\n"+data+"\n"
                 gcodes.append(ss)		
                 if (f):f.write(ss)
@@ -317,7 +331,7 @@ class laser_gcode(inkex.Effect):
                             ymin=min(ymin,csp[1][1])
                             
                         kpaths.append((pstyle,kpath))
-                        
+             
         self.export_path(kpaths,xmin,ymin)
 
 

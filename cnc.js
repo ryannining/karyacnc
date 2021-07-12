@@ -112,6 +112,7 @@ function realupload(gcode, fname, callback) {
         });
     xhr.onload = function (e) {
         progressBar.value = 0;
+        $("alert1").innerHTML="Upload OK";
         if (!wemosd1) alert(xhr.response);
         resetflashbutton();
         if (callback) callback();
@@ -1558,23 +1559,26 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 		gcodes.push("G0 X"+mround(st[0])+" Y"+mround(st[1]));
 		if (flip)g[3].reverse();
         gcodes.push(g[3].join("\n")); 
-		for (var i=g[0];i<=g[1];i++)donerings.push(moves[i]);
+		for (var i=g[0];i<=g[1];i++){
+            var r=moves[i][3];
+            if (donerings[r]==undefined)donerings[r]=[];
+            donerings[r].push(moves[i]);
+        }
 	}
 	checkdis=function(ig){
 		var g=grups[ig];
 		var r1=moves[g[0]][3]-1;
 		//var r2=moves[g[1]][3]-1;
 		var maxdis=0;
-		if (donerings[donerings.length-1][3]<r1) return 1000000;
-		for (var i=g[0];i<=g[1];i+=3){
+		var checkrings=donerings[r1];
+        if (checkrings==undefined) return 1000000;
+		for (var i=g[0];i<=g[1];i+=2){
 				var m=moves[i];
 				var mindis=1000000;
-				for (var j=donerings.length-1;j>0;j-=3){
-					var d=donerings[j];
-					if (d[3]>=r1){
-						var dis=sqr(m[0]-d[0])+sqr(m[1]-d[1]);
-						mindis=Math.min(dis,mindis);
-					} else break;
+				for (var j=checkrings.length-1;j>0;j-=3){
+					var d=checkrings[j];
+                    var dis=sqr(m[0]-d[0])+sqr(m[1]-d[1]);
+                    mindis=Math.min(dis,mindis);
 				}
 				maxdis=Math.max(maxdis,mindis);
 		} 
@@ -1598,12 +1602,13 @@ function cncengrave(imgpic,canv,ofx,ofy,rwidth,rheight){
 
 					if (g[2]==1)continue; // already run
                     var isflip=0; 
-					if (canreverse) {
-                        cdis=sqrt(sqr(lastx-m1[0])+sqr(lasty-m1[1]));
-                        isflip=1;
-                    } else cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+                    var cdis=sqrt(sqr(lastx-m0[0])+sqr(lasty-m0[1]));
+                    if (canreverse) {
+                        var cdis1=sqrt(sqr(lastx-m1[0])+sqr(lasty-m1[1]));
+                        if (cdis1<cdis) isflip=1;
+                    };
 					// check if this ok
-					cdis+=10*checkdis(j);
+					cdis+=(isflip?2:10)*checkdis(j);
 					if (dis==null || cdis<dis){
 						sel=j;
                         flip=isflip;
