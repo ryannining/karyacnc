@@ -1,4 +1,12 @@
 # karyacnc
+July 2021: 
+
+Manual book (Indonesia language). Work in progress: https://bit.ly/3BXBtTB
+
+New Feature:
+- Make user interface little easier
+- Bitmap Heightmap engraving directly from inkscape 1.xx
+
 
 New feature July 2020:
 
