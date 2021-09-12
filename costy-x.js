@@ -2525,7 +2525,8 @@ function sortedgcode() {
                 pw = getvalue('pltpw') * 255*0.01;
                 pw=sty.markpower?sty.markpower:pw;
                 zdown = strokedeep > 0 ? strokedeep : getvalue("carved");
-                _re = Math.ceil(zdown / _rz);
+                if (cmd==CMD_LASER)_re=getnumber("redrep");
+                else _re = Math.ceil(zdown / _rz);
                 vcuttab = -1 * zdown; //+tabz;
                 zdown *= -1 / _re;
                 iscut = 0;
@@ -3567,9 +3568,12 @@ function pathstoText1(gx) {
             pocket1=sty.dopocket;
             for (ii in paths){
                 psty=paths[ii][9];
-                pocket2=psty.dopocket;
+                pocket2=(RBcolor(psty["stroke"]) == "8080");
+                psty.pocket=pocket2;
+                
                 if (pocket1 && !pocket2) continue;
                 if (!pocket1 && pocket2) continue;
+                
                 //if (psty.doEngrave|| psty.domarking || psty.dovcarv)continue;
                 if (i==ii || paths[ii][4]<l1 || (psty["stroke"]=="#00ff00" && psty["fill"]=="none") )continue;//|| (!psty.closed)) continue;
                 var d=sqr(cx-paths[ii][2])+sqr(cy-paths[ii][3]);

@@ -456,7 +456,7 @@ var cglines = [];
 var realofs=0;
 function pocketcarve(tofs, ofs1, clines) {
     realofs=tofs;
-    if (cmd == CMD_CNC) tofs = Math.min(tofs/2,getnumber("clstep"));
+    if (cmd == CMD_CNC) tofs = Math.min(tofs*0.8,getnumber("clstep"));
     if (tofs < 0.2) tofs = 0.2;
     if (ofs1 < 0.2) ofs1 = 0.2;
     var paths = [];
@@ -493,7 +493,7 @@ function pocketcarve(tofs, ofs1, clines) {
             var ofs = realofs/2 -tofs;
             var last=0;
             var first=1;
-            var maxx = 100;
+            var maxx = 150;
             while (maxx-- > 0) {
                 // increase tool offset
                 ofs += tofs;

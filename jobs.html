@@ -48,7 +48,7 @@
 	</style>
 	<body style="font-family:arial;font-size:12pt;margin:auto">
 	<div class=j1 style="width:80%">
-	<b>JOG MACHINE</b><hr>
+	<b>JOG MACHINE</b>&nbsp;&nbsp;&nbsp;| &nbsp;&nbsp; <a href="cnc.html" target=new>New Job</a><hr>
 
 	<table width=100% >
 		<tr align=center><td><button class=jog onclick="speed1()">1x</button></td><td><button class=jog onclick="jogup()">Up</button></td><td><button class=jog onclick="zup()">Z+1</button><button class=jog onclick="z15()">Z 15</button></td>		
@@ -221,7 +221,11 @@ function alert2a(x){
 	urlopen("getjobs",joblist);
 }
 function deljob(i){
-	if (confirm("Remove job "+jobs[i][0]+" ?"))	urlopen("removejob?jobname="+jobs[i][0],alert2a);
+    var lastname=jobs[i][0];
+    var newname=prompt("Change name to rename",lastname);
+    if (!newname)return;
+	if (newname!=lastname)	urlopen("renamejob?jobname="+lastname+"&newname="+newname,alert2a);else
+    urlopen("removejob?jobname="+lastname,alert2a);
 }
 var lastres="";
 function joblist(res){

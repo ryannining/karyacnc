@@ -2,19 +2,38 @@
 
 <body id=body style='font-family:arial'>
 <div style='width:600px;background:#eeffaa;border-radius:10px;padding:10px;border:1px solid green;margin:auto;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);'>
-<center><h2>Karya controller WIFI configuration</h2></center><hr>
+<center><h2>Karya controller configuration</h2></center><hr>
+Machine I.P Address <input id=wsip size=13 class=saveit value="">
 <table width=100%><tr><td>WIFI A.P <button onclick="scanwifi()">Scan wifi</button><td>Password<td>Machine Name<td>
 <tr><td><select id=wifi></select> 
 <td><input id=pwd size=10>
 <td><input id=mid size=10>
 <td><button onclick="setconfig()">Save config</button>
 </table>
+<hr>
+EEPROM &nbsp;<b id=status></b><br>
+<button  id=bt3eeprom>Read Config</button><select id=eepromid>
+	
+</select><input id=eepromval size=6><button  id=bt3seteeprom>Set EEPROM</button><button id=wsconnect style="display:none"></button>
+<hr>
+<button onclick="resetf()">Reset factory settings !!</button>
+<hr>
+Download Karyacnc <a href="karyacnc.zip" target=dw>here</a>. After download, exteact it to any new folder.
+Open <i>chrome://extensions</i> Settings, and enable Developer option, and click Load unpacked, select the folder of where karyacnc extracted.
+Extension is ready and can be open <i>chrome:://apps</i> . You can right click and create shortcut on your desptop.
+<br><br>
+Download Inkscape 0.92 <a href="https://inkscape.org/release/inkscape-0.92.4/" target=ink>here</a>. After that you need to install KaryaCNC inkscape extension.<br>
+Inkscape extension (send to karyacnc) can be download <a href="inkscape.zip" target=dw>here</a>. Extract the file content to your inkscape extension folder. Usually they are in
+<i>Program files/Inkscape/share/extension</i> folder. You need to restart inkscape then. 
 <font size=2><br>
-- Machine name must be unique and registered on <a href="http://www.karyahub3d.xyz" target=hub>www.karyahub3d.xyz</a> to get benefit of IOT printing.<br>
-- Machine must be reset to apply the WIFI configuration<br>
-- Open <a href="3d.html">3D control panel here</a><br>
+
 </font>
 </div>
+<script>
+var wsconnected=0;
+</script>
+<script src="websocket.js"></script>
+
 <script>
 
 
@@ -90,6 +109,23 @@ function setconfig(){
 	urlopen("setconfig?name="+(mid.value)+"&ap="+$('wifi').value+"&pw="+$('pwd').value);
 }
 
+setclick("bt3eeprom", function() {
+    document.getElementById("eepromid").innerHTML = "";
+    sendgcode("m205");
+});
+setclick("bt3seteeprom", function() {
+    sendgcode("M206 P" + eppos + " S" + getvalue("eepromval"));
+
+});
+setevent("change", "eepromid", function() {
+    var v = getvalue("eepromid").split(":");
+    setvalue("eepromval", v[0]);
+    eppos = v[1];
+});
+function resetf(){
+    if (confirm("Really to reset machine settings ?"))sendgcode('M502');
+}
+setTimeout(connectwebsock,1500);
 </script>
 
 </body>
