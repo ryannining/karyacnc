@@ -574,6 +574,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
             lines=linesx;
         }
         if (sty.greenskip) area += 500000; // the outer still need to be the last
+        sty.subchilds=lines.length-1;
         for (var i = 0; i < lines.length; i++) {
             var line1 = lines[i];
             var ar = area;
@@ -581,7 +582,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
             var x1 = line1[0][1];
             var y1 = line1[0][2];
              
-            gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i]]);
+            gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i],i]);
         }
         var nc=lines.length-1;
         if (ofs1) {
@@ -592,7 +593,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
                 if (i > 0) ar = 1;
                 var x1 = line1[0][1];
                 var y1 = line1[0][2];
-                gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i]]);
+                gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i],i]);
                 // need to add the childs count for the parent
             }
             nc+=linesx.length;
@@ -601,7 +602,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
             gcstyle[parent[pi]].exchilds+=nc;
         }
         if (nc<0)warningpath-=nc;
-    } else gcodes.push([lenmm, "", X1, Y1, line, srl, area, closed, shapenum,[]]);
+    } else gcodes.push([lenmm, "", X1, Y1, line, srl, area, closed, shapenum,[],0]);
     shapenum++;
 }
 
@@ -662,7 +663,7 @@ function gcodepushcombined() {
             var line1 = glines[i];
             gcodes.push([s, "", X1, Y1, glines[i],
                 [], 1, 1, shapenum
-            ]);
+            ,[],0]);
         }
         gcstyle[shapenum] = ni==0?carvestyIn:carvestyOut;
     }
@@ -2331,11 +2332,11 @@ function sortedgcode() {
             }
             for (var i = 0; i < gcodes.length; i++) {
                 var sty=gcstyle[gcodes[i][8]];
+		var subch=gcodes[i][10];
                 k1=sty.doEngrave ||sty.domarking || sty.dovcarve || sty.dopocket;
                 if (kk==(k1?1:0))continue;
-
-                if (sty.childs>0) 
-                    continue; // if still have child do not process
+                if (subch==0 && sty.subchilds>0)continue;
+                if (sty.childs>0) continue; // if still have child do not process
                 var pts = gcodes[i][4];
                 var shift=0;
                 var flip=0;
@@ -2393,8 +2394,13 @@ function sortedgcode() {
         if (cs >= 0) {
 			//sshift=0;
             sty=gcstyle[gcodes[cs][8]];
-            for (var pi in sty.parent){
-                gcstyle[sty.parent[pi]].childs--;
+            subch=gcodes[cs][10];
+            if (subch==0) {
+                for (var pi in sty.parent){
+                        gcstyle[sty.parent[pi]].childs--;
+                }
+            } else {
+                sty.subchilds--;
             }
             
             sgcodes.push([gcodes[cs], cs + 1,sflip,sshift]);

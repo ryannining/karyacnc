@@ -818,7 +818,7 @@ function dopocketengrave() {
     pocketgcode();
     drawpocket();
 }
-setclick("btconengrave", dopocketengrave);
+//setclick("btconengrave", dopocketengrave);
 
 var bitmaptime=0;
 
