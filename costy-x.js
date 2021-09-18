@@ -575,6 +575,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
         }
         if (sty.greenskip) area += 500000; // the outer still need to be the last
         sty.subchilds=lines.length-1;
+        var ii=(ofs1?1:0);
         for (var i = 0; i < lines.length; i++) {
             var line1 = lines[i];
             var ar = area;
@@ -582,18 +583,20 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
             var x1 = line1[0][1];
             var y1 = line1[0][2];
              
-            gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i],i]);
+            gcodes.push([lenmm, /*ofs1?"D":""*/ "", x1, y1, lines[i], srl, ar, closed, shapenum,cuttab_manual[i],ii]);
+            ii++;
         }
         var nc=lines.length-1;
         if (ofs1) {
             // if do finish line 
+			sty.subchilds+=linesx.length;
             for (var i = 0; i < linesx.length; i++) {
                 var line1 = linesx[i];
                 var ar = area;
                 if (i > 0) ar = 1;
                 var x1 = line1[0][1];
                 var y1 = line1[0][2];
-                gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i],i]);
+                gcodes.push([lenmm, /*"F"*/ "", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum,cuttab_manual[i],i]);
                 // need to add the childs count for the parent
             }
             nc+=linesx.length;
@@ -2300,8 +2303,9 @@ function sortedgcode() {
     sortit = 1;
 	var cs=-1;
 	var sflip,sshift;
-	xs=getnumber('xsort')
-	ys=getnumber('ysort')
+	xs=getnumber('xsort');
+	ys=getnumber('ysort');
+	szs=getnumber('szsort');
     
     if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
     var re = getvalue("repeat");
@@ -2375,7 +2379,7 @@ function sortedgcode() {
                    if (sty.greentravel)dis+=1;
                 } 
                 // we already use closest and the hierarchy , so no need area size
-                //dis+=(gcodes[i][6] - 1);
+                dis+=gcodes[i][6]*szs;
                 if (gcodes[i][1]=="F")dis+=10; // finish line must be the last
                 dis+=newx*xs+newy*ys;
 

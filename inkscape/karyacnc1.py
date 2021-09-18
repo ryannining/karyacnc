@@ -30,6 +30,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import inkex, cspsubdiv
 from inkex.transforms import Transform, BoundingBox, cubic_extrema
 from inkex.paths import Path
+import simplestyle, simplepath
+import cubicsuperpath, simpletransform, bezmisc
 
 import os
 import math
@@ -113,6 +115,7 @@ class laser_gcode(inkex.Effect):
 
         for i in self.images:
             xlink = i.get('xlink:href')
+            
             if xlink.startswith('data:'):
                 data = xlink[5:]
                 (mimetype, data) = data.split(';', 1)
@@ -122,7 +125,9 @@ class laser_gcode(inkex.Effect):
                 
                 ss="I,"+str(xx-xmin)+","
                 ss+=str(yy-ymin)+","		
-                ss+=i.get("width")+","+i.get("height")+"\n"+data+"\n"
+                ss+=i.get("width")+","+i.get("height")
+                #if (i.get("transform")):ss+=","+i.get("transform")
+                ss+="\n"+data+"\n"
                 gcodes.append(ss)		
                 if (f):f.write(ss)
         
@@ -172,22 +177,34 @@ class laser_gcode(inkex.Effect):
 
 
     def get_transforms(self,g):
-        root = self.document.getroot()
-        trans = None
-        while (g!=root):
-            if 'transform' in g.keys():
-                t = Transform(g.get('transform'))
-                trans = (t*trans) if trans else t
-            g=g.getparent()
-        return trans
+        return 
 
 
     def apply_transforms(self,g,csp):
-        trans = self.get_transforms(g)
-        return Path(csp).transform(trans).to_superpath() if trans else csp
-
-
+        trans = g.composed_transform()
+        return Path(csp).transform(trans).to_superpath()
     
+    """ 
+    def get_transforms(self,g):
+        root = self.document.getroot()
+        trans = []
+        while (g!=root):
+            if 'transform' in g.keys():
+                t = g.get('transform')
+                t = simpletransform.parseTransform(t)
+                trans = simpletransform.composeTransform(t,trans) if trans != [] else t
+                print_(trans)
+            g=g.getparent()
+        return trans 
+        
+
+    def apply_transforms(self,g,csp):
+        trans = self.get_transforms(g)
+        if trans == []:
+            trans = simpletransform.parseTransform("scale(1,1)")
+        simpletransform.applyTransformToPath(trans, csp)
+        return csp
+    """
 
 
 ################################################################################
@@ -301,20 +318,22 @@ class laser_gcode(inkex.Effect):
                 for path in paths[layer] :
                     pstyle=getStyles(path)
                     col=pstyle["fill:"]
-                    xpath=path.to_path_element()
-                    if "d" not in xpath.keys() :
-                        self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
-                        continue
+                    #xpath=path.to_path_element()
+                    #xpath.apply_transform()
+                    #if "d" not in xpath.keys() :
+                    #    self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
+                    #    continue
 
                     from inkex.paths import CubicSuperPath
-                    d = xpath.get('d')
-                    csp1 = CubicSuperPath(d)      
-                    csp1 = self.apply_transforms(path, csp1)
-                    #Ryan modification
+                    d = path.get_path()
+                    trans = path.composed_transform()
+                    csp1=Path(d).transform(trans).to_superpath()
+    
                     # flatten if contain BICUBIC or ARC
-                    if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0):
-                        inkex.bezier.cspsubdiv(csp1, self.options.flatten*0.5)
-                           
+                    try:
+                        if ( (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0)):
+                            inkex.bezier.cspsubdiv(csp1, self.options.flatten*0.5)
+                    except:pass
                     np = []
 
                     for sp in csp1:
