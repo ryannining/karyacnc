@@ -426,6 +426,7 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 			}
 			lx=g1;
 		}
+		var climb=1;
 		while (w<=wmin){
 		
 			//make rectangular by P = w
@@ -433,18 +434,29 @@ function generategcode0(r,feedmethod,endmill,skip,rep1,rep2,feed){
 			if (w==0)rep=rep1;
 			for (var r=0;r<rep;r++){
 				zsc=(r+1)/rep;
-				xp=(sx+w+dx);//if (xp>=bmw)xp=bmw-1;
+				// climb mill
+				xp=(sx+(climb?+w+dx:-w-dx));//if (xp>=bmw)xp=bmw-1;
 				yp=(sy-w-dy);//if (yp<0)yp=0; 
 				if (w==0 && r==0)gcodes.push("G0 Z2\nG0 X"+mround(xp*stepx+ofx)+" Y"+mround(yp*stepy+ofy));
-
-				// top right to left top
-				lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx+w+dx));
-				// top left to bottom left 
-				lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
-				// botton left bottom right
-				lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
-				// bottom right to top right
-				lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
+				if (climb){
+					// top right to left top
+					lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx+w+dx));
+					// top left to bottom left 
+					lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
+					// botton left bottom right
+					lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
+					// bottom right to top right
+					lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
+				} else {
+					// top left to right top
+					lx=0;for (var i=sx-w-dx;i<=sx+w+dx;i++)storegcode(sy-w-dy,i,0,Math.abs(sx-i)==w+dx,i==(sx-w-dx));
+					// top right to bottom left 
+					lx=0;for (var j=sy-w-dy;j<=sy+w+dy;j++)storegcode(j,sx+w+dx,1,Math.abs(sy-j)==w+dy,0);
+					// botton right bottom left
+					lx=0;for (var i=sx+w+dx;i>=sx-w-dx;i--)storegcode(sy+w+dy,i,0,Math.abs(sx-i)==w+dx,0);
+					// bottom left to top left
+					lx=0;for (var j=sy+w+dy;j>=sy-w-dy;j--)storegcode(j,sx-w-dx,1,Math.abs(sy-j)==w+dy,0);
+				}
 			}
 			w++;
 		}
@@ -728,6 +740,7 @@ function showId(x){}
 
 </script>
 <script src="cnc.js" type="text/javascript" charset="utf-8"></script>
+<script src="gcodex.js" type="text/javascript" charset="utf-8"></script>
 <script>
 setclick("upload1",function(){begincompress(editor.getValue());upload("ukir.gcode");});
 setclick("upload2",function(){begincompress(reditor.getValue());upload("ukir.gcode");});

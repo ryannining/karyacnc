@@ -357,6 +357,7 @@ HttpServer.prototype = {
               'listen error ' +
               chrome.runtime.lastError.message +
                 ' (normal if another instance is already serving requests)');
+            if ($("title0"))$("title0").innerHTML='WebSocket error: ' + chrome.runtime.lastError.message;    
           }
         });
     });

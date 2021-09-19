@@ -746,7 +746,7 @@ setclick("bthidden3", function() {
 // gcode editor
 
 setclick("btcopy1", function() {
-    copy_to_clipboard('gcode');
+    copygcode();
 });
 setclick("btcopy2", function() {
     copy_to_clipboard('pgcode');
@@ -974,7 +974,7 @@ function connectwebsock() {
             autoreconnect=0;
             wsconnected = 0;
 			reconnectwebsock();
-			hideId("machine_ws");
+//			hideId("machine_ws");
             isConnectedCSS.style.display="none";
 
         }
@@ -988,7 +988,7 @@ function connectwebsock() {
             //nextgcode(); // 
 			sendgcode(machinepos);
 			websockOK=1;
-			showId("machine_ws");
+//			showId("machine_ws");
 			resetflashbutton();
 			autoreconnect=1;
             isConnectedCSS.style.display="";
@@ -1003,7 +1003,7 @@ function connectwebsock() {
             wsconnected = 0;
             // disable autoreconnect
 			if (autoreconnect)reconnectwebsock();
-			hideId("machine_ws");
+//			hideId("machine_ws");
             isConnectedCSS.style.display="none";
         }
         ;
@@ -1115,7 +1115,7 @@ function startserver() {
         server.listen(port);
         isServer = true;
 
-    }
+    } else $("alert1").innerHTML="ScServer Error";
 }
 
 

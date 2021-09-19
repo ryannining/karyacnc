@@ -1652,10 +1652,10 @@ var rampmoves=[]; // save the ramp moves to make a finish move
 function getspindleoff(){
     return M3+" S"+Math.floor(getnumber("spindleoffval")*2.55)+"\n";
 }
-function getspindleon(){
+function getspindleon(dw=1){
     if (cmd == CMD_LASER) return M3+" S"+cutpw+"\n";
     var P=" P"+parseInt(getnumber("dwelltime")*1000);
-    if (P==" P0")P="";
+    if ((dw==0) || (P==" P0"))P="";
     return M3+" S"+cutpw+P+"\n";
 }
 var fnl=0;
@@ -1791,9 +1791,15 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     var pup = getvalue("pup");
     if (fnl)pup="";//G0 Z0\n";
     var pdn = getvalue('pdn');
-    if ($("spindleoff").checked){
-        pup=(hasfnl?"":getspindleoff())+pup;
-        pdn=((!closed || (firstlayer && !fnl ))?getspindleon():"")+pdn;        
+    if (cmd==CMD_PLASMA || $("spindleoff").checked){
+        if (cmd==CMD_PLASMA){
+        	//pdn=pdn+"\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
+        	pdn="G0 Z0\nM3 S0 P100\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
+            pup=getspindleoff()+pup;
+        } else {
+            pup=(hasfnl?"":getspindleoff())+pup;
+        	pdn=((!closed || (firstlayer && !fnl ))?getspindleon():"")+pdn;        
+        }
     }
     var f1 = speedtravel * 60;
     var rep = getinteger('repeat');
@@ -1839,7 +1845,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     }
 	if (uselead && firstlayer && X0!=null) {
 		gcode0(f1, X0, Y0);
-		gcode0(f2, X1, Y1);
+		//gcode0(f2, X1, Y1);
 	} else gcode0(f1, X1, Y1);
     div+="G0 F"+f1+"\n";
     div+="G1 F"+f2+"\n";
@@ -1857,6 +1863,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         if (z<0 && firstlayer)div = div +"G0 Z0 F"+speedretract+"\n";
         if (firstlayer && uselead){
         	div += ";LEAD IN\n"
+            if (cmd==CMD_PLASMA)div+=pdn;
 			div += "G1 F"+f2+" Z"+mround(z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
 		} else {
             if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z-2)) + '\n';
@@ -2082,7 +2089,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     // if not closed loop then pen up
     //if ((lines[0][1] != lines[lines.length - 1][1]) ||
     //    (lines[0][2] != lines[lines.length - 1][2])) div += pup + "\n";
-
+    if (cmd==CMD_PLASMA)div+="\n"+getspindleoff()+"\n";
     return div;
 }
 
@@ -2229,7 +2236,7 @@ function gcode_verify(en = 0) {
     startgcode="M3";
     finishgcode =getspindleoff();//($("spindleoff").checked)?getspindleoff():"";
     finishgcode += pup1+fz?fz:("\nG0 F"+mround(f1)+" X0 Y0\n");
-    if (cmd==CMD_CNC)finishgcode+="G0 Z"+getvalue("finalz")+ '\nM5\n';
+    if (cmd==CMD_CNC || cmd==CMD_PLASMA)finishgcode+="G0 Z"+getvalue("finalz")+ '\nM5\n';
     if (cmd==CMD_LASER)finishgcode+=pup1;
     setvalue("pgcode", pup1 + M3+ " S255\nG0 F12000 X" + mround(sc * xmin) + " Y" + mround(ymin) + 
                               "\nG1 Z1\nG0 Z0\nG0 X" + mround(sc * xmax) +
@@ -2253,6 +2260,7 @@ function gcode_verify(en = 0) {
     var g = mz+getvalue("engcode") + gcodecarve;
 
     if (g) setvalue("engcode", g + pup1);//m3 s0\n");
+    if (cmd==CMD_PLASMA)setvalue("engcode","");
 
     ctx.font = "30px Arial";
     ctx.fillStyle = theme==0?"#000000":"#ffffff";;
@@ -2449,8 +2457,11 @@ function sortedgcode() {
 
     if (cmd == CMD_LASER) {
         pup1 = "";
-        s = getspindleon()+"G0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
+        s = getspindleon(0)+"G0 F3000\nG1 F3000\n"; //;Init machine\n;===============\nM206 P80 S20 ;x backlash\nM206 P84 S20 ;y backlash\nM206 P88 S20 ;z backlash\n;===============\n";
         se = getspindleon();
+    } else if (cmd == CMD_PLASMA) {
+        s = "G1 F3000\n";
+        se = "";
     } else {
         s = getspindleon()+"G1 F3000\n";
         se = getspindleon();
@@ -2606,7 +2617,7 @@ function sortedgcode() {
             if (fnl)ps="";//G0 Z0\n";
             // acp mode make first hole
             var acp="";
-            if ($("spindleoff").checked && !fnl)acp=getspindleoff();
+            if ((cmd==CMD_PLASMA || $("spindleoff").checked) && !fnl)acp=getspindleoff();
             acp += ps;
             var isacp = 0;
             
@@ -3819,10 +3830,28 @@ function refreshgcode() {
     myFunction(0);
     savesetting();
 }
-
+function copyStringToClipboard (str) {
+   // Create new element
+   var el = document.createElement('textarea');
+   // Set value (string to be copied)
+   el.value = str;
+   // Set non-editable to avoid focus and move outside of view
+   el.setAttribute('readonly', '');
+   el.style = {position: 'absolute', left: '-9999px'};
+   document.body.appendChild(el);
+   // Select text inside element
+   el.select();
+   // Copy text to clipboard
+   document.execCommand('copy');
+   // Remove temporary element
+   document.body.removeChild(el);
+}
 function copy_to_clipboard(id) {
     $(id).select();
     document.execCommand('copy');
+}
+function copygcode() {
+    copyStringToClipboard(getvalue("engcode")+"\n"+getvalue("gcode"));
 }
 
 

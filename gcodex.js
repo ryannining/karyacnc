@@ -45,6 +45,7 @@ var ly = -10.0;
 var lz = -10.0;
 var le = -10.0;
 var lf = -10.0;
+var lS = 0;
 var lh = 0;
 var ole = 0;
 var oxmin = 0;
@@ -242,9 +243,6 @@ function addgcode(g) {
                 cntg28--;
                 break;
             case 92:
-                xsub=0;
-                ysub=0;
-                zsub=0;
                 break;
             case 192:
                 h |= 3 << 1;
@@ -275,7 +273,7 @@ function addgcode(g) {
         }
         if (isX) {
             if (is92) {
-                xsub=gd['X']* xyScale;
+                xsub=-lx+gd['X']* xyScale;
             } else {
                 X = Math.round(gd['X'] * xyScale -xsub); // up to resolution 0.005mm max move is 64mm
                 if (isRel) X += lx;
@@ -287,7 +285,7 @@ function addgcode(g) {
         }
         if (isY) {
             if (is92) {
-                ysub=gd['Y']* xyScale;
+                ysub=-ly+gd['Y']* xyScale;
             } else {
                 Y = Math.round(gd['Y'] * xyScale-ysub);
                 if (isRel) Y += ly;
@@ -299,7 +297,7 @@ function addgcode(g) {
         }
         if (isZ) { // i think z is not to precise is ok, DZ is max 0.1 on 3d printer anyway
             if (is92) {
-                zsub=gd['Z']* zScale;
+                zsub=-lz+gd['Z']* zScale;
             } else {
                 Z = Math.round(gd['Z'] * zScale - zsub); // so i am thinking use 1 byte for dz
                 if (isRel) Z += lz; // max move is 12mm, minimum 0.1
@@ -307,7 +305,14 @@ function addgcode(g) {
                 if (Z != lz) lz = Z; // else isZ=0;
             }
         }
-        if (is92)return;
+        if (is92){
+            if (!(isX || isY || isZ)){
+                xsub=0;
+                ysub=0;
+                zsub=0;
+            }
+            return;
+        }
         if (isE) {
             E = Math.round(gd['E'] * eScale); // E need to be precise on 3d printer
             if (isRel) E += le; // max move 2.4mm, minimum 0.02

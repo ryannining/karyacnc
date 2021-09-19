@@ -136,6 +136,9 @@ setclick("btjob5", function () {
     begincompress(jobs.join("\n")+finishgcode);
     upload(getvalue("jobname") + ".gcode");
 });
+setclick("btcopygc", function(){
+	copyStringToClipboard(jobs.join("\n")+finishgcode);
+});
 
 setclick("btuploadstart", startprint);
 setclick("btuploadstop", stopprint);
