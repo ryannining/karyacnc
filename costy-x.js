@@ -1717,7 +1717,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var l1=getvalue("leadin"); // 2mm
 	
 	var leadmm=parseFloat(l1[0]);
-	var uselead=closed && $("useleadin").checked && (leadmm<len);
+	var uselead=cmd==CMD_PLASMA && closed && $("useleadin").checked && (leadmm<len);
     
     if (uselead && firstlayer){
 		// get the vector of the first point
@@ -2415,11 +2415,11 @@ function sortedgcode() {
             sty=gcstyle[gcodes[cs][8]];
             subch=gcodes[cs][10];
             if (subch==0) {
-                for (var pi in sty.parent){
-                        gcstyle[sty.parent[pi]].childs--;
-                }
             } else {
                 sty.subchilds--;
+            }
+            for (var pi in sty.parent){
+                    gcstyle[sty.parent[pi]].childs--;
             }
             
             sgcodes.push([gcodes[cs], cs + 1,sflip,sshift]);
