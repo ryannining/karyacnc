@@ -53,7 +53,14 @@ function getchecked(el) {
 function getvalue(el) {
     if (el == "gcode") return editorgcode.getValue();
     else if (el == "engcode") return editorengcode.getValue();
-
+    else if (el == "repeat") {
+		if (cmd==CMD_PLASMA)return "1";
+		return editorengcode.getValue();
+	}
+    else if (el == "tabc") {
+		if (cmd==CMD_PLASMA)return "0";
+		return editorengcode.getValue();
+	}
     var v=$(el).value;
     
     if (el == "leadin") return v.split(",");
@@ -1794,7 +1801,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
     if (cmd==CMD_PLASMA || $("spindleoff").checked){
         if (cmd==CMD_PLASMA){
         	//pdn=pdn+"\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
-        	pdn="G0 Z0\nM3 S0 P100\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
+        	z=-z;
+        	pdn="G0 Z0\nM3 S0 P100\n"+getspindleon()+"G0 Z"+mround(z);
             pup=getspindleoff()+pup;
         } else {
             pup=(hasfnl?"":getspindleoff())+pup;
@@ -1864,7 +1872,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         if (firstlayer && uselead){
         	div += ";LEAD IN\n"
             if (cmd==CMD_PLASMA)div+=pdn;
-			div += "G1 F"+f2+" Z"+mround(z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
+			div += "G1 F"+f2+" Z"+mround(-z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
 		} else {
             if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z-2)) + '\n';
 			div += pdn.replace("=cncz", mround(z)) + '\n'+"G1 F"+f2+"\n";

@@ -45,6 +45,9 @@ var ly = -10.0;
 var lz = -10.0;
 var le = -10.0;
 var lf = -10.0;
+var lF1 = -10.0;
+var lF0 = -10.0;
+
 var lS = 0;
 var lh = 0;
 var ole = 0;
@@ -266,10 +269,11 @@ function addgcode(g) {
             if (G == 1) lf = F1;
             else lf = F0;
             F = Math.min(Math.round(gd['F'] / (fScale * 60)), 255); // 
-            //if (F != lf) lf = F; // 1 byte can archive value 0 - 1000 mm/s
-            //else isF = 0;        // we dont care about the precission here :D  
-            //if (G == 1) F1 = lf;
-            //else F0 = lf;
+            if (F != lf) {
+				if (G == 1) F1 = F;
+				else F0 = F;
+            }
+            isF = 0;        // we dont care about the precission here :D  
         }
         if (isX) {
             if (is92) {
@@ -338,12 +342,11 @@ function addgcode(g) {
         steplz = dz - (stepz * (num - 1));
         steple = de - (stepe * (num - 1));
         // we write the relative position not the absolute
-        if (num == 0 && isF) {
-            h = bh;
-            h |= 1 << 3;
-            write(h, 1);
-            write(F, 1);
-        }
+		if (G == 1) {F=F1;lf = lF1;}
+		else {F=F0;lf = lF0;}
+		isF=F!=lf;
+		
+
         for (var i = 1; i <= num; i++) {
             if (i == num) {
                 wx = steplx;
@@ -369,6 +372,7 @@ function addgcode(g) {
             if (isF) {
                 write(F, 1);
                 isF = 0;
+                if (G==1)lF1=F;else lF0=F;
             }
             if (isX) {
                 write(wx + xyLimit, xySize);
@@ -457,6 +461,9 @@ function begincompress(paste, callback1, callback2) {
     eE = ole = lx = ly = lz = le = lf = 0;
     F1 = 0;
     F0 = 0;
+	lF1 = -10.0;
+	lF0 = -10.0;
+
 
     printtime = 0;
     //init2d(0);
