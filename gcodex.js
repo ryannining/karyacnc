@@ -264,7 +264,7 @@ function addgcode(g) {
         var isE = gk.indexOf('E') + 1;
         X = Y = Z = F = S = 0;
         dx = dy = dz = de = 0;
-        if (isF) {
+        if (isF && !is92) { // we use F bit in G92 as P probe Z
 
             if (G == 1) lf = F1;
             else lf = F0;
@@ -310,12 +310,11 @@ function addgcode(g) {
             }
         }
         if (is92){
-            if (!(isX || isY || isZ)){
+            if (!(isX || isY || isZ || isF)){
                 xsub=0;
                 ysub=0;
                 zsub=0;
             }
-            return;
         }
         if (isE) {
             E = Math.round(gd['E'] * eScale); // E need to be precise on 3d printer
@@ -342,52 +341,61 @@ function addgcode(g) {
         steplz = dz - (stepz * (num - 1));
         steple = de - (stepe * (num - 1));
         // we write the relative position not the absolute
-		if (G == 1) {F=F1;lf = lF1;}
-		else {F=F0;lf = lF0;}
-		isF=F!=lf;
-		
+        if (num==0){
+			if (is92 && isF) {
+				// special case, probing, WIP
+				h |= 1 << 3;
+				write(h, 1);
+				lh = h;
+			}			
+		} else {
+			if (G == 1) {F=F1;lf = lF1;}
+			else {F=F0;lf = lF0;}
+			isF=F!=lf;
+			
 
-        for (var i = 1; i <= num; i++) {
-            if (i == num) {
-                wx = steplx;
-                wy = steply;
-                wz = steplz;
-                we = steple;
-            } else {
-                wx = stepx;
-                wy = stepy;
-                wz = stepz;
-                we = stepe;
-            }
-            h = bh;
+			for (var i = 1; i <= num; i++) {
+				if (i == num) {
+					wx = steplx;
+					wy = steply;
+					wz = steplz;
+					we = steple;
+				} else {
+					wx = stepx;
+					wy = stepy;
+					wz = stepz;
+					we = stepe;
+				}
+				h = bh;
 
-            if (isF) h |= 1 << 3;
-            if (isX) h |= 1 << 4;
-            if (isY) h |= 1 << 5;
-            if (isZ) h |= 1 << 6;
-            if (isE) h |= 1 << 7;
-            write(h, 1);
-            lh = h;
+				if (isF) h |= 1 << 3;
+				if (isX) h |= 1 << 4;
+				if (isY) h |= 1 << 5;
+				if (isZ) h |= 1 << 6;
+				if (isE) h |= 1 << 7;
+				write(h, 1);
+				lh = h;
 
-            if (isF) {
-                write(F, 1);
-                isF = 0;
-                if (G==1)lF1=F;else lF0=F;
-            }
-            if (isX) {
-                write(wx + xyLimit, xySize);
-                //log(x);
-            }
-            if (isY) {
-                write(wy + xyLimit, xySize);
-            }
-            if (isZ) {
-                write(wz + zLimit, zSize);
-            }
-            if (isE) {
-                write(we + eLimit, eSize);
-            }
-        }
+				if (isF) {
+					write(F, 1);
+					isF = 0;
+					if (G==1)lF1=F;else lF0=F;
+				}
+				if (isX) {
+					write(wx + xyLimit, xySize);
+					//log(x);
+				}
+				if (isY) {
+					write(wy + xyLimit, xySize);
+				}
+				if (isZ) {
+					write(wz + zLimit, zSize);
+				}
+				if (isE) {
+					write(we + eLimit, eSize);
+				}
+			}
+		}
         // save the vertex
         if ((gd['G'] <= 1)) {
             // 3d XYZ to 2D transform

@@ -53,14 +53,13 @@ function getchecked(el) {
 function getvalue(el) {
     if (el == "gcode") return editorgcode.getValue();
     else if (el == "engcode") return editorengcode.getValue();
-    else if (el == "repeat") {
-		if (cmd==CMD_PLASMA)return "1";
-		return editorengcode.getValue();
-	}
-    else if (el == "tabc") {
-		if (cmd==CMD_PLASMA)return "0";
-		return editorengcode.getValue();
-	}
+	if (cmd==CMD_PLASMA){
+		if (el == "repeat") return "1";
+        if (el == "tabc") return "0";
+        if (el == "spindleoffval") return "0";
+        if (el == "cutpw") return "100";
+    }
+
     var v=$(el).value;
     
     if (el == "leadin") return v.split(",");
