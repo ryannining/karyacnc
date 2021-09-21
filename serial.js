@@ -318,6 +318,7 @@ function pause() {
 }
 var ss = "";
 var eeprom = {};
+var eepromgcode = "";
 var ineeprom = 0;
 var eppos = 0;
 var resp1 = "";

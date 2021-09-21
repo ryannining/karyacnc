@@ -243,7 +243,7 @@ function addgcode(g) {
                 break;
             case 28:
                 h |= 2 << 1;
-                cntg28--;
+                //cntg28--;
                 break;
             case 92:
                 break;
@@ -341,13 +341,19 @@ function addgcode(g) {
         steplz = dz - (stepz * (num - 1));
         steple = de - (stepe * (num - 1));
         // we write the relative position not the absolute
-        if (num==0){
+        if (num==0 || G==28){
 			if (is92 && isF) {
 				// special case, probing, WIP
 				h |= 1 << 3;
 				write(h, 1);
-				lh = h;
 			}			
+			if (G==28){
+				write(h, 1);
+				if (isX) {h |= 1 << 4;write(Math.round(gd['Z'] * xyScale) + xyLimit,xySize);}
+				if (isY) {h |= 1 << 5;write(Math.round(gd['Y'] * xyScale) + xyLimit,xySize);}
+				if (isZ) {h |= 1 << 6;write(Math.round(gd['Z'] * zScale) + zLimit,zSize);}				
+			}
+			lh = h;
 		} else {
 			if (G == 1) {F=F1;lf = lF1;}
 			else {F=F0;lf = lF0;}

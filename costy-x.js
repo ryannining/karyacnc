@@ -1744,18 +1744,35 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 			d=sqrt(d);
 			dx/=d; // get the vector
 			dy/=d;
+            cll = isClockwise(lines);
 			// lead in
 			var p=rotateV(0,0,leadmm*dx,leadmm*dy,ang1);
-			X0=p[0]+X1; // start
-			Y0=p[1]+Y1;
+            var dn=5;
+            var cin=0;
+            while (--dn){
+                X0=p[0]*dn*0.2+X1; // start
+                Y0=p[1]*dn*0.2+Y1;
+                if (cin)break;
+                cin=isInside(X0,Y0,lines,1)==(cll?0:1);
+            }
             XLEAD=X0;
             YLEAD=Y0;
 			// lead out
 			if (ang2){
 				var p=rotateV(0,0,leadmm*dx,leadmm*dy,ang2);
-				X9=p[0]+X1;  // stop
-				Y9=p[1]+Y1;
+			//	X9=p[0]+X1;  // stop
+			//	Y9=p[1]+Y1;
+                var dn=5;
+                cin=0;
+                while (--dn){
+                    X9=p[0]*dn*0.2+X1; // start
+                    Y9=p[1]*dn*0.2+Y1;
+                    if (cin)break;
+                    cin=isInside(X9,Y9,lines,1)==(cll?0:1);
+                }
 			}
+            // check start and stop is inside the path
+            
 			leads.push([X0,Y0,X1,Y1,X9,Y9]);
 		}
 	}
@@ -1801,7 +1818,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         if (cmd==CMD_PLASMA){
         	//pdn=pdn+"\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
         	z=-z;
-        	pdn="G0 Z0\nM3 S0 P100\n"+getspindleon()+"G0 Z"+mround(z);
+        	pdn="G0 Z0\nM3 S0 P100\n"+getspindleon()+"G1 Z"+mround(z);
             pup=getspindleoff()+pup;
         } else {
             pup=(hasfnl?"":getspindleoff())+pup;
@@ -1871,7 +1888,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
         if (firstlayer && uselead){
         	div += ";LEAD IN\n"
             if (cmd==CMD_PLASMA)div+=pdn;
-			div += "G1 F"+f2+" Z"+mround(-z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
+			div += "\nG1 F"+f2+" Z"+mround(z) + " X"+mround(X1)+" Y"+mround(Y1)+"\n";
 		} else {
             if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z-2)) + '\n';
 			div += pdn.replace("=cncz", mround(z)) + '\n'+"G1 F"+f2+"\n";
@@ -3144,17 +3161,17 @@ function gcodetoText1(gx) {
 // I hope this new method will significantly increase the performance of transfering datra
 // from inkscape to karyacnc
 // check inner or outside here
-function isInside(x,y, path){
+function isInside(x,y, path,idx=0){
     // ray-casting algorithm based on
     // http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
 
-    inside = 0
-    j=path.length-1
+    inside = 0;
+    j=path.length-1;
     for (i in path){
-        xi = path[i][0];
-        yi = path[i][1];
-        xj = path[j][0];
-        yj = path[j][1];
+        xi = path[i][0+idx];
+        yi = path[i][1+idx];
+        xj = path[j][0+idx];
+        yj = path[j][1+idx];
 
         intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
         if (intersect)inside = !inside;
