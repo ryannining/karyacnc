@@ -565,15 +565,19 @@ function modechange(f = 0) {
 	}
 	if (cmd == CMD_CNC) {
 		notcncCSS.style.display = "none";
-		if (getvalue("pup")=="")setvalue("pup", "G0 F3000 Z15");
-		if (getvalue("pdn")=="")setvalue("pdn", "G0 F1800 Z=cncz");
+		if ($("pup").value==""){
+			setvalue("pup", "G0 F3000 Z15");
+			setvalue("pdn", "G0 F1800 Z=cncz");
+		}
 		//setvalue("feed", "3");
 		//setvalue("zdown", "10");
 	}
 	if (cmd == CMD_PLASMA) { // need to change !!
 		notplasmaCSS.style.display = "none";
-		if (getvalue("pup")=="")setvalue("pup", "G0 F3000 Z15");
-		if (getvalue("pdn")=="")setvalue("pdn", "G0 F1800 Z=cncz");
+		if ($("pup").value==""){
+			setvalue("pup", "G0 F3000 Z15");
+			setvalue("pdn", "G0 F1800 Z=cncz");
+		}
 		//setvalue("feed", "3");
 		//setvalue("zdown", "10");
 	}

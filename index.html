@@ -94,7 +94,7 @@
 							</select></td></tr>
 							<tr class=notsimple><td colspan=4><hr></td></tr>							
 							<tr class=notsimple><td colspan=2>Curve Quality </td><td colspan=2><input id=curveseg class=saveit value='0.1' size=5></td></tr>
-							<tr class=notsimple><td colspan=2>Start at </td><td colspan=2><input id=startat class=saveit size=12 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
+							<tr class=notsimple><td colspan=2>Start at </td><td colspan=2><input id=startat  size=12 value="0,0"> <input size=2 type=checkbox id=usestart checked class=saveit></td></tr>
 							<tr class="notsimple notlaser"><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="0"></td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Auto tab in (mm,max tab)</td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
@@ -102,6 +102,7 @@
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
 							<tr class="notsimple notlaser notcnc"><td colspan=2>Lead in (mm,Ain,Aout) </td><td colspan=2><input id=leadin class=saveit size=5 value="3,40,90"> <input size=2 type=checkbox id=useleadin class=saveit></td></tr>
 							<tr class="notsimple notlaser notcnc"><td colspan=2>Initial Height (extra down in ..mm) </td><td colspan=2><input id=fakeinit class=saveit size=5 value="5"> <input size=2 type=checkbox id=usefakeinit class=saveit></td></tr>
+							<tr class="notsimple"><td colspan=2>Pause before cut </td><td colspan=2><input size=2 type=checkbox id=pausecut class=saveit></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Ramp down </td><td colspan=2><input size=2 type=checkbox id=rampdown class=saveit></td></tr>
 							<tr class="notsimple notlaser"><td colspan=2>Dwell (s) </td><td colspan=2><input size=3 type=text id=dwelltime class=saveit value=0></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Acp mode</td><td colspan=2><input size=2 type=checkbox id=acpmode class=saveit></td></tr>
@@ -156,7 +157,8 @@
 							<tr class="notlaser notplasma"><td colspan=2>Slow pass</td><td colspan=2><input size=2 id=firstd value=1 class=saveit>mm</td></tr>
 							<tr class="notlaser notplasma notsimple"><td colspan=2>Slow threshold</td><td colspan=2><input size=2 id=slowth value=10 class=saveit>x</td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Fast pass</td><td colspan=2><input size=2 id=carvedp value=1 class=saveit>mm</td></tr>
-							<tr class="notlaser notplasma notsimple"><td colspan=2>Climb cut</td><td colspan=2><input type=checkbox id=carveclimb checked class=saveit></td></tr>
+							<tr class="notlaser notsimple"><td colspan=2>Climb cut</td><td colspan=2><input type=checkbox id=carveclimb checked class=saveit></td></tr>
+							<tr class="notlaser notsimple"><td colspan=2>Pause</td><td colspan=2><input type=checkbox id=carvepause checked class=saveit></td></tr>
 						</table></td>
                         <td align=left class="notlaser notplasma"><img src="pocketinfo.png">
                             <hr><b>V CARVING (<font color=#00FFFF style="background:black;margin:2px">Stroke is Aqua</font>)</b><br>
@@ -296,12 +298,12 @@
 
 				<tr class="tonoff notsimple" style="background:lime"><td colspan=2><span class=notsimple>Tools Off / </span>Z-Up</td><td colspan=1 ><span class=notsimple>Tools On/ </span>Z-Down</td></tr>
 				<tr class="tonoff notsimple" ><td colspan=2><input id=pup size=13 value="G0 F3000 Z10" class=saveit></td>
-					<td colspan=1><input id=pdn size=13 value="G0 F700 Z=cncz" class="saveit"></td>
+					<td colspan=1><input id=pdn size=16 value="G0 F700 Z=cncz" class="saveit"></td>
 				</tr>
 				<tr style="background:lime" class=notsimple><td colspan=2>Flip X <input id=flipx type=checkbox class=saveit>
 					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit></td><td class="notsimple notplasma"> Pow <input id=cutpw size=2 value=100 class=saveit>%</td></tr>
 				<tr valign=center>
-                    <td colspan=1><span class="notsimple notlaser notplasma">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
+                    <td colspan=1><span class="notsimple notlaser">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
                     <td><span class="notsimple notcnc notplasma">pre Burn </span></td><td ><input id=burn1 type=checkbox class="saveit notsimple notcnc notplasma" ><button id=btrecode >Process</button></td></tr>
             <hr>
             </tr>

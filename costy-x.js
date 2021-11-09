@@ -49,7 +49,9 @@ function log(text) {
 function getchecked(el) {
 	return $(el).checked;
 }
-
+function getvalue_o(el) {
+    return $(el).value;
+}
 function getvalue(el) {
 	if (el == "gcode") return editorgcode.getValue();
 	else if (el == "engcode") return editorengcode.getValue();
@@ -61,8 +63,8 @@ function getvalue(el) {
 		if (el == "cutpw") return "100";
 		if (el == "zdown") {
 			v = Math.abs(v);
-			return ((v > 2) ? 2 : v);
-		} // no more than 2mm
+			return ((v > 3) ? 3 : v);
+		} // no more than 3mm
 	}
 
 	if (el == "leadin") return v.split(",");
@@ -585,6 +587,8 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 	if (closed) {
 		var ofs1 = 0;
 		var linesx = prepare_line2(lenmm, line, 0)[0];
+		var centerpath2=centerpath;
+
 		if (!sty.greenskip && getchecked("usefinish")) ofs1 = getnumber('finishline');
 		lines2 = prepare_line2(lenmm, line, ofs1);
 		var lines = lines2[0];
@@ -592,6 +596,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 		if (lines.length == 0) {
 			ofs1 = 0;
 			lines = linesx;
+			centerpath=centerpath2;
 		}
 		if (sty.greenskip) area += 500000; // the outer still need to be the last
 		sty.subchilds = lines.length - 1;
@@ -603,7 +608,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 			var x1 = line1[0][1];
 			var y1 = line1[0][2];
 
-			gcodes.push([lenmm, /*ofs1?"D":""*/ "", x1, y1, lines[i], srl, ar, closed, shapenum, cuttab_manual[i], ii,centerpath[i]]);
+			gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum, cuttab_manual[i], ii,centerpath[i]]);
 			ii++;
 		}
 		var nc = lines.length - 1;
@@ -616,7 +621,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 				if (i > 0) ar = 1;
 				var x1 = line1[0][1];
 				var y1 = line1[0][2];
-				gcodes.push([lenmm, /*"F"*/ "", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum, cuttab_manual[i], i,centerpath[i]]);
+				gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum, cuttab_manual[i], i,centerpath2[i]]);
 				// need to add the childs count for the parent
 			}
 			nc += linesx.length;
@@ -1702,9 +1707,9 @@ function getspindleoff() {
     return M3 + " S" + Math.floor(getnumber("spindleoffval") * 2.55) + "\n";
 }
 
-function getspindleon(dw = 1) {
+function getspindleon(dw = 1,dwt=0) {
 	if (cmd == CMD_LASER) return M3 + " S" + cutpw + "\n";
-	var tm=parseInt(getnumber("dwelltime") * 1000);
+	var tm=(dwt>0)?dwt:parseInt(getnumber("dwelltime") * 1000);
     if (cmd==CMD_PLASMA && tm<500)tm=500;
     var P = " P" + tm;
 	if ((dw == 0) || (P == " P0")) P = "";
@@ -1863,18 +1868,21 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var pup = getvalue("pup");
 	if (fnl) pup = ""; //G0 Z0\n";
 	var pdn = getvalue('pdn');
-	if (cmd == CMD_PLASMA || getchecked("spindleoff")) {
+	if (cmd == CMD_PLASMA || getchecked("spindleoff") || getchecked("pausecut")) {
 		if (cmd == CMD_PLASMA) {
 			//pdn=pdn+"\n"+((!closed || (firstlayer && !fnl ))?getspindleon():"")
 			z = -z;
 			//pdn = "G0 Z0\nM3 S0 P100\n" + getspindleon() + "G1 Z" + mround(z);
 			if (getchecked("usefakeinit")) pdn = "G0 Z-"+getvalue("fakeinit")+"\nG92 Z0\n";
             else pdn="G0 Z0\n";
+            if (getchecked("pausecut") && firstlayer) pdn+="M3 S0 P10000\n";
             pdn+="M3 S0 P100\n" + getspindleon() + "G1 Z" + mround(z);
 			pup = getspindleoff() + pup;
 		} else {
 			pup = (hasfnl ? "" : getspindleoff()) + pup;
-			pdn = ((!closed || (firstlayer && !fnl)) ? getspindleon() : "") + pdn;
+			pdn =  (((firstlayer && !fnl)) ? (getspindleon())+ (getchecked("pausecut")?"G0 Z0\nM3 S255 P10000\n":"") : "") 
+                   
+                   + pdn;
 		}
 	}
 	var f1 = speedtravel * 60;
@@ -2157,8 +2165,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		gcode0(f1, X1, 0);
 	}
 	if (uselead && lastlayer && X9 != null) {
-		if (flip) gcode0(f2, X0, Y0);
-		else gcode0(f2, X9, Y9)
+		if (flip) gcode1(f2, X0, Y0);
+		else gcode1(f2, X9, Y9)
 	}
 	//gcode0(f1,X1,Y1);
 	lastz = z;
@@ -2166,7 +2174,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	// if not closed loop then pen up
 	//if ((lines[0][1] != lines[lines.length - 1][1]) ||
 	//    (lines[0][2] != lines[lines.length - 1][2])) div += pup + "\n";
-	if (cmd == CMD_PLASMA) div += "\n" + getspindleoff() + "\n";
+	if (cmd == CMD_PLASMA) div += "\n" + getspindleon(1,250)+"\n"+getspindleoff() + "\n";
 	return div;
 }
 
@@ -2399,7 +2407,8 @@ function sortedgcode() {
 	var ov = getchecked("overcut");
 
 	// gcodes.push([lenmm, "", x1, y1, lines[i], srl, ar, closed, shapenum]);    
-
+    var ufinish = getchecked("usefinish");
+    var mustF =0;
 	for (var kk = 0; kk < 2; kk++) {
 		for (var i = 0; i < gcodes.length; i++) {
 			var sty = gcstyle[gcodes[i][8]];
@@ -2469,7 +2478,8 @@ function sortedgcode() {
 					dis += gcodes[i][6] * szs;
 					dis += (gcodes[i][11][0]-lx) * (xs+0.1)+(gcodes[i][11][1]-ly) * (ys+0.1);
                     
-					if (gcodes[i][1] == "F") dis += 10; // finish line must be the last
+					//if (gcodes[i][1] == "F" && !mustF) dis += 100; // finish line must be the last
+					if (gcodes[i][1] == "F") dis += (mustF?-1000:1000); // finish line must be the last
 					dis += newx * xs + newy * ys;
 
 					//var dis = sqrt(dx * dx + dy * dy); // distance + if outside, give area number so it will become last
@@ -2486,6 +2496,9 @@ function sortedgcode() {
 			// smalles in cs
 			if (cs >= 0) {
 				//sshift=0;
+                if (gcodes[cs][1] == "F")mustF=0;
+                if (gcodes[cs][1] == "D")mustF=1;
+                
 				sty = gcstyle[gcodes[cs][8]];
 				subch = gcodes[cs][10];
 				if (subch == 0) {} else {
@@ -2729,12 +2742,13 @@ function sortedgcode() {
 
 			// do burn cutting for CNC, first cut is half 
 			if ((_re * iscut > 0) && (cmd == CMD_CNC) && getchecked("burn1")) {
-				s += ";Burn CNC \n";
+				/*s += ";Burn CNC \n";
 				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], zdown / 2, zdown / 2, vcuttab, sgcodes[j][0][5], 1, 1, snum, f2 * 1.25, 0, shift, rcutpos);
 				cncz = Math.max(cncz + zdown / 2, cncdeep);
 				cncz2 = Math.max(cncz2 + zdown / 2, cncdeep);
-			}
-			if (!sty.closed && (getchecked("burn1") || getchecked("flipx"))) {
+                */
+            }
+			if (!sty.closed && ((cmd == CMD_CNC && getchecked("burn1")) || getchecked("flipx"))) {
 				climb = climb ? 0 : 1;
 			}
 			var of2 = f2;

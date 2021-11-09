@@ -624,13 +624,14 @@ function pocketgcode() {
 	//var rz1 = carvedeep / re1;
 	var zup = Math.min(getvalue('safez') * 1, zretract);
 	var pup = "G0 F" + speedretract + " Z" + zup + "\n";
-	var pup2 = "G0 F" + speedretract + " Z" + mround(-rz) + "\n";
+	var pup2 = "G0 F" + speedretract + " Z0\n";
 	if (cmd == CMD_LASER) {
 		pup = getvalue('pup') + "\n";
 		pup2 = pup;
 	}
 	pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	var gc = pup + "M3 S" + pw + "\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
+	var beforecut = getchecked("carvepause")?"G0 Z0\nM3 S"+pw+" P10000\n":"";
 	gc += pup;
 
 	e1 = 0;
@@ -717,13 +718,15 @@ function pocketgcode() {
 	var la = 0;
 	var climbcut = $("carveclimb").checked;
 	already = [];
+	var pup2a;
 	for (var j = 0; j < sglines.length; j++) {
 		gline = sglines[j][0];
 		f2 = sglines[j][5];
 		gline = arrayRotate(gline, sglines[j][4]);
 		var _re = Math.ceil(sglines[j][2] / (j == 0 ? rz1 : rz));
 		if (CMD_CNC) {
-			pup2 = "G0 F" + speedretract + " Z" + mround(-sglines[j][2]) + "\n";
+			pup2 = "G0 F" + speedretract + " Z" +mround(-sglines[j][2]/re) + "\n";
+
 		}
 		var _rz = sglines[j][2] / (_re);
 		var a = sglines[j][1];
@@ -750,12 +753,12 @@ function pocketgcode() {
 				cy = seg1[1];
 
 				if (ni == 0) {
-					jump = ((r == 0) && (sqr(ox - cx) + sqr(oy - cy) > sqr(realofs * 2))); // decide we need to move up z or not
+					jump = ((r == 0) && ((sqr(ox - cx) + sqr(oy - cy) > sqr(realofs * 2)))); // decide we need to move up z or not
 
 					gc += jump ? pup : (r == 0 ? pup2 : "");
-					gc += "G1 F" + (jump ? f1 : f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
+					gc += "G0 F" + (jump ? f1 : f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
 					if (jump) gc += "G0 Z0 F" + speedretract + "\n";
-					gc += pdn.replace("=cncz", mround(zz));
+					gc += (jump?beforecut:"")+pdn.replace("=cncz", mround(zz));
 					lstF = 0;
 				} else {
 					gc += (lstF != f2 ? ("G1 F" + f2) : "G1") + " X" + mround(cx) + " Y" + mround(cy) + "\n";
