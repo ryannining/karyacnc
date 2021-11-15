@@ -589,7 +589,8 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 		var linesx = prepare_line2(lenmm, line, 0)[0];
 		var centerpath2=centerpath;
 
-		if (!sty.greenskip && getchecked("usefinish")) ofs1 = getnumber('finishline');
+        if (!(sty.greentravel || sty.domarking || sty.dobtvcarve  || sty.greenskip || sty.doengrave || sty.dopocket)  &&getchecked("usefinish")) ofs1 = getnumber('finishline');
+
 		lines2 = prepare_line2(lenmm, line, ofs1);
 		var lines = lines2[0];
 		var clk = lines2[1];
@@ -891,6 +892,7 @@ function doengrave() {
 			aengrave[y] = rdata;
 		}
 		var lpw = "";
+        var lofs=getnumber("leftofset");
 		var tlx = 1000;
 		var tly = 1000;
 		while (run && maxrun) {
@@ -995,6 +997,7 @@ function doengrave() {
 					aengrave[y] = pdata;
 					for (var r = 0; r < _re; r++) {
 						ri++;
+                        var ofsx=(((ri) & 1) ? lofs : 0)
 						//if (ri>0)rdata = rdata.reverse();
 						rdata.sort(ri & 1 ? msortx : nsortx);
 						tx = rdata[0][0];
@@ -1029,8 +1032,8 @@ function doengrave() {
 						var LY = -10000;
 						var LPW = -100;
 						for (var j = 0; j <= pp; j++) {
-							oox1 = rdata[j * 2 + 1][0] * 1;
-							oox2 = rdata[j * 2][0] * 1;
+							oox1 = rdata[j * 2 + 1][0] * 1+ofsx;
+							oox2 = rdata[j * 2][0] * 1+ofsx;
 							cpw = parseInt(rdata[j * 2][1] * pw / 255);
 							if (cpw > 0)
 								cpw = " S" + cpw;
@@ -2409,12 +2412,55 @@ function sortedgcode() {
 	// gcodes.push([lenmm, "", x1, y1, lines[i], srl, ar, closed, shapenum]);    
     var ufinish = getchecked("usefinish");
     var mustF =0;
-	for (var kk = 0; kk < 2; kk++) {
+    function findnearest(closed,lx,ly,pts,sty){
+        
+        var pstep = Math.floor(pts.length / 100) + 1;
+        var newx = 0;
+        var newy = 0;
+        var shift = 0;
+        var flip = 0;
+        var dis =100000000;
+        if (closed) { // if closed loop we can check all the points
+            for (var p = 0; p < pts.length; p += pstep) {
+                var dx = pts[p][1] - lx;
+                var dy = pts[p][2] - ly;
+                var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
+                if (dis2 < dis) {
+                    shift = p;
+                    dis = dis2;
+                    newx = pts[p][1];
+                    newy = pts[p][2];
+                }
+            }
+            dis += 100;
+        } else { // if segment then only check the corner
+            var dx = pts[0][1] - lx;
+            var dy = pts[0][2] - ly;
+            dis = sqrt(dx * dx + dy * dy); // distance + area size
+            dx = pts[pts.length - 1][1] - lx;
+            dy = pts[pts.length - 1][2] - ly;
+            var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
+            if (dis2 < dis) {
+                flip = 1;
+                dis = dis2;
+                newx = pts[pts.length - 1][1];
+                newy = pts[pts.length - 1][2];
+            }
+
+            if (sty.greentravel) dis += 1;
+        }
+        return [newx,newy,dis,shift,flip];
+    }	
+    var lasttarget=0;    
+	var dosafesort=getchecked("safesort");    
+    for (var kk = 0; kk < 2; kk++) {
 		for (var i = 0; i < gcodes.length; i++) {
 			var sty = gcstyle[gcodes[i][8]];
 			sty.lchilds = sty.childs = sty.ochilds + sty.exchilds; // reset child number counter
 
 		}
+        
+
 
 		for (var j = 0; j < gcodes.length; j++) {
 			if (sortit) {
@@ -2437,43 +2483,22 @@ function sortedgcode() {
 					if (kk == (k1 ? 1 : 0)) continue;
 					if (subch == 0 && sty.subchilds > 0) continue;
 					if (sty.childs > 0) continue; // if still have child do not process
-					var pts = gcodes[i][4];
+					
+					var dis = 1000000 - (sty.lchilds ? (sty.lchilds - sty.childs) * 10 : 0);
+                    var newx = 0;
+                    var newy = 0;
+                    
+                    var pts = gcodes[i][4];
 					var shift = 0;
 					var flip = 0;
-					var dis = 1000000 - (sty.lchilds ? (sty.lchilds - sty.childs) * 10 : 0);
-
-					var pstep = Math.floor(pts.length / 100) + 1;
-					var newx = 0;
-					var newy = 0;
-					if (gcodes[i][7]) { // if closed loop we can check all the points
-						for (var p = 0; p < pts.length; p += pstep) {
-							var dx = pts[p][1] - lx;
-							var dy = pts[p][2] - ly;
-							var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
-							if (dis2 < dis) {
-								shift = p;
-								dis = dis2;
-								newx = pts[p][1];
-								newy = pts[p][2];
-							}
-						}
-						dis += 100;
-					} else { // if segment then only check the corner
-						var dx = pts[0][1] - lx;
-						var dy = pts[0][2] - ly;
-						dis = sqrt(dx * dx + dy * dy); // distance + area size
-						dx = pts[pts.length - 1][1] - lx;
-						dy = pts[pts.length - 1][2] - ly;
-						var dis2 = sqrt(dx * dx + dy * dy); // distance + area size
-						if (dis2 < dis) {
-							flip = 1;
-							dis = dis2;
-							newx = pts[pts.length - 1][1];
-							newy = pts[pts.length - 1][2];
-						}
-
-						if (sty.greentravel) dis += 1;
-					}
+                    var near = findnearest(gcodes[i][7],lx,ly,pts,sty);
+                    newx=near[0];
+                    newy=near[1];
+                    dis+=near[2];
+                    shift=near[3];
+                    flip=near[4];
+                    
+                    
 					// we already use closest and the hierarchy , so no need area size
 					dis += gcodes[i][6] * szs;
 					dis += (gcodes[i][11][0]-lx) * (xs+0.1)+(gcodes[i][11][1]-ly) * (ys+0.1);
@@ -2507,13 +2532,25 @@ function sortedgcode() {
 				for (var pi in sty.parent) {
 					gcstyle[sty.parent[pi]].childs--;
 				}
-
-				sgcodes.push([gcodes[cs], cs + 1, sflip, sshift]);
+                
 				gcodes[cs][6] = -gcodes[cs][6];
 				var pts = gcodes[cs][4];
 				// closed path back to first position
 				lx = pts[sshift][1];
 				ly = pts[sshift][2];
+
+                var newtarget=[gcodes[cs], cs + 1, sflip, sshift];
+				sgcodes.push(newtarget);
+                
+                
+                if (lasttarget && dosafesort && (!(sty.greentravel || sty.greenskip ))){
+                    // recheck for save exit from cutting path
+                    var recheck=findnearest(lasttarget[0][7],lx,ly,lasttarget[0][4],gcstyle[lasttarget[0][8]]);
+                    lasttarget[4]=lasttarget[3];
+                    lasttarget[3]=recheck[3];
+                    lasttarget=newtarget;
+                } else lasttarget=0;
+
 				if (!gcodes[cs][7]) {
 					// segment path back to last point depend on how many repeat
 					var rep = re;
@@ -2543,8 +2580,7 @@ function sortedgcode() {
 			}
 		}
 	}
-
-
+    if (lasttarget) lasttarget[3]=lasttarget[4];
 	pup1 = getvalue("pup");
 	cutpw = getnumber('cutpw') * 255 * 0.01;
 
