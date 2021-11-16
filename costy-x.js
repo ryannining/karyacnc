@@ -2543,13 +2543,16 @@ function sortedgcode() {
 				sgcodes.push(newtarget);
                 
                 
-                if (lasttarget && dosafesort && (!(sty.greentravel || sty.greenskip ))){
+                if (dosafesort && (!(sty.greentravel || sty.greenskip ))){
                     // recheck for save exit from cutting path
-                    var recheck=findnearest(lasttarget[0][7],lx,ly,lasttarget[0][4],gcstyle[lasttarget[0][8]]);
-                    lasttarget[4]=lasttarget[3];
-                    lasttarget[3]=recheck[3];
-                    lasttarget=newtarget;
+                    if (lasttarget) {
+						var recheck=findnearest(lasttarget[0][7],lx,ly,lasttarget[0][4],gcstyle[lasttarget[0][8]]);
+						lasttarget[4]=lasttarget[3];
+						lasttarget[3]=recheck[3];
+					}
+                    lasttarget=newtarget;    
                 } else lasttarget=0;
+                
 
 				if (!gcodes[cs][7]) {
 					// segment path back to last point depend on how many repeat
@@ -2580,7 +2583,7 @@ function sortedgcode() {
 			}
 		}
 	}
-    if (lasttarget) lasttarget[3]=lasttarget[4];
+    //if (lasttarget) lasttarget[3]=lasttarget[4];
 	pup1 = getvalue("pup");
 	cutpw = getnumber('cutpw') * 255 * 0.01;
 
