@@ -517,7 +517,8 @@ function prepare_line2(lenmm, lines, ofs1) {
 		if ((disable_ovc.indexOf(shapectr + "") >= 0) || (lenmm < noprocess)) return [glines, clk];
 		sharpv = $("sharp").value;
 		ov = 0.01;
-		if ((cmd == CMD_CNC) && getchecked("overcut")) {
+        var dogbone=getchecked("overcut");
+		if ((cmd == CMD_CNC) && dogbone) {
 			//ov+=$("overcut").value/10.0;
 			var ro = $("offset").value / 2;
 			ov += (sqrt(2 * sqr(ro)) - ro) + ovmore;
@@ -541,7 +542,7 @@ function prepare_line2(lenmm, lines, ofs1) {
 				cyt += y;
 				cnt += 1.0;
 
-				//if (ov!=0)
+				if (dogbone)
 				{
 					sr = sharp(gline, 1, 2, i);
 					if ((sr > sharpv)) {
@@ -565,7 +566,7 @@ function prepare_line2(lenmm, lines, ofs1) {
 						ly = y;
 						//}
 					} else newline.push(gline[i]);
-				}
+				} else newline.push(gline[i])
 			}
 			newlines.push(newline);
 		}
@@ -1869,7 +1870,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var pw1 = 1;
 	var pw2 = 0; //getvalue('pwm');
 	var pup = getvalue("pup");
-	if (fnl) pup = ""; //G0 Z0\n";
+	if (fnl) pup = "G0 Z3\n";
 	var pdn = getvalue('pdn');
 	if (cmd == CMD_PLASMA || getchecked("spindleoff") || getchecked("pausecut")) {
 		if (cmd == CMD_PLASMA) {
@@ -1882,7 +1883,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
             pdn+="M3 S0 P100\n" + getspindleon() + "G1 Z" + mround(z);
 			pup = getspindleoff() + pup;
 		} else {
-			pup = (hasfnl ? "" : getspindleoff()) + pup;
+			pup = (hasfnl ? pup : getspindleoff()) + pup;
 			pdn =  (((firstlayer && !fnl)) ? (getspindleon())+ (getchecked("pausecut")?"G0 Z0\nM3 S255 P10000\n":"") : "") 
                    
                    + pdn;
@@ -2545,7 +2546,7 @@ function sortedgcode() {
                 
                 if (dosafesort && (!(sty.greentravel || sty.greenskip ))){
                     // recheck for save exit from cutting path
-                    if (lasttarget) {
+                    if (lasttarget ) {
 						var recheck=findnearest(lasttarget[0][7],lx,ly,lasttarget[0][4],gcstyle[lasttarget[0][8]]);
 						lasttarget[4]=lasttarget[3];
 						lasttarget[3]=recheck[3];
@@ -2746,7 +2747,7 @@ function sortedgcode() {
 
 			// do pen up
 			var ps = pup1 + "\n";
-			if (fnl) ps = ""; //G0 Z0\n";
+			if (fnl) ps = "G0 Z3\n";
 			// acp mode make first hole
 			var acp = "";
 			if ((cmd == CMD_PLASMA || getchecked("spindleoff")) && !fnl) acp = getspindleoff();
