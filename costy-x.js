@@ -515,10 +515,12 @@ function prepare_line2(lenmm, lines, ofs1) {
 			return [newlines, clk];
 		}
 		if ((disable_ovc.indexOf(shapectr + "") >= 0) || (lenmm < noprocess)) return [glines, clk];
-		sharpv = $("sharp").value;
+		sharpv = Math.cos(getnumber("sharp")*Math.PI/180);
 		ov = 0.01;
         var dogbone=getchecked("overcut");
-		if ((cmd == CMD_CNC) && dogbone) {
+        var isnotcutting = sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking;
+		if (getchecked("overcut2"))isnotcutting=false;
+        if ((cmd == CMD_CNC) && dogbone && !isnotcutting) {
 			//ov+=$("overcut").value/10.0;
 			var ro = $("offset").value / 2;
 			ov += (sqrt(2 * sqr(ro)) - ro) + ovmore;
@@ -1279,6 +1281,8 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 		}
 		sty = defaultsty;
 	}
+    var isnotcutting = sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking;
+    if (getchecked("overcut2"))isnotcutting=false;
 	if (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || (!closed)) {
 		stu = 1;
 		cuttabz = 0;
@@ -1326,10 +1330,10 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 	seg = getchecked("segment");
 
 	start = 0;
-	sharpv = $("sharp").value;
+	sharpv = Math.cos(getnumber("sharp")*Math.PI/180);
 
 	ov = 0;
-	if ((cmd == CMD_CNC) && getchecked("overcut")) {
+	if ((cmd == CMD_CNC) && getchecked("overcut") && !isnotcutting) {
 		var rr = $("offset").value / 2;
 		ov = sqrt(2 * sqr(rr)) - rr;
 	}
