@@ -518,8 +518,9 @@ function prepare_line2(lenmm, lines, ofs1) {
 		sharpv = Math.cos(getnumber("sharp")*Math.PI/180);
 		ov = 0.01;
         var dogbone=getchecked("overcut");
-        var isnotcutting = sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking;
-		if (getchecked("overcut2"))isnotcutting=false;
+        var isnotcutting = (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking) ||
+                           (!sty.isblack);
+		if (getchecked("overcut2") && sty.domarking) isnotcutting=false;
         if ((cmd == CMD_CNC) && dogbone && !isnotcutting) {
 			//ov+=$("overcut").value/10.0;
 			var ro = $("offset").value / 2;
@@ -1281,8 +1282,9 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 		}
 		sty = defaultsty;
 	}
-    var isnotcutting = sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking;
-    if (getchecked("overcut2"))isnotcutting=false;
+    var isnotcutting = (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking) || 
+                           (!sty.isblack);
+    if (getchecked("overcut2") && sty.domarking)isnotcutting=false;
 	if (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || (!closed)) {
 		stu = 1;
 		cuttabz = 0;
@@ -3721,6 +3723,8 @@ function pathstoText1(gx) {
 		if (sty.doEngrave)
 			sty.angle = parseInt("0x" + stro.substr(3, 2));
 		sty.domarking = (RBcolor(stro) == "ff00");
+		sty.isblack = (RBcolor(stro) == "0000");
+        
 		sty.markpower = 0;
 		if (sty.domarking && (cmd == CMD_LASER))
 			sty.markpower = parseInt("0x" + stro.substr(3, 2)); // if CNC, we dont need power, threat as deep instead
