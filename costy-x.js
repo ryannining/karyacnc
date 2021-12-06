@@ -47,6 +47,8 @@ function log(text) {
 }
 
 function getchecked(el) {
+    if (el=="burn1" && cmd != CMD_LASER) return false;
+    if (el=="usefinish" && cmd != CMD_CNC) return false;
 	return $(el).checked;
 }
 function getvalue_o(el) {
@@ -84,12 +86,18 @@ function getvalue(el) {
 var speedvals = [];
 
 function getnumber(el) {
-	var v = getvalue(el).split(",");
+    var v = getvalue(el);
+	if (el=="sharp"){
+        if (v*1<5) return v*1;
+        return Math.cos(v*Math.PI/180);
+    }
+    v = v.split(",");
 	if (v.length == 1) return parseFloat(v[0]);
 
 	if (el == "speed") {
 		speedvals = v;
 	}
+    
 	return parseFloat(v[v.length - 1]);
 }
 
@@ -515,7 +523,7 @@ function prepare_line2(lenmm, lines, ofs1) {
 			return [newlines, clk];
 		}
 		if ((disable_ovc.indexOf(shapectr + "") >= 0) || (lenmm < noprocess)) return [glines, clk];
-		sharpv = Math.cos(getnumber("sharp")*Math.PI/180);
+		sharpv = getnumber("sharp");
 		ov = 0.01;
         var dogbone=getchecked("overcut");
         var isnotcutting = (sty.greenskip || sty.doEngrave || sty.dovcarve || sty.dopocket || sty.domarking) ||
@@ -1332,7 +1340,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 	seg = getchecked("segment");
 
 	start = 0;
-	sharpv = Math.cos(getnumber("sharp")*Math.PI/180);
+	sharpv = getnumber("sharp");
 
 	ov = 0;
 	if ((cmd == CMD_CNC) && getchecked("overcut") && !isnotcutting) {
@@ -2482,15 +2490,17 @@ function sortedgcode() {
 					for (var pi in sty.parent) {
 						gcstyle[sty.parent[pi]].childs--;
 					}
+                    
 				}
 				for (var i = 0; i < gcodes.length; i++) {
 					var sty = gcstyle[gcodes[i][8]];
 					var subch = gcodes[i][10];
 					k1 = sty.doEngrave || sty.domarking || sty.dovcarve || sty.dopocket;
 					if (kk == (k1 ? 1 : 0)) continue;
-					if (subch == 0 && sty.subchilds > 0) continue;
-					if (sty.childs > 0) continue; // if still have child do not process
-					
+                    if (!k1){
+                        if (subch == 0 && sty.subchilds > 0) continue;
+                        if (sty.childs > 0 ) continue; // if still have child do not process
+                    }
 					var dis = 1000000 - (sty.lchilds ? (sty.lchilds - sty.childs) * 10 : 0);
                     var newx = 0;
                     var newy = 0;
