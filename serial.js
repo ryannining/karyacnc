@@ -1200,9 +1200,16 @@ var jobs = [];
 function updatedownload() {
 	var element = $("download");
 	element.setAttribute('download', "gcode.nc");
-	element.href = window.URL.createObjectURL(new Blob([";JOB\n" + jobs.join("\n;JOB\n")], {
+	element.href = window.URL.createObjectURL(new Blob([startgcode+";JOB\n" + jobs.join("\n;JOB\n")+ finishgcode], {
 		type: 'text/csv'
-	}));
+	}));	
+}
+function updatedownload2() {
+	var element = $("download2");
+	element.setAttribute('download', "gcode.nc");
+	element.href = window.URL.createObjectURL(new Blob([startgcode+"\n"+getvalue("engcode") + "\n" + getvalue("gcode") + finishgcode], {
+		type: 'text/csv'
+	}));	
 }
 setclick("btjob1", function() {
 	jobcnt++;

@@ -227,7 +227,7 @@ function gcode0(f, x2, y2, z2 = 10000, e2 = 1000000) {
 			div += "G1 F60 E" + mround(e1 - 1) + "\n";
 		}
 	}
-	gcoden(0, f, x2, y2);
+	gcoden(0, f, x2, y2,z2);
 }
 
 function gcode1(f, x2, y2, z2 = 10000, e2 = 1000000) {
@@ -371,6 +371,7 @@ function getoffset() {
 }
 
 function RBcolor(stro) {
+    stro=stro.toLowerCase();
 	return stro.substr(1, 2) + stro.substr(5, 2);
 }
 var cuttab_manual = [];
@@ -538,7 +539,7 @@ function prepare_line2(lenmm, lines, ofs1) {
 		cyt = 0;
 		cnt = 0;
 		var tl = 0;
-		console.log(">>" + glines.length);
+		//console.log(">>" + glines.length);
 		for (var j = 0; j < glines.length; j++) {
 			var gline = glines[j];
 			var newline = [];
@@ -1381,17 +1382,20 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 		pocketdeep = sty.strokedeep > 0 ? sty.strokedeep : carvedeep;
 	}
 
+    var orig=(lcol=="#0000CC88") || (lcol=="#CCCCCCCC");
 	var cll = false;
-	if (closed && !plt) {
-		cll = isClockwise(lines);
-		if (!cll) lcol = "#00C800";
-		else lcol = theme == 0 ? "#000000" : "#cceeee";
-	} else {
-		lcol = theme == 0 ? "#000000" : "#cceeee";
+	if (!orig) {
+        if (closed && !plt) {
+            cll = isClockwise(lines);
+            if (!cll) lcol = "#00C800";
+            else lcol = theme == 0 ? "#000000" : "#cceeee";
+        } else {
+            lcol = theme == 0 ? "#000000" : "#cceeee";
+        }
+        if (sty.dovcarve) lcol = "#00ffff";
+        if (sty.dopocket) lcol = "#800080";
+        if (sty.domarking) lcol = "#FF0000";
 	}
-	if (sty.dovcarve) lcol = "#00ffff";
-	if (sty.dopocket) lcol = "#800080";
-	if (sty.domarking) lcol = "#FF0000";
 	ox = 0;
 	oy = 0;
 	ll = lines.length;
@@ -1736,7 +1740,7 @@ function getspindleon(dw = 1,dwt=0) {
 var fnl = 0;
 var hasfnl = 0;
 
-function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip, shift, cutpos) {
+function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip, shift, cutpos,penaway=0) {
 	// the idea is make a cutting tab in 4 posisiton,:
 	//
 	addz = getvalue("addz");
@@ -1875,9 +1879,6 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		edis = sqrt(sqr(lx - X1) + sqr(ly - Y1));
 	};
 
-	lx = X1;
-	ly = Y1;
-	lz = z;
 
 	// turn off tool and move up if needed
 	//cmd = getvalue('cmode');
@@ -1948,8 +1949,26 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	if (uselead && firstlayer && X0 != null) {
 		gcode0(f1, X0, Y0);
 		//gcode0(f2, X1, Y1);
-	} else gcode0(f1, X1, Y1);
-	div += "G0 F" + f1 + "\n";
+	} else {
+        if (cmd==CMD_CNC && firstlayer && penaway && edis>0) {
+            var D=edis;
+            var dx=(X1-lx)/D;
+            var dy=(Y1-ly)/D;
+            var as=getnumber("acpstep");
+            gcode0(f1, lx+dx*as, ly+dy*as,2);
+            gcode0(f1, lx+D*0.15*dx, ly+D*0.15*dy,zretract*0.6);
+            gcode0(f1, lx+D*0.5*dx, ly+D*0.5*dy,zretract);
+            gcode0(f1, lx+D*0.75*dx, ly+D*0.75*dy,zretract*0.6);
+            gcode0(f1, X1, Y1,zretract*0.25);
+            
+            
+        } else gcode0(f1, X1, Y1);
+	}
+    lx = X1;
+	ly = Y1;
+	lz = z;
+
+    div += "G0 F" + f1 + "\n";
 	div += "G1 F" + f2 + "\n";
 
 	//if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
@@ -1968,7 +1987,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 			if (cmd == CMD_PLASMA) div += pdn;
 			div += "\nG1 F" + f2 + " Z" + mround(z) + " X" + mround(X1) + " Y" + mround(Y1) + "\n";
 		} else {
-			if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z - 2)) + '\n';
+			if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z - 1)) + '\n';
 			div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
 		}
 	}
@@ -2188,6 +2207,10 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	}
 	//gcode0(f1,X1,Y1);
 	lastz = z;
+    if (!closed){
+    	lx=lx2;
+        ly=ly2;
+    }
 
 	// if not closed loop then pen up
 	//if ((lines[0][1] != lines[lines.length - 1][1]) ||
@@ -2293,8 +2316,8 @@ function gcode_verify(en = 0) {
 		nocut = sty.greenskip || sty.greentravel;
 		if (sty.doEngrave || (sty.dopocket)) nocut = !c1;
 		if (nocut) {
-			dash = [5, 5];
-			col = "gray";
+			dash = [1, 2];
+			col = "#0000CC88";
 		} else {
 			dash = [];
 			sfinal += Math.abs(sgcodes[i][0][0]);
@@ -2325,7 +2348,7 @@ function gcode_verify(en = 0) {
 	for (var i = 0; i < oldlines.length; i++) {
 		//draw_line      (num, lcol,      lines,          srl, dash, len, closed, snum,         flip,shift,warn) {
 
-		draw_line("", "#CCCCCC", oldlines[i][0], [], [1, 2], 0, false, oldlines[i][1], 0, 0, true, []);
+		draw_line("", "#CCCCCCCC", oldlines[i][0], [], [1, 2], 0, false, oldlines[i][1], 0, 0, true, []);
 	}
 	$("alertpath").innerHTML = (warningpath == 0) ? "" : "Lost some path !";
 
@@ -2463,6 +2486,7 @@ function sortedgcode() {
             }
 
             if (sty.greentravel) dis += 1;
+            if (sty.sortadd)dis+=sty.sortadd;
         }
         return [newx,newy,dis,shift,flip];
     }	
@@ -2638,6 +2662,10 @@ function sortedgcode() {
 		_rampdown = 0;
 	}
 	var empty = 1;
+    var slsmall=getnumber("slowsmall");
+    var slsmallv=getnumber("slowsmallval");
+    var usesl=getchecked("useslowsmall");
+    
 	cuttabinside = 0; //!getchecked("smallfirst");
 	for (var j = 0; j < sgcodes.length; j++) {
 		//cncz = cncdeep / re;
@@ -2653,11 +2681,12 @@ function sortedgcode() {
 			snum = sgcodes[j][0][8];
 			hasfnl = sgcodes[j][0][1] == "D"; // "F" = finish line
 			fnl = sgcodes[j][0][1] == "F"; // "F" = finish line
-
+            lenmm=sgcodes[j][0][0];
 			sty = gcstyle[snum];
 			if (!sty.closed) vcuttab = cncdeep;
 			//stro = sty["stroke"];
 			var f2 = getvalue('feed') * 60;
+            
 			if (sty == undefined) sty = defaultsty;
 			if ((ov > 0) && (cmd == CMD_CNC)) {
 				if (OVC_MODE == 1) {
@@ -2762,8 +2791,13 @@ function sortedgcode() {
 			}
 
 			// do pen up
+            var penaway=getchecked("acpmode") && getchecked("safesort");
 			var ps = pup1 + "\n";
-			if (fnl) ps = "G0 Z3\n";
+			if (cmd== CMD_CNC && lastz<0 && penaway && iscut) {
+                ps="G0 Z-1 F3000\n";
+                // move away will be done in the lines2gcode                
+            } else penaway=0;
+            if (fnl) ps = "G0 Z3\n";
 			// acp mode make first hole
 			var acp = "";
 			if ((cmd == CMD_PLASMA || getchecked("spindleoff")) && !fnl) acp = getspindleoff();
@@ -2807,6 +2841,7 @@ function sortedgcode() {
 			if (!sty.closed && ((cmd == CMD_CNC && getchecked("burn1")) || getchecked("flipx"))) {
 				climb = climb ? 0 : 1;
 			}
+            if (usesl && lenmm<=slsmall)f2=f2*slsmallv;
 			var of2 = f2;
 			for (var i = 0; i < _re; i++) {
 				if (_re > 1 && hasfnl && i == _re - 1) break;
@@ -2825,7 +2860,7 @@ function sortedgcode() {
 				if (_rampdown) z2 = cncz2;
 				else z2 = cncz;
 				if (acpengrave && iseng) cncz = z2 = _re * zdown;
-				sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb, shift, rcutpos);
+				sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb, shift, rcutpos,penaway);
 				if (sgcodes[j][0][4].length == 1) sr += "\nG0 F3000 Z" + (cncz - zdown) + "\n"; // drill pecking
 				if (docarve) sr = '';
 
@@ -3428,6 +3463,7 @@ function pathstoText1(gx) {
 		dopocket: 0,
 		greenskip: 0,
 		greentravel: 0,
+        sortadd:0,
 		angle: dangle
 
 
@@ -3726,7 +3762,7 @@ function pathstoText1(gx) {
 			stro = "#00" + gray + "ff";
 			sty["stroke"] = stro;
 		}
-		sty.closed = sqrt(sqr(path[0][0] - path[path.length - 1][0]) + sqr(path[0][1] - path[path.length - 1][1])) < mind;
+ 		sty.closed = sqrt(sqr(path[0][0] - path[path.length - 1][0]) + sqr(path[0][1] - path[path.length - 1][1])) < mind;
 		sty.deep = paths[i][5].length; // parent deep, used for draw sorting
 		sty.doEngrave = (RBcolor(stro) == "00ff") || (RBcolor(stro) == "0080");
 		sty.halfDPI = (RBcolor(stro) == "0080");
@@ -3743,7 +3779,8 @@ function pathstoText1(gx) {
 		sty.cuttab = (paths[i][0].length == 2) && (stro == "#800000");
 		sty.isCuttab = 0;
 		sty.flip = paths[i][1];
-
+        sty.sortadd=0;
+        if (RBcolor(stro)=="2b00")sty.sortadd=100000;
 
 		sty.greenskip = sty.greenskip || sty.cuttab || (stro == "#00ff00") || (fill == "#00ff00");
 		sty.greentravel = (stro == "#008000") || (fill == "#008000");
@@ -4004,6 +4041,7 @@ function refreshgcode() {
 	$("segm").style.display = d;
 	myFunction(0);
 	savesetting();
+    updatedownload2();
 }
 
 function copyStringToClipboard(str) {
