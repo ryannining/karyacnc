@@ -665,6 +665,8 @@ function gcodepushcombined() {
 	var scale = 1000;
 	var s = 0;
 	var ds = 0;
+    var cx=0;
+    var cy=0;
 	for (var ni = 0; ni < 2; ni++) {
 		var cpr = new ClipperLib.Clipper();
 		var pp = [];
@@ -695,7 +697,13 @@ function gcodepushcombined() {
 					ox = x;
 					oy = y;
 					newline.push([f2, x, y, s, ds]);
+                    cx+=x;
+                    cy+=y;
 				}
+                if (solution_paths.length){
+                    cx/=solution_paths.length;
+                    cy/=solution_paths.length;
+                }
 				///*
 				var l = path[0];
 				x = l.X * 1.0 / scale;
@@ -706,14 +714,15 @@ function gcodepushcombined() {
 				}
 				newline.push([f2, x, y, s, ds]);
 				//*/
-				glines.push(newline);
+				glines.push([newline,cx,cy]);
+
 			}
 		}
 		for (var i = 0; i < glines.length; i++) {
 			var line1 = glines[i];
-			gcodes.push([s, "", X1, Y1, glines[i],
+			gcodes.push([s, "", X1, Y1, line1[0],
 				[], 1, 1, shapenum, [], 0
-			]);
+			,[line1[1],line1[2]]]);
 		}
 		gcstyle[shapenum] = ni == 0 ? carvestyIn : carvestyOut;
 	}
