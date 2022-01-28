@@ -131,6 +131,7 @@
 							<tr class=notsimple><td colspan=2>Combine segment </td><td colspan=2><input size=2 type=checkbox id=enablejoin class=saveit></td></tr>
 							<tr class=notsimple><td colspan=2>Separate Cut </td><td colspan=2><input size=2 type=checkbox id=separatecut checked class=saveit></td></tr>
 							<tr class="notsimple notcnc notplasma"><td colspan=2>Smart Engrave </td><td colspan=2><input size=3 id=skiplength value=50 class=saveit>mm <input size=2 type=checkbox id=enablesmartraster class=saveit></td></tr>
+							<tr class="notsimple notcnc notplasma"><td colspan=2>Finish per part </td><td colspan=2><input size=2 type=checkbox id=finishpart class=saveit></td></tr>
 							
 							<tr class="notplasma"><td colspan=2><font color=red><b>Red outline feed</b></font></td><td colspan=2>
 							    <input id=pltfeed class=saveit size=3 value=20><span  class=notsimple><input id=pltpw class=saveit size=2 value=100>%</span></td></tr>
@@ -324,7 +325,7 @@
 				</td></tr>
 		</table>
 		<div id=gcodeinit>
-			<br><B>Preview GCODE</b><button id=btcopy2>Copy</button><br>
+			<br><B>Preview GCODE</b><br>
 			<textarea style="font-size: 10;width:100%;height:50px" id="pgcode">
 			</textarea>
 		</div>
@@ -436,7 +437,7 @@
                 Job name <input id=jobname size=10 class=saveit value='gcode'><br>
                 <button id=btupload>Upload</button><button id=btuploadstart>Start</button>
                 <button id=btuploadstop>Stop</button><button id=btuploadpause>Pause</button><button id=btuploadresume>Resume</button>
-                <a id=download2 href="javascript:" ><button>Download</button></a>
+                <hr><button id=btcopy2>Copy Gcode</button><a id=download2 href="javascript:" ><button>Download Gcode</button></a>
                 <hr>
             </div>
 			<div id=machine_3d class=hideit>

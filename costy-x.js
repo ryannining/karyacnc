@@ -2451,13 +2451,15 @@ function sortedgcode() {
 	xs = getnumber('xsort');
 	ys = getnumber('ysort');
 	szs = getnumber('szsort');
+    var ufinish = getchecked("usefinish");    
+    var sepcut = getchecked("separatecut") && !ufinish;
 
 	if (cmd == 4) setvalue("repeat", Math.ceil(getvalue("zdown") / layerheight));
 	var re = getvalue("repeat");
 	var ov = getchecked("overcut");
 
 	// gcodes.push([lenmm, "", x1, y1, lines[i], srl, ar, closed, shapenum]);    
-    var ufinish = getchecked("usefinish");
+
     var mustF =0;
     function findnearest(closed,lx,ly,pts,sty){
         
@@ -2507,9 +2509,11 @@ function sortedgcode() {
 			sty.lchilds = sty.childs = sty.ochilds + sty.exchilds; // reset child number counter
 
 		}
+        if (!sepcut && kk==1)break; // loop once if not separate cut
         
 
-
+        var sparent=-1;
+        var usefinishpart=getchecked("finishpart");
 		for (var j = 0; j < gcodes.length; j++) {
 			if (sortit) {
 				cs = -1;
@@ -2518,7 +2522,7 @@ function sortedgcode() {
 				sshift = 0;
 				var sty = gcstyle[gcodes[j][8]];
 				var k1 = sty.doEngrave || sty.domarking || sty.dovcarve || sty.dopocket;
-				var skip = kk == (k1 ? 1 : 0)
+				var skip = (kk == (k1 ? 1 : 0)) && sepcut;
 				if (skip) {
 					for (var pi in sty.parent) {
 						gcstyle[sty.parent[pi]].childs--;
@@ -2529,12 +2533,14 @@ function sortedgcode() {
 					var sty = gcstyle[gcodes[i][8]];
 					var subch = gcodes[i][10];
 					k1 = sty.doEngrave || sty.domarking || sty.dovcarve || sty.dopocket;
-					if (kk == (k1 ? 1 : 0)) continue;
+					if (kk == (k1 ? 1 : 0) && sepcut) continue;
                     if (!k1){
                         if (subch == 0 && sty.subchilds > 0) continue;
                         if (sty.childs > 0 ) continue; // if still have child do not process
                     }
-					var dis = 1000000 - (sty.lchilds ? (sty.lchilds - sty.childs) * 10 : 0);
+					var dis = 1000000;
+                    if (usefinishpart && (sparent==sty.topparent || sparent==sty.idp))dis=0;
+                    
                     var newx = 0;
                     var newy = 0;
                     
@@ -2582,7 +2588,7 @@ function sortedgcode() {
 				for (var pi in sty.parent) {
 					gcstyle[sty.parent[pi]].childs--;
 				}
-                
+                sparent=sty.topparent;
 				gcodes[cs][6] = -gcodes[cs][6];
 				var pts = gcodes[cs][4];
 				// closed path back to first position
@@ -2650,7 +2656,7 @@ function sortedgcode() {
 	}
 
 	cncdeep0 = -getvalue("zdown");
-	var sepcut = getchecked("separatecut");
+	
 	skipz = -getvalue("zdown0");
 	if (skipz == undefined) skipz = 0;
 	var oskipz = skipz;
@@ -3845,6 +3851,19 @@ function pathstoText1(gx) {
 		//if (path.length==0)continue;
 		sty = paths[i][9];
 		sty.ochilds = sty.childs;
+        // fint the topparent (biggest childs
+        var bc=0;
+        var tp=0;
+        for (var pi in sty.parent){
+            var j=sty.parent[pi];
+            var s=paths[j][9];
+            if (s.childs>bc){
+                tp=j;
+                bc=s.childs;
+            }
+        }
+        sty.topparent=tp;
+        sty.idp=i;
 
 
 		//for (var pi in paths[i][5]){
