@@ -2588,7 +2588,7 @@ function sortedgcode() {
 				for (var pi in sty.parent) {
 					gcstyle[sty.parent[pi]].childs--;
 				}
-                sparent=sty.topparent;
+                if (!(sty.greenskip || sty.greentravel))sparent=sty.topparent;
 				gcodes[cs][6] = -gcodes[cs][6];
 				var pts = gcodes[cs][4];
 				// closed path back to first position
