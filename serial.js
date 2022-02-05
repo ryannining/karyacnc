@@ -658,6 +658,7 @@ setevent("change", "repeat", checkrep);
 setevent("change", "material", changematerial);
 setevent("change", "profile", setprofile);
 setclick("btsavep", saveprofile);
+setclick("btdelp", delprofile);
 setclick("btloadp", loadprofile);
 setclick("btresume", function() {
 	okwait = 0;
@@ -777,7 +778,8 @@ setclick("btcopy1", function() {
 	copygcode();
 });
 setclick("btcopy2", function() {
-	copy_to_clipboard('pgcode');
+	copygcode();
+	//copy_to_clipboard('pgcode');
 });
 
 setclick("tracingbt", function() {
@@ -970,6 +972,15 @@ function saveprofile() {
 
 }
 
+function delprofile() {
+	name = getvalue("profilename");
+	if (name == "") name = getvalue("profile");
+	setvalue("profilename", "");
+	delete jobsettings[name];
+	savesetting("");
+	updateprofile();
+
+}
 function setprofile() {
 	setvalue("profilename", getvalue("profile"));
 }
