@@ -24,6 +24,140 @@ function urlopen(s, cb_ok, cb_err) {
 	xhr.send();
 }
 
+//=======================
+// to suit your point format, run search/replace for '.x', '.y' and '.z';
+// (configurability would draw significant performance overhead)
+
+// square distance between 2 points
+function getSquareDistance(p1, p2) {
+
+    var dx = p1.x - p2.x,
+        dy = p1.y - p2.y,
+        dz = p1.z - p2.z;
+
+    return dx * dx + dy * dy + dz * dz;
+}
+
+// square distance from a point to a segment
+function getSquareSegmentDistance(p, p1, p2) {
+
+    var x = p1.x,
+        y = p1.y,
+        z = p1.z,
+
+        dx = p2.x - x,
+        dy = p2.y - y,
+        dz = p2.z - z;
+
+    if (dx !== 0 || dy !== 0 || dz !== 0) {
+
+        var t = ((p.x - x) * dx + (p.y - y) * dy + (p.z - z) * dz) /
+                (dx * dx + dy * dy + dz * dz);
+
+        if (t > 1) {
+            x = p2.x;
+            y = p2.y;
+            z = p2.z;
+
+        } else if (t > 0) {
+            x += dx * t;
+            y += dy * t;
+            z += dz * t;
+        }
+    }
+
+    dx = p.x - x;
+    dy = p.y - y;
+    dz = p.z - z;
+
+    return dx * dx + dy * dy + dz * dz;
+}
+// the rest of the code doesn't care for the point format
+
+// basic distance-based simplification
+function simplifyRadialDistance(points, sqTolerance) {
+
+    var prevPoint = points[0],
+        newPoints = [prevPoint],
+        point;
+
+    for (var i = 1, len = points.length; i < len; i++) {
+        point = points[i];
+
+        if (getSquareDistance(point, prevPoint) > sqTolerance) {
+            newPoints.push(point);
+            prevPoint = point;
+        }
+    }
+
+    if (prevPoint !== point) {
+        newPoints.push(point);
+    }
+
+    return newPoints;
+}
+
+// simplification using optimized Douglas-Peucker algorithm with recursion elimination
+function simplifyDouglasPeucker(points, sqTolerance) {
+
+    var len = points.length,
+        MarkerArray = typeof Uint8Array !== 'undefined' ? Uint8Array : Array,
+        markers = new MarkerArray(len),
+
+        first = 0,
+        last = len - 1,
+
+        stack = [],
+        newPoints = [],
+
+        i, maxSqDist, sqDist, index;
+
+    markers[first] = markers[last] = 1;
+
+    while (last) {
+
+        maxSqDist = 0;
+
+        for (i = first + 1; i < last; i++) {
+            sqDist = getSquareSegmentDistance(points[i], points[first], points[last]);
+
+            if (sqDist > maxSqDist) {
+                index = i;
+                maxSqDist = sqDist;
+            }
+        }
+
+        if (maxSqDist > sqTolerance) {
+            markers[index] = 1;
+            stack.push(first, index, index, last);
+        }
+
+        last = stack.pop();
+        first = stack.pop();
+    }
+
+    for (i = 0; i < len; i++) {
+        if (markers[i]) {
+            newPoints.push(points[i]);
+        }
+    }
+
+    return newPoints;
+}
+
+// both algorithms combined for awesome performance
+function simplify3d(points, tolerance, highestQuality) {
+
+    var sqTolerance = tolerance !== undefined ? tolerance * tolerance : 1;
+
+    points = highestQuality ? points : simplifyRadialDistance(points, sqTolerance);
+    points = simplifyDouglasPeucker(points, sqTolerance);
+
+    return points;
+}
+
+// ===============
+
 function startprint() {
 	//urlopen("startprint");
 	urlopen("startjob?jobname=/" + getvalue("jobname") + ".gcode",
@@ -164,6 +298,7 @@ setclick("btcopycanvas", function() {
 
 
 var segsv = [];
+var segsvdraw=[];
 var carvetime = 0;
 var gcodecarve = "";
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
@@ -354,47 +489,116 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var oldx = -100;
 	var oldy = -100;
 	var trav="";
-	for (var i = 0; i < segsv.length; i++) {
-		seg1 = segsv[i];
-		rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
-		cx = (seg1[3] + maxofs) * dpm;
-		cy = (seg1[4] + maxofs) * dpm;
-		lx = seg1[3];
-		ly = seg1[4];
-		r = seg1[6] * dpm;
-		if (lnd != seg1[11]) {
-			trav= "G0 Z4\n";
-			trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
-			trav += "G0 Z0\n";
-			lnd = seg1[11];
-			continue;
-		}
-		gc+=trav;
-		trav="";
-		// F is depend on 2*phi*radius
-		// 
-		var fs = seg1[10];
-		//if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
-		if (r > dstep) {
-			fpart = "F" + parseInt(fs);
-			xpart = " X" + mround2(seg1[3]);
-			ypart = " Y" + mround2(seg1[4]);
-			zpart = " Z" + mround2(seg1[5]);
-			if (oldx == seg1[3]) xpart = "";
-			if (oldy == seg1[4]) ypart = "";
-			if (oldz == seg1[5]) zpart = "";
-			if (oldf == fs) fpart = "";
+	segsvdraw=[];
+	if (1){
+		var points=[];
+		for (var i = 0; i < segsv.length; i++) {
+			seg1 = segsv[i];
+			rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
+			/*cx = (seg1[3] + maxofs) * dpm;
+			cy = (seg1[4] + maxofs) * dpm;
+			lx = seg1[3];
+			ly = seg1[4];
+			r = seg1[6] * dpm;
+			*/
+			if (lnd != seg1[11]) {
+				trav= "G0 Z4\n";
+				trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
+				trav += "G0 Z0\n";
+				lnd = seg1[11];
+				continue;
+			}
+			function gen_gcode(points){
+				// generate gcode
+				if (points.length>0){
+					points=simplify3d(points,0.1,true);
+					oldx=-1000;
+					oldy=-1000;
+					oldz=-1000;
+					oldf=-1000;
+					for (var i=0;i<points.length;i++){
+						var p=points[i];
+						fpart = "F" + parseInt(p.f);
+						xpart = " X" + mround2(p.x);
+						ypart = " Y" + mround2(p.y);
+						zpart = " Z" + mround2(p.z);
+						if (oldx == p.x) xpart = "";
+						if (oldy == p.y) ypart = "";
+						if (oldz == p.z) zpart = "";
+						if (oldf == p.f) fpart = "";
 
-			gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
-			oldx = seg1[3];
-			oldy = seg1[4];
-			oldz = seg1[5];
-			oldf = fs;
+						gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
+						oldx=p.x;
+						oldy=p.y;
+						oldz=p.z;
+						oldf=p.f;
+						segsvdraw.push(segsv[p.i]);
+						
+					}
+				}
+			}
+			if (trav){
+				gen_gcode(points);
+				points=[];
+				gc+=trav;
+				trav="";
+			}
+			// F is depend on 2*phi*radius
+			// 
+			var fs = seg1[10];
+			//if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
+			if (r > dstep) {
+
+				points.push({'x':seg1[3],'y':seg1[4],'z':seg1[5],'f':fs,'i':i});
+			}
+			carvetime += rdis / (fs * 0.0167);
+			//r=1;
+			//ctx.moveTo(cx+r,cy);
+			//ctx.arc(cx,cy,r,0,2*Math.PI);
 		}
-		carvetime += rdis / (fs * 0.0167);
-		//r=1;
-		//ctx.moveTo(cx+r,cy);
-		//ctx.arc(cx,cy,r,0,2*Math.PI);
+		gen_gcode(points);
+	} else {
+		for (var i = 0; i < segsv.length; i++) {
+			seg1 = segsv[i];
+			rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
+
+			if (lnd != seg1[11]) {
+				trav= "G0 Z4\n";
+				trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
+				trav += "G0 Z0\n";
+				lnd = seg1[11];
+				continue;
+			}
+
+			if (trav){
+				gc+=trav;
+				trav="";
+			}
+			// F is depend on 2*phi*radius
+			// 
+			var fs = seg1[10];
+			//if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
+			if (r > dstep) {
+				fpart = "F" + parseInt(fs);
+				xpart = " X" + mround2(seg1[3]);
+				ypart = " Y" + mround2(seg1[4]);
+				zpart = " Z" + mround2(seg1[5]);
+				if (oldx == seg1[3]) xpart = "";
+				if (oldy == seg1[4]) ypart = "";
+				if (oldz == seg1[5]) zpart = "";
+				if (oldf == fs) fpart = "";
+
+				gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
+				oldx = seg1[3];
+				oldy = seg1[4];
+				oldz = seg1[5];
+				oldf = fs;
+			}
+			carvetime += rdis / (fs * 0.0167);
+			//r=1;
+			//ctx.moveTo(cx+r,cy);
+			//ctx.arc(cx,cy,r,0,2*Math.PI);
+		}
 	}
 	gc += "G0 Z4\n";
 	gcodecarve = gc;
@@ -410,8 +614,9 @@ function drawvcarve() {
 	ctx.strokeStyle = "#aaaaaa44";
 	var lnd = -1;
 	var skip = 0;
-	for (var i = 0; i < segsv.length; i++) {
-		var seg1 = segsv[i];
+	var segsv1=segsvdraw;
+	for (var i = 0; i < segsv1.length; i++) {
+		var seg1 = segsv1[i];
 		cx = (seg1[3] + maxofs) * dpm;
 		cy = (seg1[4] + maxofs) * dpm;
 		var r = seg1[6] * dpm;
@@ -427,8 +632,8 @@ function drawvcarve() {
 	ctx.stroke();
 	ctx.beginPath();
 	ctx.strokeStyle = "#ff0000";
-	for (var i = 0; i < segsv.length; i++) {
-		var seg1 = segsv[i];
+	for (var i = 0; i < segsv1.length; i++) {
+		var seg1 = segsv1[i];
 		cx = (seg1[3] + maxofs) * dpm;
 		cy = (seg1[4] + maxofs) * dpm;
 		r = seg1[6] * dpm;
@@ -446,8 +651,8 @@ function drawvcarve() {
 	ctx.beginPath();
 	ctx.strokeStyle = "#FFFF0088";
 	lnd = -1;
-	for (var i = 0; i < segsv.length; i++) {
-		var seg1 = segsv[i];
+	for (var i = 0; i < segsv1.length; i++) {
+		var seg1 = segsv1[i];
 		cx = (seg1[0] + maxofs) * dpm;
 		cy = (seg1[1] + maxofs) * dpm;
 		r = seg1[6] * dpm;
