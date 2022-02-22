@@ -601,12 +601,13 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 		var ofs1 = 0;
 		var linesx = prepare_line2(lenmm, line, 0)[0];
 		var centerpath2=centerpath;
+		var clk = linesx[1];
 
-        if (!(sty.greentravel || sty.domarking || sty.dobtvcarve  || sty.greenskip || sty.doengrave || sty.dopocket)  &&getchecked("usefinish")) ofs1 = getnumber('finishline');
+        if (!(sty.greentravel || sty.domarking || sty.dobtvcarve  || sty.greenskip || sty.doengrave || sty.dopocket)  && (lenmm>(clk?200:50) && getchecked("usefinish"))) ofs1 = getnumber('finishline');
 
 		lines2 = prepare_line2(lenmm, line, ofs1);
 		var lines = lines2[0];
-		var clk = lines2[1];
+		clk = lines2[1];
 		if (lines.length == 0) {
 			ofs1 = 0;
 			lines = linesx;
@@ -1399,7 +1400,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
             if (!cll) lcol = "#00C800";
             else lcol = theme == 0 ? "#000000" : "#cceeee";
         } else {
-            lcol = theme == 0 ? "#000000" : "#cceeee";
+            lcol = theme == 0 ? "#880000" : "#ffeeee";
         }
         if (sty.dovcarve) lcol = "#00ffff";
         if (sty.dopocket) lcol = "#800080";

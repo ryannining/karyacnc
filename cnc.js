@@ -353,6 +353,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var oldf = -100;
 	var oldx = -100;
 	var oldy = -100;
+	var trav="";
 	for (var i = 0; i < segsv.length; i++) {
 		seg1 = segsv[i];
 		rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
@@ -362,12 +363,14 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 		ly = seg1[4];
 		r = seg1[6] * dpm;
 		if (lnd != seg1[11]) {
-			gc += "G0 Z4\n";
-			gc += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
-			gc += "G0 Z0\n";
+			trav= "G0 Z4\n";
+			trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
+			trav += "G0 Z0\n";
 			lnd = seg1[11];
 			continue;
 		}
+		gc+=trav;
+		trav="";
 		// F is depend on 2*phi*radius
 		// 
 		var fs = seg1[10];
@@ -496,7 +499,7 @@ function pocketcarve(tofs, ofs1, clines) {
 		for (var kd in pathsdeep) {
 			var paths = pathsdeep[kd];
 			deep = kd;
-			var ofs = realofs / 2 - tofs;
+			var ofs = realofs / 2 - tofs;// -0.1;
 			var last = 0;
 			var first = 1;
 			var maxx = 150;
@@ -631,7 +634,8 @@ function pocketgcode() {
 	}
 	pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	var gc = pup + "M3 S" + pw + "\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
-	var beforecut = getchecked("carvepause")?"G0 Z0\nM3 S"+pw+" P10000\n":"";
+	var beforecut = "";
+	var beforecut_p = getchecked("carvepause")?"G0 Z0\nM3 S"+pw+" P10000\n":"";
 	gc += pup;
 
 	e1 = 0;
@@ -716,6 +720,8 @@ function pocketgcode() {
 	var oy = 0;
 	var lz = 0;
 	var la = 0;
+	var lpx=-1000;
+	var lpy=-1000;
 	var climbcut = $("carveclimb").checked;
 	already = [];
 	var pup2a;
@@ -754,11 +760,17 @@ function pocketgcode() {
 
 				if (ni == 0) {
 					jump = ((r == 0) && ((sqr(ox - cx) + sqr(oy - cy) > sqr(realofs * 2)))); // decide we need to move up z or not
-
+					var dist2=sqr(lpx - cx) + sqr(lpy - cy);
+					var bfc=beforecut;
+					if (dist2>10000){
+						bfc=beforecut_p;
+						lpx=cx;
+						lpy=cy;
+					}
 					gc += jump ? pup : (r == 0 ? pup2 : "");
 					gc += "G0 F" + (jump ? f1 : f2) + " X" + mround(cx) + " Y" + mround(cy) + "\n";
 					if (jump) gc += "G0 Z0 F" + speedretract + "\n";
-					gc += (jump?beforecut:"")+pdn.replace("=cncz", mround(zz));
+					gc += (jump?bfc:"")+pdn.replace("=cncz", mround(zz));
 					lstF = 0;
 				} else {
 					gc += (lstF != f2 ? ("G1 F" + f2) : "G1") + " X" + mround(cx) + " Y" + mround(cy) + "\n";
