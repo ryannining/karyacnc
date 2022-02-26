@@ -490,6 +490,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var oldx = -100;
 	var oldy = -100;
 	var trav="";
+	var totalmm=0;
 	segsvdraw=[];
 	if (1){
 		var points=[];
@@ -513,6 +514,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 					if (oldf == p.f) fpart = "";
 
 					gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
+					totalmm+=sqrt(sqr(oldx-p.x)+sqr(oldy-p.y)+sqr(oldz-p.z));
 					oldx=p.x;
 					oldy=p.y;
 					oldz=p.z;
@@ -524,7 +526,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 		}		
 		for (var i = 0; i < segsv.length; i++) {
 			seg1 = segsv[i];
-			rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
+			//rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
 			/*cx = (seg1[3] + maxofs) * dpm;
 			cy = (seg1[4] + maxofs) * dpm;
 			lx = seg1[3];
@@ -549,11 +551,11 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			// 
 			var fs = seg1[10];
 			//if (r>1)fs=ffeed/(2*Math.PI*seg1[6]);
-			if (r > dstep) {
+			//if (r > dstep) {
 
 				points.push({'x':seg1[3],'y':seg1[4],'z':seg1[5],'f':fs,'i':i});
-			}
-			carvetime += rdis / (fs * 0.0167);
+			//}
+			//carvetime += rdis / (fs * 0.0167);
 			//r=1;
 			//ctx.moveTo(cx+r,cy);
 			//ctx.arc(cx,cy,r,0,2*Math.PI);
@@ -596,12 +598,12 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 				oldz = seg1[5];
 				oldf = fs;
 			}
-			carvetime += rdis / (fs * 0.0167);
 			//r=1;
 			//ctx.moveTo(cx+r,cy);
 			//ctx.arc(cx,cy,r,0,2*Math.PI);
 		}
 	}
+	carvetime+=totalmm/(fs/60.0);
 	gc += "G0 Z4\n";
 	gcodecarve = gc;
 	//gcode_verify();
