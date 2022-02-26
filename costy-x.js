@@ -305,7 +305,7 @@ function isClockwise(poly, px = 1, py = 2) {
 var overcut = [0, 0];
 var cross = 0;
 
-function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
+function sharp(poly, px = 1, py = 2, idx = 0, num = 2,dotcross=0) {
 	var sum = 0;
 	ci = idx;
 	nci = ci;
@@ -333,7 +333,8 @@ function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
 	vec2 = [vec2[0] / d2, vec2[1] / d2];
 	dot = (vec1[0] * vec2[0]) + (vec1[1] * vec2[1]);
 	cross = (vec1[0] * vec2[1]) - (vec2[0] * vec1[1]);
-
+    if (dotcross)return [dot,cross,vec1,vec2];
+    
 	// corner overcut
 
 	if (cross < 0)
@@ -344,6 +345,7 @@ function sharp(poly, px = 1, py = 2, idx = 0, num = 2) {
 
 	return (dot);
 }
+
 var jmltravel = 0;
 
 
@@ -1672,6 +1674,8 @@ function getcutpos(index, shift, flip) {
 		if (getchecked("flipx")) climb = !climb;
 		var lshift = 0;
 		var len = 0;
+        var sharps=[];
+        var cosd=1+Math.cos(165*Math.PI/180);
 
 		for (var ci = 0; ci < lines.length; ci++) {
 			if (climb) {
@@ -1688,9 +1692,12 @@ function getcutpos(index, shift, flip) {
 			pdis = lines[pi][4];
 			if ((i <= shift)) lshift += pdis;
 
+            var cksharp=sharp(lines,1,2,i);
+            // dot is [0]
+            if (Math.abs(1+cksharp)>cosd)sharps.push(len);
 
 		}
-
+        
 		if (rcutpos.length == 0) {
 			if (len < Math.min(50, cutevery * 2)) cuttabz = 0;
 			//if (disable_tab.indexOf(num + "") >= 0) cuttabz = 0;
@@ -1701,13 +1708,17 @@ function getcutpos(index, shift, flip) {
 			if (dv < 2) dv = 0;
 			if (dv > 8) dv = 4;
 			lc = len / dv;
-			slc = lc / 2;
 			rcutpos = [];
 			for (var k = 0; k < dv; k++) {
+                // check if the cut pos near a sharp edges, then need to shift
+				slc = lc*0.5+k*lc;
+                for (var i=0;i<sharps.length;i++){
+                        if (Math.abs(sharps[i]-slc)<15)slc=sharps[i]+15;
+                }
 				rcutpos.push(slc);
-				slc += lc;
 			}
 		}
+        
 
 
 		// shift the cutpos

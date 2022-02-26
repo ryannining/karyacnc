@@ -365,9 +365,8 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 								}
 							}
 							if (p > PL) {
-								segsv.push(firstp);
+								//segsv.push(firstp);
 								return;
-
 							}
 							//           x   y  id cx cy cz r             fs
 							if (j == 0 && !firstp) firstp = segsv[segsv.length - 1];
@@ -387,11 +386,13 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var sc = 1;
 	if ($("flipx").checked) sc = 0;
 	if ($("flipve").checked) sc = !sc;
+	if ($("cutclimb").checked) sc = !sc;
 
 	for (var i = 0; i < path.length; i++) {
 		var sc = path[i][1];
 		if ($("flipx").checked) sc = 0;
 		if ($("flipve").checked) sc = !sc;
+		if ($("cutclimb").checked) sc = !sc;
 		segmentation(i, path[i][0], sc);
 	}
 	// create toolpath
@@ -492,6 +493,35 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	segsvdraw=[];
 	if (1){
 		var points=[];
+		function gen_gcode(points){
+			// generate gcode
+			if (points.length>0){
+				points=simplify3d(points,0.1,true);
+				oldx=-1000;
+				oldy=-1000;
+				oldz=-1000;
+				oldf=-1000;
+				for (var i=0;i<points.length;i++){
+					var p=points[i];
+					fpart = "F" + parseInt(p.f);
+					xpart = " X" + mround2(p.x);
+					ypart = " Y" + mround2(p.y);
+					zpart = " Z" + mround2(p.z);
+					if (oldx == p.x) xpart = "";
+					if (oldy == p.y) ypart = "";
+					if (oldz == p.z) zpart = "";
+					if (oldf == p.f) fpart = "";
+
+					gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
+					oldx=p.x;
+					oldy=p.y;
+					oldz=p.z;
+					oldf=p.f;
+					segsvdraw.push(segsv[p.i]);
+					
+				}
+			}
+		}		
 		for (var i = 0; i < segsv.length; i++) {
 			seg1 = segsv[i];
 			rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
@@ -508,35 +538,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 				lnd = seg1[11];
 				continue;
 			}
-			function gen_gcode(points){
-				// generate gcode
-				if (points.length>0){
-					points=simplify3d(points,0.1,true);
-					oldx=-1000;
-					oldy=-1000;
-					oldz=-1000;
-					oldf=-1000;
-					for (var i=0;i<points.length;i++){
-						var p=points[i];
-						fpart = "F" + parseInt(p.f);
-						xpart = " X" + mround2(p.x);
-						ypart = " Y" + mround2(p.y);
-						zpart = " Z" + mround2(p.z);
-						if (oldx == p.x) xpart = "";
-						if (oldy == p.y) ypart = "";
-						if (oldz == p.z) zpart = "";
-						if (oldf == p.f) fpart = "";
-
-						gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
-						oldx=p.x;
-						oldy=p.y;
-						oldz=p.z;
-						oldf=p.f;
-						segsvdraw.push(segsv[p.i]);
-						
-					}
-				}
-			}
+			
 			if (trav){
 				gen_gcode(points);
 				points=[];
