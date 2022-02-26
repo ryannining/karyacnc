@@ -603,7 +603,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			//ctx.arc(cx,cy,r,0,2*Math.PI);
 		}
 	}
-	carvetime+=totalmm/(fs/60.0);
+	if (fs && totalmm>0) carvetime+=totalmm/(fs/60.0);
 	gc += "G0 Z4\n";
 	gcodecarve = gc;
 	//gcode_verify();
