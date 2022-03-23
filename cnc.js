@@ -303,6 +303,7 @@ var carvetime = 0;
 var gcodecarve = "";
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
 function vcarve(maxr, angle, step, path, dstep, dstep2) {
+
 	sqrt = Math.sqrt;
 	sqr = function(x) {
 		return x * x;
@@ -314,11 +315,12 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	gcodecarve = "";
 	var pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	segmentation = function(nd, path, rev) {
-		PL = path.length / 2 - 1;
+		PL = path.length / 2 - 1; // skip last point is same as first
 		var x1, y1, x2, y2, i, dx, dy, L, opx, opy, ovx, ovy, vx, vy, px, py;
 		L = 0;
 		var firstp;
-		for (var p = -1; p <= PL + 1; p++) {
+
+		for (var p = -1; p <= PL; p++) {
 			i = p;
 			if (rev) {
 				i = PL - i;
@@ -381,7 +383,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			x1 = x2;
 			y1 = y2;
 		}
-		segsv.push(firstp);
+		//segsv.push(firstp);
 	}
 	var sc = 1;
 	if ($("flipx").checked) sc = 0;
@@ -400,6 +402,8 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var n = 0;
 	var gc = "M3 " + pw + "\nG0 F6000 Z4\nG1 F2000\n";
 	ve = 1 / Math.tan(angle * Math.PI / 360);
+	
+	var minz=-(getvalue("vdiamin")/2*ve);
 	var jj, seg2, seg1, mr2;
 	var maxz = -maxr * ve;
 	var ftrav = getvalue("trav") * 60;
@@ -497,31 +501,35 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 		function gen_gcode(points){
 			// generate gcode
 			if (points.length>0){
-				points=simplify3d(points,0.1,true);
+				points=simplify3d(points,0.3*step,true);
 				oldx=-1000;
 				oldy=-1000;
 				oldz=-1000;
 				oldf=-1000;
+				gfirst=0;
 				for (var i=0;i<points.length;i++){
 					var p=points[i];
 					fpart = "F" + parseInt(p.f);
 					xpart = " X" + mround2(p.x);
 					ypart = " Y" + mround2(p.y);
-					zpart = " Z" + mround2(p.z);
+					zpart = " Z" + mround2(Math.min(minz,p.z));
 					if (oldx == p.x) xpart = "";
 					if (oldy == p.y) ypart = "";
 					if (oldz == p.z) zpart = "";
 					if (oldf == p.f) fpart = "";
 
-					gc += "G1 " + fpart + xpart + ypart + zpart + "\n";
+					gcur= "G1 " + fpart + xpart + ypart + zpart + "\n";
+					gc +=gcur;
 					totalmm+=sqrt(sqr(oldx-p.x)+sqr(oldy-p.y)+sqr(oldz-p.z));
 					oldx=p.x;
 					oldy=p.y;
 					oldz=p.z;
 					oldf=p.f;
 					segsvdraw.push(segsv[p.i]);
-					
+					if (i==0)gfirst=[segsv[p.i],gcur];
 				}
+				gc+=gfirst[1];
+				segsvdraw.push(gfirst[0]);
 			}
 		}		
 		for (var i = 0; i < segsv.length; i++) {
@@ -618,12 +626,13 @@ function drawvcarve() {
 	ctx.strokeStyle = "#aaaaaa44";
 	var lnd = -1;
 	var skip = 0;
+	var minr=getvalue("vdiamin")/2;
 	var segsv1=segsvdraw;
 	for (var i = 0; i < segsv1.length; i++) {
 		var seg1 = segsv1[i];
 		cx = (seg1[3] + maxofs) * dpm;
 		cy = (seg1[4] + maxofs) * dpm;
-		var r = seg1[6] * dpm;
+		var r = Math.max(seg1[6],minr) * dpm;
 		if (seg1[11] == lnd) {
 			lnd = seg1[11];
 			continue;

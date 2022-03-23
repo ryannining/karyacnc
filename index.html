@@ -12,10 +12,10 @@
   50% { opacity: 0.3; }
 }
 	.smallwindow {
-	font-size: 9pt;font-family: arial;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px;z-index:1000;
+	rfont-size: 9pt;text-align:  right;background: cyan;display:none;position:absolute;border:1px solid blue;box-shadow: 4px 4px 2px rgba(0,0,0,0.5);padding:5px;z-index:1000;
 	}
 	.smallwindow tr {
-	font-size: 9pt;font-family: arial;text-align:  right;}
+	rfont-size: 9pt;text-align:  right;}
 #editorgcode,#editorengcode { 
         position: absolute;
         top: 0;
@@ -26,6 +26,11 @@
 	
 	html, body {
 		overflow-y: visible;
+		body {
+		  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+					   Roboto, Oxygen-Sans, Ubuntu, Cantarell,
+					   "Helvetica Neue", sans-serif;
+		}
 	}
 	.arrow-up {
 	  width: 0; 
@@ -65,12 +70,12 @@
     .hideit {display:none}
 
 	</style>
-	<body style="font-family:arial;font-size:12pt">
+	<body style="font-family:system-ui;rfont-size">
 		<table  class=hideit width=100%  id=title1  style="background:lightgray;font-weight:600">
 			<tr>
 				<td>
 				<center><h2 id=title0>KARYACNC</h2></center>
-				<center style="font-size:9pt;font-family:arial">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, 
+				<center style="rfont-size:9pt;font-family:system-ui">Butuh Jasa cutting acrylic,triplek,mdf,Aluminium Composite, 
 				hubungi kami di 083838461040 atau emailkan desain ke ryannining@gmail.com</center>
 				<center>Butuh senter led ? kunjungi toko kami <a href="http://www.tokosenterled.com">Toko Senter kami</a></center>
 				</td>
@@ -78,8 +83,8 @@
 		</table>
 		<table width=100%>
 			<tr valign=top width=1000px>
-				<td id=title2 width=300px style="background: yellow;">
-				<table width=100% style="font-size: 10pt;font-family: arial;text-align:  right;">
+				<td id=title2 width=250px style="background: yellow;">
+				<table width=100% style="rfont-size: 10pt;text-align:  right;">
 					<tr>
 						<td colspan=3 align=left><button id=bthidden>Option</button>
 						<table id=vars class=smallwindow style="">
@@ -168,7 +173,7 @@
                         <td align=left class="notlaser notplasma"><img src="pocketinfo.png">
                             <hr><b>V CARVING (<font color=#00FFFF style="background:black;margin:2px">Stroke is Aqua</font>)</b><br>
                             <b>Endmill:</b>&nbsp;
-                            Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdia class=saveit size=2 value=10>
+                            Angle<input id=vangle class=saveit size=2 value=90>Dia<input id=vdiamin class=saveit size=2 value=0.3><input id=vdia class=saveit size=2 value=10>
                             Feed<input id=vcfeed class=saveit size=2 value=30>
                             <br><b>Quality:</b>&nbsp;Res<input id=vres class=saveit size=2 value=100>Flip<input id=flipve type=checkbox class=saveit>&nbsp;&nbsp;
                             <button class=hideit id=btvcarve>VCarve</button><br>
@@ -286,7 +291,7 @@
 				</tr>
 				<tr><td colspan=2>Mat Price/cm2</td><td colspan=1><input id=matprice class=saveit value=32 size=4></td></tr>
 				<tr><td colspan=2>Cut Price/min</td><td colspan=1><input id=cutprice class=saveit value=1500 size=4></td></tr>
-				<tr><td colspan=2 ><span class=notsimple>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit>&nbsp;</span>Endmill &#248</td><td colspan=1> <input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td>
+				<tr><td colspan=2 class=notsimple>PLT (&#248=0)<input id=pltmode type=checkbox class=saveit>&nbsp;</td><td colspan=1> Endmill &#248<input id=offset class=saveit size=2 value=0 placeholder="Kalau mau menambah sesak part di laser kira2 0.2 cukup"></td>
                     </tr>				
 
 				<tr style="background:lime"><td colspan=3>Settings for CUTTING (black outline)</td></tr>
@@ -305,8 +310,8 @@
 				<tr class="tonoff notsimple" ><td colspan=2><input id=pup size=13 value="G0 F3000 Z10" class=saveit></td>
 					<td colspan=1><input id=pdn size=16 value="G0 F700 Z=cncz" class="saveit"></td>
 				</tr>
-				<tr style="background:lime" class=notsimple><td colspan=2>Flip X <input id=flipx type=checkbox class=saveit>
-					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit></td><td class="notsimple notplasma"> Pow <input id=cutpw size=2 value=100 class=saveit>%</td></tr>
+				<tr style="background:lime" class=notsimple><td colspan=3>Flip X <input id=flipx type=checkbox class=saveit>
+					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit><span class="notsimple notplasma"> Pow <input id=cutpw size=2 value=100 class=saveit>%</span></tr>
 				<tr valign=center>
                     <td colspan=1><span class="notsimple notlaser">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
                     <td><span class="notsimple notcnc notplasma">pre Burn </span></td><td ><input id=burn1 type=checkbox class="saveit notsimple notcnc notplasma" ><button id=btrecode >Process</button></td></tr>
@@ -320,32 +325,32 @@
 			<button id=btcopycanvas>Copy Canvas</button><br>
 			<span class=notsimple>
 			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.<br>
-			<textarea style="font-size: 10;width:100%;height:50px" id="applog"></textarea>
+			<textarea style="rfont-size: 10;width:100%;height:50px" id="applog"></textarea>
 			</span>
 				</td></tr>
 		</table>
 		<div id=gcodeinit>
 			<br><B>Preview GCODE</b><br>
-			<textarea style="font-size: 10;width:100%;height:50px" id="pgcode">
+			<textarea style="rfont-size: 10;width:100%;height:50px" id="pgcode">
 			</textarea>
 		</div>
-		<textarea class=hideit style="font-size: 10;width:100%;height:50px" id=segm ></textarea></td>
+		<textarea class=hideit style="rfont-size: 10;width:100%;height:50px" id=segm ></textarea></td>
 		<td>
-			<div  id=gcodepreview style="width:220px">
+			<div  id=gcodepreview style="width:250px">
 			<span class=notsimple>
                 <button id=tracingbt>GCODE SENDER</button><B>GCODE</b><button  id=btcopy1>Copy</button><br>TOOLS<hr>
 			  </span>
               Cutting gcode
-			  <div style="font-size: 10;width:100%;height:300" id="gcode">
+			  <div style="rfont-size: 10;width:100%;height:300" id="gcode">
 			  </div>
 			  Engrave gcode
-			  <div style="font-size: 10;width:100%;height:200" id="engcode">
+			  <div style="rfont-size: 10;width:100%;height:200" id="engcode">
 			  </div><button id=btgcode2vec class=hideit>ReVector Gcode</button>
 			</div>
 		</td>
 		<td id="myCanvas1td" width=600 style="padding:5px;border:solid 1px">
 			<p style="background:yellow" id="area_dimension">Object Preview</p>
-			<p class="blink_me" id="alertpath">aaaa</p>
+			<p class="blink_me" id="alertpath"></p>
 			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
 			<div id="myCanvas1div" style="width:600px;height:500px;overflow:scroll">
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
@@ -354,7 +359,7 @@
 			<p style="background:yellow" id="area_dimension2"></p>
 			<br><button id=btsaveset class=hideit>Save Config</button>
 		</td>
-		<td width=300px bgcolor=lightblue style="padding:5px">
+		<td width=250px bgcolor=lightblue style="padding:5px">
 			<b>Machine Control <span id=portnum></span></b>&nbsp;|<b id=alert1 style='color:red' class=blink_me>...</b><br>
 			<button id=bthidden2>Connection Settings</button>
 			<div class=hideit><br>LASER POWER SCALE<select id=powerscale>&nbsp;

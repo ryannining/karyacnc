@@ -771,6 +771,7 @@ setclick("bthidden3", function() {
 		d = 'block';
 	hidd3 = !hidd3;
 	$("gcodepreview").style.display = d;
+	resizedisplay();
 });
 // gcode editor
 
@@ -875,8 +876,11 @@ function updatewmode() {
 }
 
 function updateweb(sett) {
-	for (var k in sett) {
-		var a = $(k);
+	var kl = document.getElementsByClassName("saveit");
+	for (var i = 0; i < kl.length; i++) {
+		var a=kl[i];
+		var k=a.id;
+		//var a = $(k);
 		if (a != undefined) {
 			if (a.type == 'checkbox')
 				a.checked = sett[k];
@@ -889,6 +893,7 @@ function updateweb(sett) {
 	modechange();
 	updatewmode();
 }
+
 
 function updateprofile() {
 	var p = "";
@@ -1169,9 +1174,10 @@ function startserver() {
 }
 
 
-function resizedisplay() {
+function resizedisplay(reload=1) {
 	var sc = parseFloat(getvalue("zoom1"));
-	var nw = Math.max(100, window.innerWidth - 700);
+	var gcw=hidd3?600:850;
+	var nw = Math.max(100, window.innerWidth - gcw);
 	var v = $('myCanvas1');
 	v.width = nw * sc;
 	nh = window.innerHeight - 200;
@@ -1180,7 +1186,7 @@ function resizedisplay() {
 	$('myCanvas1div').style.width = nw + 50;
 	$('myCanvas1div').style.height = nh;
 	if ($("regcodeX").checked) karya_ready = 1;
-	if (karya_ready) refreshgcode();
+	if (karya_ready && reload) refreshgcode();
 	karya_ready = 1;
 }
 window.onresize = function() {

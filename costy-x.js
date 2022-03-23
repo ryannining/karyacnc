@@ -12,6 +12,7 @@ var CMD_FOAM = 2;
 var CMD_LASER = 1;
 var OVC_MODE = 0; // 1 drill 0 path
 var cuttabs = [];
+var starttabs = [];
 var theme = 1; // 0 white
 var M3 = "M3";
 
@@ -71,14 +72,19 @@ function getvalue(el) {
 
 	if (el == "leadin") return v.split(",");
 	else if (el == "pup") {
-
-		if (v.trim() == "") {
-			if (cmd == CMD_CNC) v = "G0 F4000 Z10";
-		}
+        v=v.toUpperCase().trim();
+        if (cmd == CMD_CNC)  {
+            if ( v== "") {
+                v = "G0 F4000 Z10";
+            } else if (v[0]=="Z"){ 
+                v = "G0 F4000 "+v;
+            }
+        }
 		return v.replaceAll(";", "\n");
 	} else if (el == "pdn") {
-		if (v.trim() == "") {
-			if (cmd == CMD_CNC) v = "G0 F1500 Z=cncz";
+        v=v.trim();
+		if (v == "") {
+			if (cmd == CMD_CNC) v = "G0 F2500 Z=cncz";
 		}
 		return $(el).value.replaceAll(";", "\n");
 	} else return v;
@@ -313,17 +319,27 @@ function sharp(poly, px = 1, py = 2, idx = 0, num = 2,dotcross=0) {
 	cur = poly[ci];
 	d1 = 0;
 	d2 = 0;
+    l=1;
 	while (d1 == 0) {
 		pci--;
-		if (pci < 0) pci += poly.length;
-		prev = poly[pci];
+		if (pci < 0) {
+            pci += poly.length;
+            l--;
+            if (l<0)break;
+		}
+        prev = poly[pci];
 		vec1 = [prev[px] - cur[px], prev[py] - cur[py]];
 		d1 = sqrt(vec1[0] * vec1[0] + vec1[1] * vec1[1]);
 	}
+    l=1;
 	while (d2 == 0) {
 		nci++;
-		if (nci >= poly.length) nci -= poly.length;
-		next = poly[nci];
+		if (nci >= poly.length) {
+            nci -= poly.length;
+            l--;
+            if (l<0)break;
+        }
+        next = poly[nci];
 		vec2 = [next[px] - cur[px], next[py] - cur[py]];
 		d2 = sqrt(vec2[0] * vec2[0] + vec2[1] * vec2[1]);
 	}
@@ -377,9 +393,11 @@ function RBcolor(stro) {
 	return stro.substr(1, 2) + stro.substr(5, 2);
 }
 var cuttab_manual = [];
+var starttab_manual = [];
 var centerpath=[];
 function prepare_line2(lenmm, lines, ofs1) {
 	cuttab_manual = [];
+    starttab_manual=[];
     centerpath=[];
 	var detail = getnumber("curveseg") * 0.2;
 	var ovmore = getnumber("ovcmore");
@@ -465,12 +483,13 @@ function prepare_line2(lenmm, lines, ofs1) {
 				var path = offsetted_paths[i];
 				var path = ClipperLib.JS.Lighten(offsetted_paths[i], detail * scale);
 				if (sty.dovcarve) {
-					if (clk) path = path.reverse();
-					combinedpath.push([path, sty.flip]);
+					//if (clk) path = path.reverse();
+					combinedpath.push([path, clk]);//sty.flip]);
 				} else {
 					if (path.length) {
 						s = 0;
 						var cuts = [];
+                        var starts = [];
                         cenx=0;
                         ceny=0;
 						for (var j = 0; j <= path.length; j++) {
@@ -495,6 +514,19 @@ function prepare_line2(lenmm, lines, ofs1) {
 										cuts.push(si);
 									}
 								}
+								// check if this line is intersect with start tab line
+								// function intersects(a,b,c,d,p,q,r,s)
+								for (var k = 0; k < starttabs.length; k++) {
+									var p1 = starttabs[k][0];
+									var p2 = starttabs[k][1];
+									var si = intersects_p(p1[0], p1[1], p2[0], p2[1], ox, oy, x, y);
+									if (si != null) {
+										si = s + ds * (si);
+										console.log("Intersect at" + (si));
+										starts.push(si);
+									}
+								}
+                                
 							}
 							s += ds;
                             cenx+=x;
@@ -508,6 +540,7 @@ function prepare_line2(lenmm, lines, ofs1) {
                         centerpath.push([cenx/path.length,ceny/path.length]);
 						glines.push(newline);
 						cuttab_manual.push(cuts);
+						starttab_manual.push(starts);
 					}
 				}
 			}
@@ -605,16 +638,18 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 		var centerpath2=centerpath;
 		var clk = linesx[1];
 
-        if (!(sty.greentravel || sty.domarking || sty.dobtvcarve  || sty.greenskip || sty.doengrave || sty.dopocket)  && (lenmm>(clk?200:50) && getchecked("usefinish"))) ofs1 = getnumber('finishline');
-
-		lines2 = prepare_line2(lenmm, line, ofs1);
-		var lines = lines2[0];
-		clk = lines2[1];
-		if (lines.length == 0) {
-			ofs1 = 0;
-			lines = linesx;
-			centerpath=centerpath2;
-		}
+        if (!(sty.greentravel || sty.domarking || sty.dovcarve  || sty.greenskip || sty.doengrave || sty.dopocket)  && (lenmm>(clk?200:50) && getchecked("usefinish"))) ofs1 = getnumber('finishline');
+        if (ofs1>0){
+            lines2 = prepare_line2(lenmm, line, ofs1);
+            var lines = lines2[0];
+            clk = lines2[1];
+        } else lines=[];
+        if (lines.length == 0) {
+            ofs1 = 0;
+            lines = linesx;
+            centerpath=centerpath2;
+        }
+        
 		if (sty.greenskip) area += 500000; // the outer still need to be the last
 		sty.subchilds = lines.length - 1;
 		var ii = (ofs1 ? 1 : 0);
@@ -625,7 +660,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 			var x1 = line1[0][1];
 			var y1 = line1[0][2];
 
-			gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum, cuttab_manual[i], ii,centerpath[i]]);
+			gcodes.push([lenmm, ofs1?"D":"", x1, y1, lines[i], srl, ar, closed, shapenum, [cuttab_manual[i],starttab_manual[i]], ii,centerpath[i]]);
 			ii++;
 		}
 		var nc = lines.length - 1;
@@ -638,7 +673,7 @@ function gcodepush(lenmm, X1, Y1, lenmm1, line, closed) {
 				if (i > 0) ar = 1;
 				var x1 = line1[0][1];
 				var y1 = line1[0][2];
-				gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum, cuttab_manual[i], i,centerpath2[i]]);
+				gcodes.push([lenmm, "F", x1, y1, linesx[i], srl, ar + 1000, closed, shapenum, [cuttab_manual[i],starttab_manual[i]], i,centerpath2[i]]);
 				// need to add the childs count for the parent
 			}
 			nc += linesx.length;
@@ -1400,17 +1435,18 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
         if (closed && !plt) {
             cll = isClockwise(lines);
             if (!cll) lcol = "#00C800";
-            else lcol = theme == 0 ? "#000000" : "#cceeee";
+            else lcol = theme == 0 ? "#000000" : "#ee8888";
         } else {
             lcol = theme == 0 ? "#880000" : "#ffeeee";
         }
         if (sty.dovcarve) lcol = "#00ffff";
         if (sty.dopocket) lcol = "#800080";
-        if (sty.domarking) lcol = "#FF0000";
+        if (sty.domarking) lcol = "#FF6666";
 	}
 	ox = 0;
 	oy = 0;
 	ll = lines.length;
+
 	if (shift) ll++;
 
 	var pdis = 0;
@@ -1526,8 +1562,8 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 				Y1 = ly;
 				if (!stu) {
 					// direct travel to here
+                    ctx.strokeStyle = "#FFFF00";
 					jmltravel += sqrt(sqr(olx - lx) + sqr(oly - ly)) / dpm;
-					ctx.strokeStyle = "#FFFF00";
 					ctx.stroke();
 				}
 				ctx.beginPath();
@@ -1542,9 +1578,18 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 		}
 	}
 
-
 	//ctx.lineTo(X1, Y1);
 	ctx.stroke();
+    if (lines.length==1){
+        ctx.strokeStyle = "#CC0088";
+		var r=getnumber("offset")*dpm*0.5;
+        ctx.moveTo(lx+r, ly);
+        ctx.arc(lx, ly, r, 0, 2 * Math.PI)
+
+        ctx.stroke();
+    }
+    ctx.strokeStyle = "#FFFF00";
+    
 	d1 = sqrt(sqr(lx - X1) + sqr(ly - Y1)) / dpm;
 	if (num == "") return;
 
@@ -1666,7 +1711,7 @@ var cachedcutpos = [];
 
 function getcutpos(index, shift, flip) {
 	if (cachedcutpos[index] == undefined) {
-		var rcutpos = sgcodes[index][0][9];
+		var rcutpos = sgcodes[index][0][9][0];
 		if (rcutpos == undefined) rcutpos = [];
 		lines = sgcodes[index][0][4];
 		var climb = flip;
@@ -2371,7 +2416,7 @@ function gcode_verify(en = 0) {
 
 		draw_line("", "#CCCCCCCC", oldlines[i][0], [], [1, 2], 0, false, oldlines[i][1], 0, 0, true, []);
 	}
-	$("alertpath").innerHTML = (warningpath == 0) ? "" : "Lost some path !";
+	//$("alertpath").innerHTML = (warningpath == 0) ? "" : "Lost some path !";
 
 	ctx.font = "12px Arial";
 	w = mround((xmax - xmin) / 10);
@@ -2508,9 +2553,10 @@ function sortedgcode() {
                 newy = pts[pts.length - 1][2];
             }
 
-            if (sty.greentravel) dis += 1;
-            if (sty.sortadd)dis+=sty.sortadd;
         }
+        if (sty.greentravel) dis += 1;
+        if (sty.sortadd)
+            dis+=sty.sortadd;
         return [newx,newy,dis,shift,flip];
     }	
     var lasttarget=0;    
@@ -2757,6 +2803,7 @@ function sortedgcode() {
 				zdown *= -1 / _re;
 				iscut = 0;
 				iseng = 1;
+                //cncdeep = zdown*_re;
 				se += M3 + " S" + parseInt(pw) + "\n";
 			}
 			if (sty.doEngrave || sty.dovcarve) { // blue and pink (v carve)
@@ -2896,8 +2943,10 @@ function sortedgcode() {
 					se += sr;
 				} else s += sr;
 				if ((!sty.closed) && (_re > 1)) climb = climb ? 0 : 1;
-				cncz = Math.max(cncz + zdown, cncdeep);
-				cncz2 = Math.max(cncz2 + zdown, cncdeep);
+				//cncz = Math.max(cncz + zdown, cncdeep);
+				//cncz2 = Math.max(cncz2 + zdown, cncdeep);
+				cncz = cncz + zdown;
+				cncz2 = cncz2 + zdown;
 
 			}
 			// do last cutting
@@ -3633,6 +3682,7 @@ function pathstoText1(gx) {
 	// clear path from empty path
 	var npaths = [];
 	cuttabs = [];
+    starttabs = [];
 	xma = -1000000;
 	xmi = 1000000;
 	yma = -1000000;
@@ -3643,11 +3693,17 @@ function pathstoText1(gx) {
 		var sty = paths[i][9];
 		var stro = sty["stroke"];
 		var cuttab = (stro == "#800000");
+		var starttab = (stro == "#550000");
 		var centerpos = (stro == "#008080");
 		var engravebound = (stro == "#ffff00");
 		if (cuttab) {
 			var cp = paths[i][0];
 			if (cp.length >= 2) cuttabs.push([cp[0], cp[cp.length - 1]]);
+			continue;
+		}
+		if (starttab) {
+			var cp = paths[i][0];
+			if (cp.length >= 2) starttabs.push([cp[0], cp[cp.length - 1]]);
 			continue;
 		}
 		if (engravebound) {
@@ -3711,6 +3767,15 @@ function pathstoText1(gx) {
 		p[1][1] -= yofs;
 
 	}
+	for (var i in starttabs) {
+		var p = starttabs[i];
+		p[0][0] -= xofs;
+		p[0][1] -= yofs;
+		p[1][0] -= xofs;
+		p[1][1] -= yofs;
+
+	}
+    
 	// calculate bounding
 	// fill the cx,cy,ln,width,height
 
@@ -3807,7 +3872,7 @@ function pathstoText1(gx) {
 		sty.isCuttab = 0;
 		sty.flip = paths[i][1];
         sty.sortadd=0;
-        if (RBcolor(stro)=="2b00")sty.sortadd=100000;
+        if (RBcolor(stro)=="2b00"){sty.isblack=true;sty.sortadd=100000;}
 
 		sty.greenskip = sty.greenskip || sty.cuttab || (stro == "#00ff00") || (fill == "#00ff00");
 		sty.greentravel = (stro == "#008000") || (fill == "#008000");
@@ -3826,13 +3891,17 @@ function pathstoText1(gx) {
 			cy = paths[i][3];
 			var l1 = paths[i][4];
 			pocket1 = sty.dopocket;
+            carve1=sty.dovcarve;
 			for (ii in paths) {
 				psty = paths[ii][9];
 				pocket2 = (RBcolor(psty["stroke"]) == "8080");
+				carve2 = (psty["stroke"] == "#00ffff");
 				psty.pocket = pocket2;
 
 				if (pocket1 && !pocket2) continue;
 				if (!pocket1 && pocket2) continue;
+				if (carve1 && !carve2) continue;
+				if (!carve1 && carve2) continue;
 
 				//if (psty.doEngrave|| psty.domarking || psty.dovcarv)continue;
 				if (i == ii || paths[ii][4] < l1 || (psty["stroke"] == "#00ff00" && psty["fill"] == "none")) continue; //|| (!psty.closed)) continue;
