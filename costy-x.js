@@ -3088,10 +3088,14 @@ function myFunction(scale1) {
 	var ysfar = 0;
 	var n1 = 0;
 	lines = [];
-	var scale = 25.4 / getvalue('scale');
+	var scale = 25.4 / 72;
 	if (scale1) scale = 1;
-	scalex = scale;
-	scaley = scale;
+    var scales=getvalue('scale').split(",");
+    if (scales.length==1 && scales[0]=="72"){scales[0]=1;setvalue('scale','1');}
+    if (scales.length==0)scales=[1,1];
+    if (scales.length==1)scales.push(scales[0]);
+	scalex = scale*scales[0];
+	scaley = scale*scales[1];
 
 	//cmd = getvalue('cmode');
 	theme = getchecked("isdarktheme") ? 1 : 0;
@@ -4021,6 +4025,163 @@ if (!window.Clipboard) {
 window.addEventListener("paste", pasteHandler);
 
 /* Handle paste events */
+
+function Paste_init2d(v){
+  v=("0,145").split(",");
+  zdeg=v[0]*1;
+  xdeg=v[1]*1;
+  sinz=Math.sin(zdeg*0.0174533);
+  cosz=Math.cos(zdeg*0.0174533);
+  sinx=Math.sin(xdeg*0.0174533);
+  cosx=Math.cos(xdeg*0.0174533);
+}
+Paste_init2d(0);
+function showProgress(){
+}
+
+var t0=performance.now();
+function aftercompress(){
+	var t1=performance.now();
+	c1=mround((t1-t0)/1000);
+	lines.sort(function (b,a){return a[3]-b[3];})
+	Paste_rendergcode("myCanvas1");
+	t0=performance.now();
+	c2=mround((t0-t1)/1000);
+	
+	setvalue("gcode",decode());
+}
+
+function Paste_rendergcode(canvasid){
+    Paste_init2d(0);
+    
+    function transform(v3d){
+        var x2=v3d[0]*cosz-v3d[1]*sinz;
+        var y1=v3d[0]*sinz+v3d[1]*cosz;
+        
+        var y2=y1*cosx-v3d[2]*sinx;
+        var z2=y1*sinx+v3d[2]*cosx;
+        
+        return [x2,y2,z2];
+        
+    }
+    
+	if (overtex.lentgh==0)return;
+	var xmax=-100000;
+	var xmin=100000;
+	var ymax=-100000;
+	var ymin=100000;
+	var zmax=-100000;
+	var zmin=100000;
+    var canva=$(canvasid);
+    var ctx=canva.getContext("2d");
+	
+
+	var vertex=[];
+	lines=[];
+	var vc=[];
+	var lv=0;
+	// 3d to 2d transformation + lighting
+	for (var i=0;i<overtex.length;i++){
+		var ov=overtex[i];
+		
+        //ov[3]=-ov[3];
+		var tr=transform(ov);
+		
+		var tx=tr[0];
+		var ty=tr[2];
+		// save bounding box
+
+
+		// save vertex
+		vc=[tx,ty,-tr[1]];
+		vertex.push(vc);
+		if (ov[4]==1 && lv){
+		    // cheap fast lighting
+		    dx=lv[0]-vc[0];
+		    dz=lv[1]-vc[1];
+		    dy=lv[2]-vc[2];
+		    
+		    l=-ov[3];//Math.abs(150*dx/Math.sqrt(dx*dx+dy*dy));
+		    // if there is extruder value then save the line
+		    p=vertex.length-1;
+		    zz=0;//-Math.min(vertex[p][2],vertex[p-1][2]);
+		    lines.push([p-1,p,l,zz,ov[5]]);
+		    xmax=Math.max(xmax,tx);		
+		    xmin=Math.min(xmin,tx);		
+		    ymax=Math.max(ymax,ty);		
+		    ymin=Math.min(ymin,ty);		
+		    zmax=Math.max(zmax,tr[1]);		
+		    zmin=Math.min(zmin,tr[1]);
+		}
+		lv=vc;
+	}
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ///*/ nice background
+	var grd=ctx.createLinearGradient(0,0,0,200);
+	grd.addColorStop(0,"#88bbFF");
+	grd.addColorStop(0.35,"white");
+	grd.addColorStop(0.55,"#eeaa33");
+	grd.addColorStop(1,"#bb7711");
+
+	ctx.fillStyle="white";
+	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+	//*/
+  
+	//calculate scale
+	var zs=200.0/(zmax-zmin);
+	var xs=ctx.canvas.width/(xmax-xmin);
+	var ys=ctx.canvas.height/(ymax-ymin);
+	
+	var sc = Math.min(xs,ys);
+	
+	var xa=-xmin*sc+(ctx.canvas.width/2-0.5*(xmax-xmin)*sc);
+	var za=-zmin*sc;
+	var ya=-ymin*sc+(ctx.canvas.height/2-0.5*(ymax-ymin)*sc);
+	var rp=1;Math.floor(2000/(ozmax-ozmin))+1;
+	
+	
+	// actual rendering
+	var front=[];
+	for (var i=0;i<lines.length;i++){
+		var v1=vertex[lines[i][0]];
+		var v2=vertex[lines[i][1]];
+		// light color
+		//ll=getColor(lines[i][2]+v1[2]*zs+za);
+		ll="#40404080";
+		if (lines[i][4]>150)ll="#c0404080";
+		else if (lines[i][4]>20)ll="#4040c080";
+		//else (lines[i][4]>150)ll="blue";
+		
+		// transform to canvas size
+		var x1=v1[0]*sc+xa+3;
+		var x2=v2[0]*sc+xa+3;
+		var y1=v1[1]*sc+ya+3;
+		var y2=v2[1]*sc+ya+3;
+		for (var j=0;j<rp;j++){
+			ctx.beginPath();
+			
+			ctx.strokeStyle=ll;
+			ctx.moveTo(x1, y1-j);
+			ctx.lineTo(x2, y2-j);
+			ctx.stroke();
+		}
+		
+	}
+    ctx.font = "11px Arial";
+    ctx.fillStyle = "white";
+    sx = mround((oxmax - oxmin) / 10);
+    sy = mround((oymax - oymin) / 10);
+    sz = mround((ozmax - ozmin) / 10);
+	gram=filament/(333*eScale);
+mtr=mround(filament/(eScale*1000));
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm",3,11);
+	ctx.fillText("Time:"+mround(printtime/60)+"m", 3, 23);
+    ctx.fillStyle = "black";
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm",2,10);
+	ctx.fillText("Time:"+mround(printtime/60)+"m", 2, 22);
+	
+}
+
 function pasteHandler(e) {
 	// We need to check if event.clipboardData is supported (Chrome)
 	if (e.clipboardData) {
@@ -4031,6 +4192,17 @@ function pasteHandler(e) {
 
 			for (var i = 0; i < items.length; i++) {
 
+				if (items[i].type.indexOf("text/plain") !== -1) {
+                    yflip=-1;
+                    gcode=e.clipboardData.getData('text/plain');
+                    if (gcode){
+                        t0=performance.now();
+                        begincompress(gcode,showProgress,aftercompress);
+                        //$("gcode").innerHTML=s;
+                        text1='';
+                    }
+                    yflip=1;
+                } else
 				if (items[i].type.indexOf("image") !== -1) {
 					// We need to represent the image as a file,
 					var blob = items[i].getAsFile();
@@ -4143,6 +4315,10 @@ function createSVG(source, blob) {
 }
 
 function refreshgcode() {
+    if (text1==''){
+        Paste_rendergcode("myCanvas1");
+        return;
+    };
 	var d = 'none';
 	if (getchecked("segment"))
 		d = 'block';

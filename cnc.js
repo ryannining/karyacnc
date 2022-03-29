@@ -303,7 +303,7 @@ var carvetime = 0;
 var gcodecarve = "";
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
 function vcarve(maxr, angle, step, path, dstep, dstep2) {
-
+	if (path.length<=0)return;
 	sqrt = Math.sqrt;
 	sqr = function(x) {
 		return x * x;

@@ -45,9 +45,9 @@ var lx = -10.0;
 var ly = -10.0;
 var lz = -10.0;
 var le = -10.0;
-var lf = -10.0;
-var lF1 = -10.0;
-var lF0 = -10.0;
+var lf = 10.0;
+var lF1 = 10.0;
+var lF0 = 10.0;
 
 var lS = 0;
 var lh = 0;
@@ -95,7 +95,7 @@ if (GXVER == 1) {
 	eSize = 1; // 1 bytes
 	fScale = 2; // to get range 0-500 from 0-255
 }
-
+var yflip=1;
 function datasize(n) {
 	return (1 << (n * 8 - 1)) - 2;
 }
@@ -112,6 +112,157 @@ var xsub = 0;
 var ysub = 0;
 var zsub = 0;
 
+function approx_distance( dx,  dy)
+{
+  return Math.sqrt(dx*dx+dy*dy);	
+}
+
+function writeline(h,dx,dy,dz,F){
+var isX,isY,isZ; 
+	if (F>0) h |= 1 << 3;
+	if (isX=dx!=0) h |= 1 << 4;
+	if (isY=dy!=0) h |= 1 << 5;
+	if (isZ=dz!=0) h |= 1 << 6;
+
+	write(h, 1);
+
+	if (F>0) {
+		write(F, 1);
+	}
+	if (isX) {
+		write(dx + xyLimit, xySize);
+		//log(x);
+	}
+	if (isY) {
+		write(dy + xyLimit, xySize);
+	}
+	if (isZ) {
+		write(dz + zLimit, zSize);
+	}
+
+		
+}
+/*
+
+G1 X0 Y0  F2000
+G1 X0 Y-14.93 
+G1 X19.39                        
+G2 X15 Y-25 I10.61 J-10.61  
+G1 X0 
+
+*/
+
+function gcode_arc(h,lf,cx1,cy1,cx2,cy2,lz, fI, fJ, ccw)
+{
+  var radius = Math.sqrt(fI*fI+fJ*fJ);
+
+  var cx = cx1 + fI ;
+  var cy = cy1 + fJ ;
+
+
+  var r_axis0 = -fI;  // Radius vector from center to current location
+  var r_axis1 = -fJ;
+  var rt_axis0 = cx2 - cx;
+  var rt_axis1 = cy2 - cy;
+
+
+  // CCW angle between position and target from circle center. Only one atan2() trig computation required.
+  var angular_travel = Math.atan2(r_axis0 * rt_axis1 - r_axis1 * rt_axis0, r_axis0 * rt_axis0 + r_axis1 * rt_axis1);
+  if ((!ccw && angular_travel <= 0.00001) || (ccw && angular_travel < -0.000001)) {
+    angular_travel += 2.0 * Math.PI;
+  }
+  if (ccw) {
+    angular_travel -= 2.0 * Math.PI;
+  }
+
+  var millimeters_of_travel = Math.abs(angular_travel * radius); //hypot(angular_travel*radius, fabs(linear_travel));
+  if (millimeters_of_travel < 1) {
+    return;// treat as succes because there is nothing to do;
+  }
+  var segments = Math.max(1, Math.floor(millimeters_of_travel*2/xyScale));
+
+  var theta_per_segment = angular_travel / segments;
+
+
+
+  lx=cx1;
+  ly=cy1;
+		// add printtime
+  printtime += Math.sqrt(millimeters_of_travel / (xyScale * xyScale)) / (lf*fScale);
+  for (var i = 1; i < segments; i++) {
+    // Increment (segments-1)
+	var cos_Ti  = Math.cos(i * theta_per_segment);
+	var sin_Ti  = Math.sin(i * theta_per_segment);
+	r_axis0 = -fI * cos_Ti + fJ * sin_Ti;
+	r_axis1 = -fI * sin_Ti - fJ * cos_Ti;
+    var nx = Math.floor(cx + r_axis0);
+    var ny = Math.floor(cy + r_axis1);
+    //move.axis[nE] = extscaled>>4;
+    writeline(h,nx-lx, ny-ly,0,0);
+    lx=nx;
+    ly=ny;
+	overtex.push([lx / xyScale, ly / xyScale, lz / zScale, 0, 1,lf*fScale]);
+	oxmax = Math.max(oxmax, lx / xyScale);
+	oxmin = Math.min(oxmin, lx / xyScale);
+	oymax = Math.max(oymax, ly / xyScale);
+	oymin = Math.min(oymin, ly / xyScale);
+  }
+  writeline(h,cx2-lx, cy2-ly,0,0);
+  lx=cx2;
+  ly=cy2;
+  overtex.push([lx / xyScale, ly / xyScale, lz / zScale, 0, 1,lf*fScale]);
+}
+
+var rlx,rly;
+function gcodeline(bh,G,num,x,y,z,dx,dy,dz,I,J,R){
+	stepx = Math.floor(dx / num);
+	stepy = Math.floor(dy / num);
+	stepz = Math.floor(dz / num);
+	steplx = dx - (stepx * (num - 1)); // to make sure total move is same
+	steply = dy - (stepy * (num - 1));
+	steplz = dz - (stepz * (num - 1));
+	if (G == 0) {
+		F = F0;
+		lf = lF0;
+	} else {
+		F = F1;
+		lf = lF1;
+	}
+	var isF = F != lf;
+	if (G == 0) lF0 = F0; else lF1 = F1;
+	var isX = Math.abs(dx)>0;
+	var isY = Math.abs(dy)>0;
+	var isZ = Math.abs(dz)>0;
+	if (G<2){
+		for (var i = 1; i <= num; i++) {
+			if (i == num) {
+				wx = steplx;
+				wy = steply;
+				wz = steplz;
+
+			} else {
+				wx = stepx;
+				wy = stepy;
+				wz = stepz;
+
+			}
+			writeline(bh,wx,wy,wz,i==1 && isF?F:0);
+			isF=0;
+
+		}
+		overtex.push([lx / xyScale, ly / xyScale, lz / zScale, 0, G,lf*fScale]);
+		// add printtime
+		printtime += Math.sqrt((dx * dx + dy * dy) / (xyScale * xyScale)) / (F*fScale);
+	} else {
+		// arc
+		gcode_arc(bh,lf,rlx,rly,x,y,z,I,J,G==2);
+
+	}
+	rlx=lx;
+	rly=ly;	
+}
+
+var lastG=0;
 function addgcode(g) {
 	// read gcode
 	ln++;
@@ -221,20 +372,26 @@ function addgcode(g) {
 		}
 
 		console.log(ln + " M" + gd['M'] + " S" + s);
+	} else {
+		if (!(gk.indexOf('G') + 1)) {
+			gk+="G";
+			gd["G"]=lastG;
+		}
 	}
 	var rmul = -1;
 	var isS = 0;
 	if (gk.indexOf('G') + 1) {
 		h = 0;
 		var G = gd['G'];
+		lastG=G;
 		switch (G) {
 			case 2:
-				h |= 0 << 1; // G2, R is +
+				h |= 1 << 1; // G2, R is +
 				rmul = 1; // we will save R in S
 				isS = 1;
 				break; // 
 			case 3:
-				h |= 0 << 1; // G2 with R is -
+				h |= 1 << 1; // G2 with R is -
 
 				break; // 
 			case 0:
@@ -263,6 +420,9 @@ function addgcode(g) {
 		var isX = gk.indexOf('X') + 1;
 		var isY = gk.indexOf('Y') + 1;
 		var isZ = gk.indexOf('Z') + 1;
+		var isI = gk.indexOf('I') + 1;
+		var isJ = gk.indexOf('J') + 1;
+		var isR = gk.indexOf('R') + 1;
 		var isE = gk.indexOf('E') + 1;
 		X = Y = Z = F = S = 0;
 		dx = dy = dz = de = 0;
@@ -271,19 +431,29 @@ function addgcode(g) {
 			if (G == 1) lf = F1;
 			else lf = F0;
 			F = Math.min(Math.round(gd['F'] / (fScale * 60)), 255); // 
-			if (F != lf) {
-				if (G == 1) F1 = F;
-				else F0 = F;
-			}
+			if (G == 1) F1 = F;
+			else F0 = F;
 			isF = 0; // we dont care about the precission here :D  
 		}
+		I=J=R=0;
+		if (isI) {
+			I = gd['I'] * xyScale; 
+		}
+		if (isJ) {
+			J = gd['J'] * xyScale; 
+		}
+		if (isR) {
+			R = gd['R'] * xyScale; 
+		}
+
+
 		if (isX) {
 			if (is92) {
 				xsub = -lx + gd['X'] * xyScale;
 			} else {
 				X = Math.round(gd['X'] * xyScale - xsub); // up to resolution 0.005mm max move is 64mm
 				if (isRel) X += lx;
-				dx = X - lx;
+				dx = X - lx; // X - dx = X - X + lx=lx 
 				if (X != lx) lx = X;
 				else isX = 0;
 			}
@@ -293,7 +463,7 @@ function addgcode(g) {
 			if (is92) {
 				ysub = -ly + gd['Y'] * xyScale;
 			} else {
-				Y = Math.round(gd['Y'] * xyScale - ysub);
+				Y = Math.round(gd['Y'] * yflip * xyScale - ysub);
 				if (isRel) Y += ly;
 				dy = Y - ly;
 				if (Y != ly) ly = Y;
@@ -336,7 +506,7 @@ function addgcode(g) {
 		num = Math.max(Math.ceil(Math.abs(de) / eLimit), num);
 		
 		// we write the relative position not the absolute
-		if (num == 0 || G == 28) {
+		if (!(isJ || isI || isR) && (num == 0 || G == 28)) {
 			if (G == 28) {
 				if (isX) h |= 1 << 4;
 				if (isY) h |= 1 << 5;
@@ -354,82 +524,18 @@ function addgcode(g) {
 			}
 			lh = h;
 		} else {
-			stepx = Math.floor(dx / num);
-			stepy = Math.floor(dy / num);
-			stepz = Math.floor(dz / num);
-			stepe = Math.floor(de / num);
-			steplx = dx - (stepx * (num - 1)); // to make sure total move is same
-			steply = dy - (stepy * (num - 1));
-			steplz = dz - (stepz * (num - 1));
-			steple = de - (stepe * (num - 1));
-			if (G == 1) {
-				F = F1;
-				lf = lF1;
-			} else {
-				F = F0;
-				lf = lF0;
-			}
-			isF = F != lf;
-
-
-			for (var i = 1; i <= num; i++) {
-				if (i == num) {
-					wx = steplx;
-					wy = steply;
-					wz = steplz;
-					we = steple;
-				} else {
-					wx = stepx;
-					wy = stepy;
-					wz = stepz;
-					we = stepe;
-				}
-				h = bh;
-
-				if (isF) h |= 1 << 3;
-				if (isX) h |= 1 << 4;
-				if (isY) h |= 1 << 5;
-				if (isZ) h |= 1 << 6;
-				if (isE) h |= 1 << 7;
-				write(h, 1);
-				lh = h;
-
-				if (isF) {
-					write(F, 1);
-					isF = 0;
-					if (G == 1) lF1 = F;
-					else lF0 = F;
-				}
-				if (isX) {
-					write(wx + xyLimit, xySize);
-					//log(x);
-				}
-				if (isY) {
-					write(wy + xyLimit, xySize);
-				}
-				if (isZ) {
-					write(wz + zLimit, zSize);
-				}
-				if (isE) {
-					write(we + eLimit, eSize);
-				}
-			}
+			gcodeline(bh,G,num,X,Y,Z,dx,dy,dz,I,J,R);
 		}
-		// save the vertex
-		if ((gd['G'] <= 1)) {
-			// 3d XYZ to 2D transform
-			overtex.push([lx / xyScale, ly / xyScale, lz / zScale, isE, gd['G']]);
-			// add printtime
-			printtime += Math.sqrt((dx * dx + dy * dy) / (xyScale * xyScale)) / lf;
-		}
+		oxmax = Math.max(oxmax, lx / xyScale);
+		oxmin = Math.min(oxmin, lx / xyScale);
+		oymax = Math.max(oymax, ly / xyScale);
+		oymin = Math.min(oymin, ly / xyScale);
+		ozmax = Math.max(ozmax, lz / zScale);
+		ozmin = Math.min(ozmin, lz / zScale);	
+
 		//console.log("G"+gd['G']+" X"+X);
 	}
-	oxmax = Math.max(oxmax, lx / xyScale);
-	oxmin = Math.min(oxmin, lx / xyScale);
-	oymax = Math.max(oymax, ly / xyScale);
-	oymin = Math.min(oymin, ly / xyScale);
-	ozmax = Math.max(ozmax, lz / zScale);
-	ozmin = Math.min(ozmin, lz / zScale);
+	
 	if (!cntg28) {
 		endcompress();
 		cntg28 = 2;
@@ -485,11 +591,12 @@ function begincompress(paste, callback1, callback2) {
 	ysub = 0;
 	zsub = 0;
 	filament = 0;
-	eE = ole = lx = ly = lz = le = lf = 0;
-	F1 = 0;
-	F0 = 0;
-	lF1 = -10.0;
-	lF0 = -10.0;
+	eE = ole = lx = ly = lz = le =0;
+	lf = 0;
+	F1 = 50;
+	F0 = 50;
+	lF1 = 0.0;
+	lF0 = 0.0;
 
 
 	printtime = 0;

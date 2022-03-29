@@ -14,9 +14,9 @@
 <table width=100%><tr valign=top><td>
 <div>LOAD GCODE AND PREVIEW</div><hr>
 <input type="file" id="inputfile"/><br>
-View angle<input id=angle value="0,55" size=5><button onclick="init2d(0);rendergcode();">View</button>
+View angle<input id=angle value="0,135" size=5><button onclick="init2d(0);rendergcode();">View</button>
 <div>Preview:</div>
-<canvas id="myCanvas" width="200" height="200" style="border:1px solid #d3d3d3;"></canvas>
+<canvas id="myCanvas" width="400" height="300" style="border:1px solid #d3d3d3;"></canvas>
 <table width=200><tr><td>
 <td align=right>
 </table>
@@ -30,15 +30,17 @@ Job name <input id=jobname size=10 value=gcode><br>
 
 </table>
 <hr>You can also just copy paste the Gcode Text here.
+ <div style="rfont-size: 10;width:100%;height:300" id="gcode">
+<textarea style="width:100%;height:100%" id="gcodet"></textarea>
+</div>
 </div>
 <script>
 var wsconnected=0;
 </script>
 <script src="websocket.js"></script>
-
+<script src="ace.js" type="text/javascript" charset="utf-8"></script>
 <script src="gcodex.js" type="text/javascript" charset="utf-8"></script>
 <script>
-
 
 var c = document.getElementById("myCanvas");
 var ctx = c.getContext("2d");
@@ -149,7 +151,7 @@ function transform(v3d){
 }
 
 
-function rendergcode(){
+function rendergcode(canvasid){
 	if (overtex.lentgh==0)return;
 	xmax=-100000;
 	xmin=100000;
@@ -166,6 +168,7 @@ function rendergcode(){
 	// 3d to 2d transformation + lighting
 	for (var i=0;i<overtex.length;i++){
 		var ov=overtex[i];
+		
         //ov[3]=-ov[3];
 		var tr=transform(ov);
 		
@@ -173,30 +176,31 @@ function rendergcode(){
 		var ty=tr[2];
 		// save bounding box
 
-		xmax=Math.max(xmax,tx);		
-		xmin=Math.min(xmin,tx);		
-		ymax=Math.max(ymax,ty);		
-		ymin=Math.min(ymin,ty);		
-		zmax=Math.max(zmax,tr[1]);		
-		zmin=Math.min(zmin,tr[1]);
+
 		// save vertex
 		vc=[tx,ty,-tr[1]];
 		vertex.push(vc);
 		if (ov[4]==1 && lv){
-			// cheap fast lighting
-			dx=lv[0]-vc[0];
-			dz=lv[1]-vc[1];
-			dy=lv[2]-vc[2];
-			
-			l=-ov[3];//Math.abs(150*dx/Math.sqrt(dx*dx+dy*dy));
-			// if there is extruder value then save the line
-			p=vertex.length-1;
-			zz=0;//-Math.min(vertex[p][2],vertex[p-1][2]);
-			lines.push([p-1,p,l,zz]);
+		    // cheap fast lighting
+		    dx=lv[0]-vc[0];
+		    dz=lv[1]-vc[1];
+		    dy=lv[2]-vc[2];
+		    
+		    l=-ov[3];//Math.abs(150*dx/Math.sqrt(dx*dx+dy*dy));
+		    // if there is extruder value then save the line
+		    p=vertex.length-1;
+		    zz=0;//-Math.min(vertex[p][2],vertex[p-1][2]);
+		    lines.push([p-1,p,l,zz,ov[5]]);
+		    xmax=Math.max(xmax,tx);		
+		    xmin=Math.min(xmin,tx);		
+		    ymax=Math.max(ymax,ty);		
+		    ymin=Math.min(ymin,ty);		
+		    zmax=Math.max(zmax,tr[1]);		
+		    zmin=Math.min(zmin,tr[1]);
 		}
 		lv=vc;
 	}
-	ctx.clearRect(0, 0, 200, 200);
+	ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     ///*/ nice background
 	var grd=ctx.createLinearGradient(0,0,0,200);
 	grd.addColorStop(0,"#88bbFF");
@@ -205,19 +209,19 @@ function rendergcode(){
 	grd.addColorStop(1,"#bb7711");
 
 	ctx.fillStyle="white";
-	ctx.fillRect(0,0,200,200);
+	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//*/
   
 	//calculate scale
 	var zs=200.0/(zmax-zmin);
-	var xs=194.0/(xmax-xmin);
-	var ys=194.0/(ymax-ymin);
+	var xs=ctx.canvas.width/(xmax-xmin);
+	var ys=ctx.canvas.height/(ymax-ymin);
 	
 	var sc = Math.min(xs,ys);
 	
-	var xa=-xmin*xs+(97-0.5*(xmax-xmin)*sc);
-	var za=-zmin*zs;
-	var ya=-ymin*ys+(97-0.5*(ymax-ymin)*sc);
+	var xa=-xmin*sc+(ctx.canvas.width/2-0.5*(xmax-xmin)*sc);
+	var za=-zmin*sc;
+	var ya=-ymin*sc+(ctx.canvas.height/2-0.5*(ymax-ymin)*sc);
 	var rp=1;Math.floor(2000/(ozmax-ozmin))+1;
 	
 	// draw the bed grid
@@ -261,11 +265,16 @@ function rendergcode(){
 	
 	// actual rendering
 	var front=[];
-	for (var i=1;i<lines.length-1;i++){
+	for (var i=0;i<lines.length;i++){
 		var v1=vertex[lines[i][0]];
 		var v2=vertex[lines[i][1]];
 		// light color
-		ll=getColor(lines[i][2]+v1[2]*zs+za);
+		//ll=getColor(lines[i][2]+v1[2]*zs+za);
+		ll="#40404080";
+		if (lines[i][4]>150)ll="#c0404080";
+		else if (lines[i][4]>20)ll="#4040c080";
+		//else (lines[i][4]>150)ll="blue";
+		
 		// transform to canvas size
 		var x1=v1[0]*sc+xa+3;
 		var x2=v2[0]*sc+xa+3;
@@ -273,6 +282,7 @@ function rendergcode(){
 		var y2=v2[1]*sc+ya+3;
 		for (var j=0;j<rp;j++){
 			ctx.beginPath();
+			
 			ctx.strokeStyle=ll;
 			ctx.moveTo(x1, y1-j);
 			ctx.lineTo(x2, y2-j);
@@ -287,11 +297,11 @@ function rendergcode(){
     sz = mround((ozmax - ozmin) / 10);
 	gram=filament/(333*eScale);
 mtr=mround(filament/(eScale*1000));
-    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm, E: "+mtr+"mt",3,11);
-	ctx.fillText("W:" + mround(gram) + " gr, Time:"+mround(printtime/55+1)+"m", 3, 23);
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm",3,11);
+	ctx.fillText("Time:"+mround(printtime/60)+"m", 3, 23);
     ctx.fillStyle = "black";
-    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm, E: "+mtr+"mt",2,10);
-	ctx.fillText("W:" + mround(gram) + " gr, Time:"+mround(printtime/55+1)+"m", 2, 22);
+    ctx.fillText("X:" + sx + "  Y:" + sy +"  Z:" + sz + "cm",2,10);
+	ctx.fillText("Time:"+mround(printtime/60)+"m", 2, 22);
 	
 }
 
@@ -315,6 +325,7 @@ function aftercompress(){
 	var s="";
 	for (var i=0;i<compress.length;i++){s+=String.fromCharCode(compress[i]);}
 	cs=JSON.stringify(s);
+	if(typeof editorgcode == 'undefined') $("gcodet").innerHTML=decode();else editorgcode.setValue(decode(), -1);
 }
 function urlopen(s){
   var xhr = new XMLHttpRequest();
@@ -347,6 +358,7 @@ function homing(){
 var mbody=document.getElementById("body");
 var gcode="";
 function myFunction(v) {
+        yflip=-1;
 	if (document.activeElement==$("decode"))return;
 	gcode=v.clipboardData.getData('text/plain');
 	if (gcode){
@@ -524,6 +536,12 @@ var control = document.getElementById("inputfile");
 
 var cs="";
 compress=[];
+
+var editorgcode = ace.edit("gcode");
+//editorgcode.setReadOnly(true);
+editorgcode.session.setMode("ace/mode/gcode");
+editorgcode.renderer.setShowGutter(false);
+
 //for (var i=0;i<cs.length;i++){compress.push(cs.charCodeAt(i));}
 //decode();begincompress(editor.getValue());
 
