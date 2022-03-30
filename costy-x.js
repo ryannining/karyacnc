@@ -3291,7 +3291,7 @@ function gcodetoText1(gx) {
 	// try to support G2 and G3
 	gcstyle = [];
 	gs = gx.split("\n");
-	var scale = getvalue('scale') / 25.4;
+	var scale = 72/ 25.4;
 	var cflipx = 1;
 	var cflipy = 1;
 
@@ -3504,7 +3504,7 @@ function pathstoText1(gx) {
 	var join = getchecked("enablejoin");
 	gcstyle = [];
 	gs = gx.split("\n");
-	var scale = getvalue('scale') / 25.4;
+	var scale = 72/ 25.4;
 	var cflipx = 1;
 	var cflipy = 1;
 	ink_images = [];
