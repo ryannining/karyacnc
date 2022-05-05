@@ -4287,8 +4287,9 @@ window.addEventListener('drop', function(e) {
 			reader.onload = function(event) {
 				var dataURL = reader.result;
                 var ss = event.target.result; //.toUpperCase();
-                jobsettings=JSON.parse(ss);
-                updateprofile();
+                var newsetting=JSON.parse(ss);
+                
+                updateprofile(newsetting);
             };
             reader.readAsText(file);            
         }

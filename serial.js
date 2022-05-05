@@ -896,7 +896,13 @@ function updateweb(sett) {
 }
 
 
-function updateprofile() {
+function updateprofile(newdata=null) {
+	if (newdata!=null){
+		for (var k in newdata) {
+			if (typeof(jobsettings[k])=='undefined') jobsettings[k]=newdata[k]; else
+			jobsettings[k+"_1"]=newdata[k];
+		}
+	}
 	var p = "";
 	for (var k in jobsettings) {
 		p += "<option value='" + k + "'>" + k + "</option>";
@@ -980,9 +986,11 @@ function saveprofile() {
 
 function delprofile() {
 	name = getvalue("profilename");
-	if (name == "") name = getvalue("profile");
-	setvalue("profilename", "");
-	delete jobsettings[name];
+	if (name=="***") jobsettings={}; else {
+		if (name == "") name = getvalue("profile");
+		setvalue("profilename", "");
+		delete jobsettings[name];
+	}
 	savesetting("");
 	updateprofile();
 
