@@ -79,6 +79,8 @@ function getvalue(el) {
             } else if (v[0]=="Z"){ 
                 v = "G0 F4000 "+v;
             }
+        } else if (cmd == CMD_LASER){
+            //v+="\nG0 F2000 Z0.1";
         }
 		return v.replaceAll(";", "\n");
 	} else if (el == "pdn") {
@@ -86,13 +88,19 @@ function getvalue(el) {
 		if (v == "") {
 			if (cmd == CMD_CNC) v = "G0 F2500 Z=cncz";
 		}
-		return $(el).value.replaceAll(";", "\n");
+        if (cmd == CMD_LASER){
+            //v+="\nG0 F2000 Z0";
+        }
+		return v.replaceAll(";", "\n");
 	} else return v;
 }
 var speedvals = [];
 
 function getnumber(el) {
     var v = getvalue(el);
+	if (el=="smooth"){
+        return 1;
+    }
 	if (el=="sharp"){
         if (v*1<5) return v*1;
         return Math.cos(v*Math.PI/180);
@@ -1992,6 +2000,10 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	// deactivate tools and move to cut position
 	div = div + "\n;SHAPE #" + num + "\n";
 	if (!closed && isnotpoint) div += pup + "\n";
+    if (cmd==CMD_LASER && firstlayer){
+        // to allow resume from controller
+        div+="G0 Z0.1 F2000\nG0 Z0\n";
+    }
 	if (cmd == CMD_3D) {
 		z = -z; // if 3D then move up
 		if (z <= layerheight) {
@@ -2044,7 +2056,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	if (cmd == CMD_LASER) {
 		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
 		//div = div + pdn.replace("=cncz", mround(z)) + '\n';
-	} else
+        div+=pdn+"\n";
+    } else
 	if (cmd != CMD_3D && !fnl) {
 		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
 		if (z < 0 && firstlayer) div = div + "G0 Z0 F" + speedretract + "\n";
@@ -2429,7 +2442,7 @@ function gcode_verify(en = 0) {
 	pup1 = getvalue("pup") + '\n';
 	//startgcode = "M3";
 	finishgcode = getspindleoff(); //($("spindleoff").checked)?getspindleoff():"";
-	finishgcode += pup1 + fz ? fz : ("\nG0 F" + mround(f1) + " X0 Y0\n");
+	finishgcode += pup1 + (fz ? fz : ("\nG0 F" + mround(f1) + " X0 Y0\n"));
 	if (cmd == CMD_CNC || cmd == CMD_PLASMA) finishgcode += "G0 Z" + getvalue("finalz") + '\nM5\n';
 	if (cmd == CMD_LASER) finishgcode += pup1;
 	setvalue("pgcode", pup1 + M3 + " S255\nG0 F12000 X" + mround(sc * xmin) + " Y" + mround(ymin) +
@@ -2860,9 +2873,11 @@ function sortedgcode() {
 			var climb = sgcodes[j][2];
 			//if (fnl)climb=!climb;
 			rcutpos = getcutpos(j, shift, climb);
+            var isfirst=true;
 			if ((_re * iscut > 0) && (cmd == CMD_LASER) && getchecked("burn1")) {
 				s += lines2gcode(sgcodes[j][1], sgcodes[j][0], cncz2, cncz2, vcuttab, sgcodes[j][0][5], 1, 1, snum, getvalue("burnfeed") * 60, 0, shift, rcutpos);
-			}
+                isfirst=false;
+            }
 
 			// do pen up
             var penaway=getchecked("acpmode") && getchecked("safesort");
@@ -2934,7 +2949,7 @@ function sortedgcode() {
 				if (_rampdown) z2 = cncz2;
 				else z2 = cncz;
 				if (acpengrave && iseng) cncz = z2 = _re * zdown;
-				sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, i == 0, snum, f2 + fff, climb, shift, rcutpos,penaway);
+				sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, isfirst && (i == 0), snum, f2 + fff, climb, shift, rcutpos,penaway);
 				if (sgcodes[j][0][4].length == 1) sr += "\nG0 F3000 Z" + (cncz - zdown) + "\n"; // drill pecking
 				if (docarve) sr = '';
 
@@ -4195,7 +4210,7 @@ function pasteHandler(e) {
 				if (items[i].type.indexOf("text/plain") !== -1) {
                     yflip=-1;
                     gcode=e.clipboardData.getData('text/plain');
-                    if (gcode){
+                    if (gcode && getchecked("pastegcode")){
                         t0=performance.now();
                         begincompress(gcode,showProgress,aftercompress);
                         //$("gcode").innerHTML=s;
@@ -4224,14 +4239,14 @@ function pasteHandler(e) {
 		setTimeout(checkInput, 1);
 	}
 }
-/*
+
 window.addEventListener('dragover', function(e) {
     e.stopPropagation();
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
-});
-*/
-window.addEventListener('Xdrop', function(e) {
+},false);
+
+window.addEventListener('drop', function(e) {
 	e.stopPropagation();
 	e.preventDefault();
 	var files = e.dataTransfer.files; // Array of all files
@@ -4266,9 +4281,19 @@ window.addEventListener('Xdrop', function(e) {
 					refreshgcode();
 				});
 			}
-		}
+		} else if (file.name.indexOf(".prf")>0) {
+			var reader = new FileReader();
+			reader.tipe = file.type;
+			reader.onload = function(event) {
+				var dataURL = reader.result;
+                var ss = event.target.result; //.toUpperCase();
+                jobsettings=JSON.parse(ss);
+                updateprofile();
+            };
+            reader.readAsText(file);            
+        }
 	}
-});
+},false);
 
 /* Parse the input in the paste catcher element */
 function checkInput() {
@@ -4294,7 +4319,7 @@ function createImage(source, blob) {
 	//clear gcode
 	pastedImage.onload = function() {
 		Potrace.loadImageFromFile(blob);
-		Potrace.info.alphamax = getvalue("smooth");
+		Potrace.info.alphamax = getnumber("smooth");
 		Potrace.process(function() {
 			//displayImg();
 			//displaySVG(scale);

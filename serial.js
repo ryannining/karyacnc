@@ -845,6 +845,7 @@ function savesetting(name) {
 			"jobsettings": jobsettings
 		});
 	}
+	updatedownloadprofile();
 }
 
 setclick("btsaveset", savesetting);
@@ -1213,6 +1214,14 @@ setclick("btzoom", window.onresize);
 
 var jobcnt = 0;
 var jobs = [];
+
+function updatedownloadprofile() {
+	var element = $("downloadprofile");
+	element.setAttribute('download', "profiles.prf");
+	element.href = window.URL.createObjectURL(new Blob([JSON.stringify(jobsettings)], {
+		type: 'text/csv'
+	}));	
+}
 
 function updatedownload() {
 	var element = $("download");

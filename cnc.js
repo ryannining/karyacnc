@@ -303,13 +303,14 @@ var carvetime = 0;
 var gcodecarve = "";
 // Path are in pair of x and y -> [x,y,x,y,x,y,x,y,...]
 function vcarve(maxr, angle, step, path, dstep, dstep2) {
+	segsvdraw=[];
+	segsv = [];
 	if (path.length<=0)return;
 	sqrt = Math.sqrt;
 	sqr = function(x) {
 		return x * x;
 	}
 	// segmentation
-	segsv = [];
 	var s = 0;
 	carvetime = 0;
 	gcodecarve = "";
@@ -495,7 +496,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var oldy = -100;
 	var trav="";
 	var totalmm=0;
-	segsvdraw=[];
+
 	if (1){
 		var points=[];
 		function gen_gcode(points){
@@ -949,7 +950,8 @@ function pocketgcode() {
 		gline = arrayRotate(gline, sglines[j][4]);
 		var _re = Math.ceil(sglines[j][2] / (j == 0 ? rz1 : rz));
 		if (CMD_CNC) {
-			pup2 = "G0 F" + speedretract + " Z" +mround(-sglines[j][2]/re) + "\n";
+			// kentul kentul jare pak adit
+			pup2 = re==1?"":"G0 F" + speedretract + " Z" +mround(-sglines[j][2]/re) + "\n";
 
 		}
 		var _rz = sglines[j][2] / (_re);
