@@ -1237,6 +1237,10 @@ function getFontColor(el,el2,el3){
 
   $(el3).style.color=rgbToHex(f1[1]);	
   $(el3).style.background=rgbToHex(f1[2]);	
+  el3="title2_c";  
+  $(el3).style.color=rgbToHex(f1[1]);	
+  $(el3).style.background=rgbToHex(f1[2]);	
+
   document.bgColor=rgbToHex(fh2);
 
   var fh5=mixColor(f1[2],(f1[0] > 0.5)?[0.3,0.7,1]:[0,0.4,0.6],0.3);
