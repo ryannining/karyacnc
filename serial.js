@@ -861,6 +861,8 @@ function updatestyle(k, va) {
 	if (k == 'wcolor') {
 		$("title1").style.background = va;
 		$("title2").style.background = va;
+		color=getComputedStyle($("title1")).background;
+		getFontColor("title2","title2_a","title2_b");
 	}
 }
 
@@ -972,7 +974,7 @@ function loadprofile() {
 	if (name == "") name = getvalue("profile");
 	setvalue("profilename", name);
 	loadsettings(name);
-	sendgcode("m220 s100"); // reset speed
+	//sendgcode("m220 s100"); // reset speed
 }
 
 function saveprofile() {
@@ -1182,21 +1184,85 @@ function startserver() {
 	} else $("alert1").innerHTML = "ScServer Error";
 }
 
+function mixColor(rgb1,rgb2,ratio){
+	return [ratio*rgb1[0]+(1-ratio)*rgb2[0],
+			ratio*rgb1[1]+(1-ratio)*rgb2[1],
+			ratio*rgb1[2]+(1-ratio)*rgb2[2]];
+}
+function rgbToHex(rgb){
+	if (rgb[0]>1)rgb[0]=1;
+	if (rgb[1]>1)rgb[1]=1;
+	if (rgb[2]>1)rgb[2]=1;
+	return "#"+parseInt(rgb[0]*255).toString(16).padStart(2,"0")+
+				parseInt(rgb[1]*255).toString(16).padStart(2,"0")+
+				parseInt(rgb[2]*255).toString(16).padStart(2,"0");
+}
+
+function bestFontColor(el){
+	if (typeof(el)=="string"){
+		var bcolor=getComputedStyle($(el)).background;
+		var srgb=bcolor.match(/\d+/g);
+		var rgb= [parseInt(srgb[0])/255.0,
+				parseInt(srgb[1])/255.0,
+				parseInt(srgb[2])/255.0];
+	} else rgb=el;
+  // Counting the perceptive luminance
+  // human eye favors green color... 
+  var a = 1 - (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]);
+  return [a,(a > 0.5)?[1,1,1]:[0,0,0],rgb];
+}
+function getFontColor(el,el2,el3){
+  var f1=bestFontColor(el);	
+  var fh2=mixColor(f1[2],(f1[0] > 0.5)?[1,1,1]:[0,0,0],0.6);
+  var f2=bestFontColor(fh2);	
+
+  var fh3=mixColor(f1[2],[0.7,0.4,0.2],0.3);
+  var f3=bestFontColor(fh3);	
+
+  hdr1CSS.style.background=rgbToHex(fh2);
+  hdr1CSS.style.color=rgbToHex(f2[1]);
+  hdr2CSS.style.background=rgbToHex(fh3);
+  hdr2CSS.style.color=rgbToHex(f3[1]);
+  $(el2).style.color=rgbToHex(f1[1]);
+
+
+  $(el3).style.background="lightblue"; 	
+  f4=bestFontColor(el3);	
+  var f42=mixColor(f4[2],[1,0.8,0.5],0.6);
+  f4=bestFontColor(f42);
+
+  smallWCSS.style.color=rgbToHex(f4[1]);
+  smallWCSS.style.background=rgbToHex(f42);
+  
+
+  $(el3).style.color=rgbToHex(f1[1]);	
+  $(el3).style.background=rgbToHex(f1[2]);	
+  document.bgColor=rgbToHex(fh2);
+
+  var fh5=mixColor(f1[2],(f1[0] > 0.5)?[0.3,0.7,1]:[0,0.4,0.6],0.3);
+  var f5=bestFontColor(fh5);	
+
+  buttonCSS.style.background=rgbToHex(fh5);
+  buttonCSS.style.color=rgbToHex(f5[1]);
+}
+
 
 function resizedisplay(reload=1) {
 	var sc = parseFloat(getvalue("zoom1"));
+	var tw=parseInt(getComputedStyle($('maintable')).width);
 	var gcw=hidd3?600:850;
-	var nw = Math.max(100, window.innerWidth - gcw);
+	var nw = Math.max(100, tw - gcw);
 	var v = $('myCanvas1');
 	v.width = nw * sc;
 	nh = window.innerHeight - 200;
 	v.height = nh * sc;
-	$('myCanvas1td').width = nw + 50;
-	$('myCanvas1div').style.width = nw + 50;
+	$('myCanvas1td').width = nw;
+	$('myCanvas1div').style.width = nw;
 	$('myCanvas1div').style.height = nh;
 	if ($("regcodeX").checked) karya_ready = 1;
 	if (karya_ready && reload) refreshgcode();
 	karya_ready = 1;
+
 }
 window.onresize = function() {
 	setTimeout(resizedisplay, 600);
@@ -1294,6 +1360,15 @@ i = sheet.insertRule('.isConnected {display:none  }', sheet.cssRules.length);
 var isConnectedCSS = sheet.cssRules[i];
 i = sheet.insertRule('.mustCOM {' + (hasCOM ? "" : "display:none") + '  }', sheet.cssRules.length);
 var ismustCOMCSS = sheet.cssRules[i];
+i = sheet.insertRule('.hdr1 { background:lime; }', sheet.cssRules.length);
+var hdr1CSS = sheet.cssRules[i];
+i = sheet.insertRule('.hdr2 { background:chocolate; }', sheet.cssRules.length);
+var hdr2CSS = sheet.cssRules[i];
+i = sheet.insertRule('button {border-radius:6px;margin:1px}', sheet.cssRules.length);
+var buttonCSS = sheet.cssRules[i];
+
+i = sheet.insertRule('.smallwindow {	text-align:  right;background: cyan;display:none;position:absolute;border:1px solid black;border-radius:5px;box-shadow: 2px 4px 10px rgba(0,0,0,0.5);padding:5px;z-index:1000;}', sheet.cssRules.length);
+var smallWCSS = sheet.cssRules[i];
 
 setevent("change", "wmode", updatewmode);
 modechange(1);
