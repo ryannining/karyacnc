@@ -4288,8 +4288,9 @@ window.addEventListener('drop', function(e) {
 				var dataURL = reader.result;
                 var ss = event.target.result; //.toUpperCase();
                 var newsetting=JSON.parse(ss);
-                
-                updateprofile(newsetting);
+                wxAlert("Confirmation","Load external profile data ?","Yes,No",function(){
+                    updateprofile(newsetting);
+                },null);
             };
             reader.readAsText(file);            
         }

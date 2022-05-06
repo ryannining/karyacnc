@@ -67,8 +67,52 @@
 	}
     .hideit {display:none}
 
+
+.overlay {
+        position: absolute;
+        display: none;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 2;
+      }
+
+      .popup {
+        position: absolute;
+        width: 50%;
+        height: auto;
+        top: 25%;
+        left: 25%;
+        text-align: center;
+        background: white;
+        border-radius:10px;
+      }
+     
+      .popup h3 {
+        font-size: 20px;
+        height: 50px;
+        line-height: 50px;
+        color: black;
+      }
+      .CloseIcon{
+        cursor: pointer;
+      }
 	</style>
 	<body style="font-family:sans-serif;margin:0;rfont-size">
+	<div class="overlay" id="overlay">
+      <div class="popup">
+        <h3 id=wxtitle>Popup Content</h3>
+		<hr>
+		<div id=wxcontent></div>
+		<hr>
+		        <button id=wxbt1  >Ok</button>
+		        <button id=wxbt2  >Close</button>
+		        <br><br>
+
+      </div>
+    </div>		
 		<table  class=hideit width=100%  id=title1  style="background:lightgray;font-weight:600">
 			<tr>
 				<td>
@@ -314,8 +358,8 @@
 				<tr style="" class=hdr1 class=notsimple><td colspan=3>Flip X <input id=flipx type=checkbox class=saveit>
 					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit><span class="notsimple notplasma"> Pow <input id=cutpw size=2 value=100 class=saveit>%</span></tr>
 				<tr valign=center>
-                    <td colspan=1><span class="notsimple notlaser">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
-                    <td><span class="notsimple notcnc notplasma">pre Burn </span></td><td ><input id=burn1 type=checkbox class="saveit notsimple notcnc notplasma" ><button id=btrecode >Process</button></td></tr>
+                    <td colspan=2><span class="notsimple notlaser">Climb mill <input id=cutclimb type=checkbox class=saveit></span>
+                    <span class="notsimple notcnc notplasma">pre Burn </span> <input id=burn1 type=checkbox class="saveit notsimple notcnc notplasma" ></td><td ><button id=btrecode >Process</button></td></tr>
             <hr>
             </tr>
             <tr><td colspan=3 align=left>
@@ -368,7 +412,7 @@
 				<option value=2>2X</option>
 				<option value=3>3X</option>
 			</select></div>
-			<table id=vars2 class=smallwindow>
+			<table id=vars2 class=smallwindow style="margin-left:-100px">
 				<tr class="notsimple mustCOM"><td colspan=2>Board COM BAUD </td><td colspan=2><input id=baudrate size=10 value="230400" class=saveit></td></tr>
 				<tr><td colspan=2>Board IP 192.168.</td><td colspan=2><input id=wsip size=14 class=saveit value="0.123"></td></tr>
 				<tr><td colspan=2>Direct to CNC </td><td colspan=2>192.168.4.1<input type=checkbox id=wsdirect class=saveit></td></tr>

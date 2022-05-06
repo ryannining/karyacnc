@@ -870,11 +870,11 @@ function updatewmode() {
 	dm = getvalue("wmode");
 	if (dm == 1) {
 		notsimpleCSS.style.display = "none";
-		$("vars3").style.marginLeft = "230px";
+		$("vars3").style.marginLeft = "200px";
 	}
 	if (dm == 2) {
 		notsimpleCSS.style.display = "";
-		$("vars3").style.marginLeft = "330px";
+		$("vars3").style.marginLeft = "230px";
 	}
 }
 
@@ -988,13 +988,21 @@ function saveprofile() {
 
 function delprofile() {
 	name = getvalue("profilename");
-	if (name=="***") jobsettings={}; else {
+	if (name=="***") {
+        wxAlert("Confirmation","Do you really want to clear profile data ?","Yes,No",function(){
+            jobsettings={};
+            savesetting("");
+            updateprofile();
+        },null);
+    } else {
 		if (name == "") name = getvalue("profile");
-		setvalue("profilename", "");
-		delete jobsettings[name];
+        wxAlert("Confirmation","Do you really want to delete profile '"+name+"' ?","Yes,No",function(){
+            setvalue("profilename", "");
+            delete jobsettings[name];
+            savesetting("");
+            updateprofile();
+        },null);
 	}
-	savesetting("");
-	updateprofile();
 
 }
 function setprofile() {
@@ -1243,9 +1251,10 @@ function getFontColor(el,el2,el3){
 
   document.bgColor=rgbToHex(fh2);
 
-  var fh5=mixColor(f1[2],(f1[0] > 0.5)?[0.3,0.7,1]:[0,0.4,0.6],0.3);
+  var fh5=mixColor(fh2,(f2[0] > 0.5)?[1,1,1]:[0,0,0],0.5);
   var f5=bestFontColor(fh5);	
 
+  buttonCSS.style.borderColor=rgbToHex(fh5);
   buttonCSS.style.background=rgbToHex(fh5);
   buttonCSS.style.color=rgbToHex(f5[1]);
 }
@@ -1272,7 +1281,50 @@ window.onresize = function() {
 	setTimeout(resizedisplay, 600);
 }
 
+/*
+    POP UP
+*/
 
+function wxAlert(title,text,bts,click1,click2){
+  $("overlay").style.display = 'block'
+  $("wxtitle").innerHTML = title;
+  $("wxcontent").innerHTML = text;
+  $("wxbt1").style.display="";
+  $("wxbt2").style.display="none";
+  wxcb1=click1;
+  wxcb2=click2;
+  var bt=bts.split(",");
+  $("wxbt1").innerHTML=bt[0];
+  if (bt.length==2){
+      $("wxbt2").style.display="";
+      $("wxbt2").innerHTML=bt[1];
+  }
+}
+
+function OpenModal(e=0) {
+  let element = document.getElementById('overlay')
+  element.style.display = 'block'
+}
+function CloseModal(e=0) {
+  let element = document.getElementById('overlay')
+  element.style.display = 'none'
+}
+var wxcb1=null;
+var wxcb2=null;
+
+function wxClick1(e){
+    if (wxcb1)wxcb1(e);
+    CloseModal(0);
+}
+function wxClick2(e){
+    if (wxcb2)wxcb2(e);
+    CloseModal(0);
+}
+
+setclick("wxbt1",wxClick1);
+setclick("wxbt2",wxClick2);
+
+// ============================================================
 
 setTimeout(function() {
 	//var h=window.location.host;
