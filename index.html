@@ -394,14 +394,14 @@
 			</div>
 		</td>
 		<td id="myCanvas1td" width=auto style="background:white;padding:5px;border:solid 1px">
-			<p style="background:yellow" id="area_dimension">Object Preview</p>
+			<p style="background:rgba(255,255,100,0.5);color:black" id="area_dimension">Object Preview</p>
 			<p class="blink_me" id="alertpath"></p>
 			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
-			<div id="myCanvas1div" style="width:600px;height:500px;overflow:scroll">
+			
+			<div id="myCanvas1div" style="width:600px;height:500px;overflow-y:auto;overflow-x:hidden">
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
 			</div>
 			Dark Theme<input type=checkbox id=isdarktheme class=saveit><br>
-			<p style="background:yellow" id="area_dimension2"></p>
 			<br><button id=btsaveset class=hideit>Save Config</button>
 		</td>
 		<td width=300px id=title2_b bgcolor=lightblue style="padding:5px">

@@ -1451,6 +1451,8 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
         if (sty.dopocket) lcol = "#800080";
         if (sty.domarking) lcol = "#FF6666";
 	}
+    $("myCanvas1td").style.background=theme == 1 ? "#333333" : "#EEEEEE";
+    $("myCanvas1td").style.color=theme == 1 ? "#FFFFFF" : "#000000";
 	ox = 0;
 	oy = 0;
 	ll = lines.length;
@@ -2434,7 +2436,7 @@ function gcode_verify(en = 0) {
 	ctx.font = "12px Arial";
 	w = mround((xmax - xmin) / 10);
 	h = mround((ymax - ymin) / 10);
-	$("area_dimension2").innerHTML = "W:" + w + " H:" + h + " Area:" + mround(w * h) + " cm2";
+	//$("area_dimension2").innerHTML = "W:" + w + " H:" + h + " Area:" + mround(w * h) + " cm2";
 	text = $("material");
 	mat = text.options[text.selectedIndex].innerText;
 	sc = 1;
