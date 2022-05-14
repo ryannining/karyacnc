@@ -804,6 +804,7 @@ try {
 	storage = chrome.storage.local;
 
 } catch (e) {
+    console.log("Storage not supported !");
 	stotype = 1;
 	storage = localStorage;
 }
@@ -854,6 +855,10 @@ setclick("btgcode2vec", function() {
 	refreshgcode();
 });
 
+
+var defaultProfile={"part_acp":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":true,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"0","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"part_acp","material":"25,2,27,1500,6","cmode":"3","matprice":"27","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"16","repeat":"2","zdown0":"0","zdown":"6","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G0 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"orange","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"laser_akrilik":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":true,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"0","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"laser_akrilik","material":"6,1,37,1500","cmode":"1","matprice":"37","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"6","repeat":"1","zdown0":"0","zdown":"0","tabc":"0","tablen":"0","pup":"","pdn":"M3 S255","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"lightgreen","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"kerja_mdf18":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":false,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"3","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"kerja_mdf18","material":"25,2,27,1500,6","cmode":"3","matprice":"18","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"20","repeat":"4","zdown0":"0","zdown":"19","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G0 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"#CCAA88","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"kerja_triplek5":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":false,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"3","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"kerja_triplek5","material":"25,2,27,1500,6","cmode":"3","matprice":"6","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"20","repeat":"1","zdown0":"0","zdown":"6","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G0 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"#CCBB88","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""}};
+
+
 function updatestyle(k, va) {
 	if (k == 'wtitle') {
 		$("title0").innerHTML = va;
@@ -861,6 +866,8 @@ function updatestyle(k, va) {
 	if (k == 'wcolor') {
 		$("title1").style.background = va;
 		$("title2").style.background = va;
+		color=getComputedStyle($("title1")).background;
+		getFontColor("title2","title2_a","title2_b");
 	}
 }
 
@@ -868,11 +875,11 @@ function updatewmode() {
 	dm = getvalue("wmode");
 	if (dm == 1) {
 		notsimpleCSS.style.display = "none";
-		$("vars3").style.marginLeft = "230px";
+		$("vars3").style.marginLeft = "200px";
 	}
 	if (dm == 2) {
 		notsimpleCSS.style.display = "";
-		$("vars3").style.marginLeft = "330px";
+		$("vars3").style.marginLeft = "230px";
 	}
 }
 
@@ -896,7 +903,13 @@ function updateweb(sett) {
 }
 
 
-function updateprofile() {
+function updateprofile(newdata=null) {
+	if (newdata!=null){
+		for (var k in newdata) {
+			if (typeof(jobsettings[k])=='undefined') jobsettings[k]=newdata[k]; else
+			jobsettings[k+"_1"]=newdata[k];
+		}
+	}
 	var p = "";
 	for (var k in jobsettings) {
 		p += "<option value='" + k + "'>" + k + "</option>";
@@ -910,6 +923,7 @@ function loadsettings(name) {
 		updateweb(jobsettings[name]);
 		return;
 	}
+    jobsettings=defaultProfile;
 
 	try {
 		if (stotype == 0) {
@@ -936,25 +950,14 @@ function loadsettings(name) {
 			});
 			storage.get("jobsettings", function(r) {
 				jobsettings = r.jobsettings;
-				if (jobsettings == undefined) jobsettings = {};
+				if (jobsettings == undefined || Object.keys(jobsettings).length==0) {
+					jobsettings = defaultProfile;
+					setvalue("profilename","part_acp");
+					loadprofile();
+				}
 				updateprofile();
 			});
-		} else {
-			jobsettings = storage.jobsettings;
-			text1 = storage.text1;
-			if (text1 == undefined) text1 = "";
-			if (storage.gcstyle != undefined) gcstyle = JSON.parse(storage.gcstyle);
-			if (storage.ink_images != undefined) ink_images = JSON.parse(storage.ink_images);
-			if (storage.cuttabs != undefined) cuttabs = JSON.parse(storage.cuttabs);
-			if (storage.ebounds != undefined) engravebounds = JSON.parse(storage.ebounds);
-			if (storage.settings != undefined) {
-				updateweb(JSON.parse(storage.settings));
-				if (jobsettings == undefined) jobsettings = {};
-				if (!ink_images) ink_images = [];
-				updateprofile();
-			}
 		}
-		//connectwebsock();
 
 	} catch (e) {}
 
@@ -966,7 +969,7 @@ function loadprofile() {
 	if (name == "") name = getvalue("profile");
 	setvalue("profilename", name);
 	loadsettings(name);
-	sendgcode("m220 s100"); // reset speed
+	//sendgcode("m220 s100"); // reset speed
 }
 
 function saveprofile() {
@@ -980,11 +983,21 @@ function saveprofile() {
 
 function delprofile() {
 	name = getvalue("profilename");
-	if (name == "") name = getvalue("profile");
-	setvalue("profilename", "");
-	delete jobsettings[name];
-	savesetting("");
-	updateprofile();
+	if (name=="***") {
+        wxAlert("Confirmation","Do you really want to clear profile data ?","Yes,No",function(){
+            jobsettings={};
+            savesetting("");
+            updateprofile();
+        },null);
+    } else {
+		if (name == "") name = getvalue("profile");
+        wxAlert("Confirmation","Do you really want to delete profile '"+name+"' ?","Yes,No",function(){
+            setvalue("profilename", "");
+            delete jobsettings[name];
+            savesetting("");
+            updateprofile();
+        },null);
+	}
 
 }
 function setprofile() {
@@ -1174,27 +1187,139 @@ function startserver() {
 	} else $("alert1").innerHTML = "ScServer Error";
 }
 
+function mixColor(rgb1,rgb2,ratio){
+	return [ratio*rgb1[0]+(1-ratio)*rgb2[0],
+			ratio*rgb1[1]+(1-ratio)*rgb2[1],
+			ratio*rgb1[2]+(1-ratio)*rgb2[2]];
+}
+function rgbToHex(rgb){
+	if (rgb[0]>1)rgb[0]=1;
+	if (rgb[1]>1)rgb[1]=1;
+	if (rgb[2]>1)rgb[2]=1;
+	return "#"+parseInt(rgb[0]*255).toString(16).padStart(2,"0")+
+				parseInt(rgb[1]*255).toString(16).padStart(2,"0")+
+				parseInt(rgb[2]*255).toString(16).padStart(2,"0");
+}
+
+function bestFontColor(el){
+	if (typeof(el)=="string"){
+		var bcolor=getComputedStyle($(el)).background;
+		var srgb=bcolor.match(/\d+/g);
+		var rgb= [parseInt(srgb[0])/255.0,
+				parseInt(srgb[1])/255.0,
+				parseInt(srgb[2])/255.0];
+	} else rgb=el;
+  // Counting the perceptive luminance
+  // human eye favors green color... 
+  var a = 1 - (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]);
+  return [a,(a > 0.5)?[1,1,1]:[0,0,0],rgb];
+}
+function getFontColor(el,el2,el3){
+  var f1=bestFontColor(el);	
+  var fh2=mixColor(f1[2],(f1[0] > 0.5)?[1,1,1]:[0,0,0],0.6);
+  var f2=bestFontColor(fh2);	
+
+  var fh3=mixColor(f1[2],[0.7,0.4,0.2],0.3);
+  var f3=bestFontColor(fh3);	
+
+  hdr1CSS.style.background=rgbToHex(fh2);
+  hdr1CSS.style.color=rgbToHex(f2[1]);
+  hdr2CSS.style.background=rgbToHex(fh3);
+  hdr2CSS.style.color=rgbToHex(f3[1]);
+  $(el2).style.color=rgbToHex(f1[1]);
+
+
+  $(el3).style.background="lightblue"; 	
+  f4=bestFontColor(el3);	
+  var f42=mixColor(f4[2],[1,0.8,0.5],0.6);
+  f4=bestFontColor(f42);
+
+  smallWCSS.style.color=rgbToHex(f4[1]);
+  smallWCSS.style.background=rgbToHex(f42);
+  
+
+  $(el3).style.color=rgbToHex(f1[1]);	
+  $(el3).style.background=rgbToHex(f1[2]);	
+  el3="title2_c";  
+  $(el3).style.color=rgbToHex(f1[1]);	
+  $(el3).style.background=rgbToHex(f1[2]);	
+
+  document.bgColor=rgbToHex(fh2);
+
+  var fh5=mixColor(fh2,(f2[0] > 0.5)?[1,1,1]:[0,0,0],0.5);
+  var f5=bestFontColor(fh5);	
+
+  buttonCSS.style.borderColor=rgbToHex(fh5);
+  buttonCSS.style.background=rgbToHex(fh5);
+  buttonCSS.style.color=rgbToHex(f5[1]);
+}
+
 
 function resizedisplay(reload=1) {
 	var sc = parseFloat(getvalue("zoom1"));
+	var tw=parseInt(getComputedStyle($('maintable')).width);
 	var gcw=hidd3?600:850;
-	var nw = Math.max(100, window.innerWidth - gcw);
+	var nw = Math.max(100, tw - gcw);
 	var v = $('myCanvas1');
 	v.width = nw * sc;
-	nh = window.innerHeight - 200;
+	nh = window.innerHeight - 124;
 	v.height = nh * sc;
-	$('myCanvas1td').width = nw + 50;
-	$('myCanvas1div').style.width = nw + 50;
+	$('myCanvas1td').width = nw;
+	$('myCanvas1div').style.width = nw;
 	$('myCanvas1div').style.height = nh;
 	if ($("regcodeX").checked) karya_ready = 1;
 	if (karya_ready && reload) refreshgcode();
 	karya_ready = 1;
+
 }
 window.onresize = function() {
 	setTimeout(resizedisplay, 600);
 }
 
+/*
+    POP UP
+*/
 
+function wxAlert(title,text,bts,click1,click2){
+  $("overlay").style.display = 'block'
+  $("wxtitle").innerHTML = title;
+  $("wxcontent").innerHTML = text;
+  $("wxbt1").style.display="";
+  $("wxbt2").style.display="none";
+  wxcb1=click1;
+  wxcb2=click2;
+  var bt=bts.split(",");
+  $("wxbt1").innerHTML=bt[0];
+  if (bt.length==2){
+      $("wxbt2").style.display="";
+      $("wxbt2").innerHTML=bt[1];
+  }
+}
+
+function OpenModal(e=0) {
+  let element = document.getElementById('overlay')
+  element.style.display = 'block'
+}
+function CloseModal(e=0) {
+  let element = document.getElementById('overlay')
+  element.style.display = 'none'
+}
+var wxcb1=null;
+var wxcb2=null;
+
+function wxClick1(e){
+    if (wxcb1)wxcb1(e);
+    CloseModal(0);
+}
+function wxClick2(e){
+    if (wxcb2)wxcb2(e);
+    CloseModal(0);
+}
+
+setclick("wxbt1",wxClick1);
+setclick("wxbt2",wxClick2);
+
+// ============================================================
 
 setTimeout(function() {
 	//var h=window.location.host;
@@ -1286,6 +1411,15 @@ i = sheet.insertRule('.isConnected {display:none  }', sheet.cssRules.length);
 var isConnectedCSS = sheet.cssRules[i];
 i = sheet.insertRule('.mustCOM {' + (hasCOM ? "" : "display:none") + '  }', sheet.cssRules.length);
 var ismustCOMCSS = sheet.cssRules[i];
+i = sheet.insertRule('.hdr1 { background:lime; }', sheet.cssRules.length);
+var hdr1CSS = sheet.cssRules[i];
+i = sheet.insertRule('.hdr2 { background:chocolate; }', sheet.cssRules.length);
+var hdr2CSS = sheet.cssRules[i];
+i = sheet.insertRule('button {border-radius:6px;margin:1px}', sheet.cssRules.length);
+var buttonCSS = sheet.cssRules[i];
+
+i = sheet.insertRule('.smallwindow {	text-align:  right;background: cyan;display:none;position:absolute;border:1px solid black;border-radius:5px;box-shadow: 2px 4px 10px rgba(0,0,0,0.5);padding:5px;z-index:1000;}', sheet.cssRules.length);
+var smallWCSS = sheet.cssRules[i];
 
 setevent("change", "wmode", updatewmode);
 modechange(1);

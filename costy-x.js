@@ -1445,12 +1445,14 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
             if (!cll) lcol = "#00C800";
             else lcol = theme == 0 ? "#000000" : "#ee8888";
         } else {
-            lcol = theme == 0 ? "#880000" : "#ffeeee";
+            lcol = theme == 0 ? "#664400" : "#cc4400";
         }
         if (sty.dovcarve) lcol = "#00ffff";
         if (sty.dopocket) lcol = "#800080";
         if (sty.domarking) lcol = "#FF6666";
 	}
+    $("myCanvas1td").style.background=theme == 1 ? "#333333" : "#EEEEEE";
+    $("myCanvas1td").style.color=theme == 1 ? "#FFFFFF" : "#000000";
 	ox = 0;
 	oy = 0;
 	ll = lines.length;
@@ -1959,7 +1961,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var pw1 = 1;
 	var pw2 = 0; //getvalue('pwm');
 	var pup = getvalue("pup");
-	if (fnl) pup = "G0 Z3\n";
+	if (fnl) pup = "G0 Z4\n";
 	var pdn = getvalue('pdn');
 	if (cmd == CMD_PLASMA || getchecked("spindleoff") || getchecked("pausecut")) {
 		if (cmd == CMD_PLASMA) {
@@ -1973,7 +1975,8 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 			pup = getspindleoff() + pup;
 		} else {
 			pup = (hasfnl ? pup : getspindleoff()) + pup;
-			pdn =  (((firstlayer && !fnl)) ? (getspindleon())+ (getchecked("pausecut")?"G0 Z0\nM3 S255 P10000\n":"") : "") 
+			//pup = getspindleoff() + pup;
+			pdn =  (((firstlayer || fnl)) ? (getspindleon())+ (getchecked("pausecut")?"G0 Z0\nM3 S255 P10000\n":"") : "") 
                    
                    + pdn;
 		}
@@ -2058,17 +2061,21 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		//div = div + pdn.replace("=cncz", mround(z)) + '\n';
         div+=pdn+"\n";
     } else
-	if (cmd != CMD_3D && !fnl) {
-		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
-		if (z < 0 && firstlayer) div = div + "G0 Z0 F" + speedretract + "\n";
-		if (firstlayer && uselead) {
-			div += ";LEAD IN\n"
-			if (cmd == CMD_PLASMA) div += pdn;
-			div += "\nG1 F" + f2 + " Z" + mround(z) + " X" + mround(X1) + " Y" + mround(Y1) + "\n";
-		} else {
-			if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z - 1)) + '\n';
-			div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
-		}
+	if (cmd != CMD_3D) {
+        if (fnl){
+            div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
+        } else {
+            //if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
+            if (z < 0 && firstlayer) div = div + "G0 Z0 F" + speedretract + "\n";
+            if (firstlayer && uselead) {
+                div += ";LEAD IN\n"
+                if (cmd == CMD_PLASMA) div += pdn;
+                div += "\nG1 F" + f2 + " Z" + mround(z) + " X" + mround(X1) + " Y" + mround(Y1) + "\n";
+            } else {
+                if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z - 1)) + '\n';
+                div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
+            }
+        }
 	}
 	var incut = 0;
 	var iscut = 0;
@@ -2434,7 +2441,7 @@ function gcode_verify(en = 0) {
 	ctx.font = "12px Arial";
 	w = mround((xmax - xmin) / 10);
 	h = mround((ymax - ymin) / 10);
-	$("area_dimension2").innerHTML = "W:" + w + " H:" + h + " Area:" + mround(w * h) + " cm2";
+	//$("area_dimension2").innerHTML = "W:" + w + " H:" + h + " Area:" + mround(w * h) + " cm2";
 	text = $("material");
 	mat = text.options[text.selectedIndex].innerText;
 	sc = 1;
@@ -2889,7 +2896,8 @@ function sortedgcode() {
             if (fnl) ps = "G0 Z3\n";
 			// acp mode make first hole
 			var acp = "";
-			if ((cmd == CMD_PLASMA || getchecked("spindleoff")) && !fnl) acp = getspindleoff();
+            //&& !fnl
+			if ((cmd == CMD_PLASMA || getchecked("spindleoff")) ) acp = getspindleoff();
 			acp += ps;
 			var isacp = 0;
 
@@ -4287,8 +4295,10 @@ window.addEventListener('drop', function(e) {
 			reader.onload = function(event) {
 				var dataURL = reader.result;
                 var ss = event.target.result; //.toUpperCase();
-                jobsettings=JSON.parse(ss);
-                updateprofile();
+                var newsetting=JSON.parse(ss);
+                wxAlert("Confirmation","Load external profile data ?","Yes,No",function(){
+                    updateprofile(newsetting);
+                },null);
             };
             reader.readAsText(file);            
         }

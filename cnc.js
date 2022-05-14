@@ -14,12 +14,13 @@ function urlopen(s, cb_ok, cb_err) {
 	xhr.open("GET", "http://" + getcncip() + "/" + s, true);
 	xhr.onload = function(e) {
 		//alert(xhr.response);
-		$("alert1").innerHTML = w;
 		if (cb_ok) cb_ok();
+		wxAlert("HTTP Response",xhr.response,"Ok",null,null);
 	};
 	xhr.addEventListener('error', function(e) {
 		$("alert1").innerHTML = "ERROR";
 		if (cb_err) cb_err();
+		wxAlert("HTTP ERROR","Error No:","Ok",null,null);
 	});
 	xhr.send();
 }
@@ -194,7 +195,9 @@ function resetflashbutton() {
 }
 
 function stopprint() {
-	urlopen("stopprint");
+	wxAlert("Confirmation","Stop running Job ?","Yes,No",function(){
+		urlopen("stopprint");
+	},null);	
 }
 
 var mbody = document.getElementById("body");

@@ -637,7 +637,9 @@ function begincompress(paste, callback1, callback2) {
 var decodes = "";
 var decoding = 0;
 var AX, AY, AZ, AE;
-
+var shapes=[];
+var shapes_ctr=0;
+var PZ=0;
 function decodealine() {
 	var isM = 0;
 	var isG = 0;
@@ -721,6 +723,11 @@ function decodealine() {
 		}
 		var x = 0;
 		decodes += "G" + G;
+		var shape=[];
+		if (G<=1 && AZ>0){
+			shape=[AX,AY,AZ];
+			PZ=AZ;
+		}
 		if (h & (1 << 3)) {
 			s = read(1);
 			isF = 1;
@@ -751,6 +758,11 @@ function decodealine() {
 				isZ = 1;
 				AZ += (x - zLimit) / zScale;
 				decodes += " Z" + mround(AZ);
+				if (AZ<=0 && PZ>0){
+					PZ=AZ;
+					shapes.push(shape);
+					shapes_ctr++;
+				}
 			}	
 		}
 		if (h & (1 << 7)) {
@@ -781,6 +793,9 @@ function decode() {
 	AY = 0;
 	AZ = 0;
 	AE = 0;
+	shapes=[];
+	shapes_ctr=0;
+	PZ=0;
 
 	while (decoding) {
 		decodealine();
