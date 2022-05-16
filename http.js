@@ -357,7 +357,7 @@ HttpServer.prototype = {
               'listen error ' +
               chrome.runtime.lastError.message +
                 ' (normal if another instance is already serving requests)');
-            if ($("title0"))$("title0").innerHTML='WebSocket error: ' + chrome.runtime.lastError.message;    
+            wxAlert("Server Error",'<font color=red>WebSocket Server '+port+' error: ' + chrome.runtime.lastError.message+"</font><br><br>Try restart Karyacnc, or restart Chrome Browser");    
           }
         });
     });
