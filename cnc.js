@@ -9,18 +9,18 @@ function getcncip() {
 	return cncip;
 }
 
-function urlopen(s, cb_ok, cb_err) {
+function urlopen(s, cb_ok=0, cb_err=0,wx=1) {
 	var xhr = new XMLHttpRequest();
 	xhr.open("GET", "http://" + getcncip() + "/" + s, true);
 	xhr.onload = function(e) {
 		//alert(xhr.response);
 		if (cb_ok) cb_ok();
-		wxAlert("HTTP Response",xhr.response,"Ok",null,null);
+		if (wx)wxAlert("HTTP Response",xhr.response,"Ok",null,null);
 	};
 	xhr.addEventListener('error', function(e) {
 		$("alert1").innerHTML = "ERROR";
 		if (cb_err) cb_err();
-		wxAlert("HTTP ERROR","Error No:","Ok",null,null);
+		if (wx)wxAlert("HTTP ERROR","Error No:","Ok",null,null);
 	});
 	xhr.send();
 }
@@ -1922,3 +1922,9 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 
 	}
 }
+
+
+//urlopen("https://ryannining.goatcounter.com/count");
+//data-goatcounter="https://ryannining.goatcounter.com/count";
+//if(!sessionStorage.getItem("_swa")&&document.referrer.indexOf(location.protocol+"//"+location.host)!== 0){fetch("https://counter.dev/track?"+new URLSearchParams({referrer:document.referrer,screen:screen.width+"x"+screen.height,user:"ryannining",utcoffset:"7"}))};sessionStorage.setItem("_swa","1");
+
