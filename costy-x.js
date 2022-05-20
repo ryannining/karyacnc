@@ -98,6 +98,7 @@ var speedvals = [];
 
 function getnumber(el) {
     var v = getvalue(el);
+    if (v=='undefined')v='0';
 	if (el=="smooth"){
         return 1;
     }
@@ -1412,16 +1413,21 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 	ctx.beginPath();
 	if (firstline) {
 		firstline = 0;
-		lx = (lx + maxofs) * dpm;
+        var ss = getvalue("startat").split(",");
+		lx = ss[0] * 1;
+		ly = ss[1] * 1;
+        
+        lx = (lx + maxofs) * dpm;
 		ly = (ly + maxofs) * dpm;
 		ctx.setLineDash([]);
 		ctx.moveTo(lx - 15, ly);
 		ctx.lineTo(lx + 15, ly);
 		ctx.moveTo(lx, ly - 15);
 		ctx.lineTo(lx, ly + 15);
-		ctx.strokeStyle = "#FFFF00";
+		ctx.strokeStyle = "#AA77FF";
 		ctx.stroke();
-	}
+		ctx.strokeStyle = "#FFFF00";
+    }
 	ctx.setLineDash([]);
 	ctx.moveTo(lx, ly);
 	lx2 = lx;
@@ -1572,8 +1578,10 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 				Y1 = ly;
 				if (!stu) {
 					// direct travel to here
-                    ctx.strokeStyle = "#FFFF00";
+					
+                    ctx.strokeStyle = "#CC550080";
 					jmltravel += sqrt(sqr(olx - lx) + sqr(oly - ly)) / dpm;
+					//ctx.arc(lx, ly, 1.5, 0, 2 * Math.PI)
 					ctx.stroke();
 				}
 				ctx.beginPath();
@@ -2470,17 +2478,18 @@ function gcode_verify(en = 0) {
 	//var menit = mround((sfinal + jmltravel * 10) / getvalue('feed') / 60.0);
 	var re = getvalue("repeat");
 	//menit = menit * re;
-	var g = mz + getvalue("engcode") + gcodecarve;
+	var g = getvalue("engcode") + gcodecarve;
 
 	if (g) setvalue("engcode", g + pup1); //m3 s0\n");
 	if (cmd == CMD_PLASMA) setvalue("engcode", "");
 
-	ctx.font = "30px Arial";
+	ctx.font = "15px Courier";
 	ctx.fillStyle = theme == 0 ? "#000000" : "#ffffff";;
 	td = getvalue('offset');
 	if (getchecked("pltmode")) td = "PLT"
-	ctx.fillText("X:" + w + "  Y:" + h + "cm  Z:" + getvalue("zdown") + "mm/" + getvalue('repeat') + "    T:" + mround(menit) + "min", 2, c.height - 10);
-	ctx.fillText("Feed:" + getvalue("feed") + "mm/s   Tool \u2300 :" + td + "mm", 2, c.height - 42);
+	ctx.fillText("Width x Height:" + mround1(w) + " x " + mround1(h) + "cm  DOC:" + mround1(getnumber("zdown")/getnumber('repeat')) + "mm x " + getvalue('repeat'), 5, c.height - 13);
+	ctx.fillText("Feed:" + getvalue("feed") + "mm/s, Tool \u2300:" + td + "mm  Est:" + mround1(menit*0.7) + "minute", 5, c.height - 35);
+	ctx.fillText("Profile: " + getvalue("profilename")+ ", Start:"+getvalue('startat'), 5, c.height - 57);
 
 	if (cmd == CMD_3D) {
 		gram = e1 / 333;

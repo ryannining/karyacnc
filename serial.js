@@ -920,7 +920,9 @@ function updateprofile(newdata=null) {
 function loadsettings(name) {
 	if (name == undefined) name = "";
 	if (name) {
+		var s1=getvalue("startat");
 		updateweb(jobsettings[name]);
+		setvalue("startat")=s1;
 		return;
 	}
     jobsettings=defaultProfile;
@@ -1129,7 +1131,7 @@ function startserver() {
 		});
 		// Listen for possible errors
 		server.addEventListener('error', function(event) {
-			$("title0").innerHTML = 'WebSocket error: ' + event;
+			wxAlert("Server Error",'WebSocket Server error: ' + event);
 		});
 
 		// A list of connected websockets.
@@ -1286,6 +1288,7 @@ function wxAlert(title,text,bts,click1,click2){
   $("wxcontent").innerHTML = text;
   $("wxbt1").style.display="";
   $("wxbt2").style.display="none";
+  if (typeof(bts)=='undefined')bts="Ok";
   wxcb1=click1;
   wxcb2=click2;
   var bt=bts.split(",");
@@ -1425,3 +1428,11 @@ setevent("change", "wmode", updatewmode);
 modechange(1);
 
 
+function getChromeVersion () {     
+    var raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
+
+    return raw ? parseInt(raw[2], 10) : false;
+}
+
+
+if (getChromeVersion()<100)wxAlert("Update Chrome","Please update Chrome Web Browser !"); 

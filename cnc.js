@@ -15,12 +15,12 @@ function urlopen(s, cb_ok=0, cb_err=0,wx=1) {
 	xhr.onload = function(e) {
 		//alert(xhr.response);
 		if (cb_ok) cb_ok();
-		if (wx)wxAlert("HTTP Response",xhr.response,"Ok",null,null);
+		if (wx)wxAlert("HTTP Response",xhr.response);
 	};
 	xhr.addEventListener('error', function(e) {
 		$("alert1").innerHTML = "ERROR";
 		if (cb_err) cb_err();
-		if (wx)wxAlert("HTTP ERROR","Error No:","Ok",null,null);
+		if (wx)wxAlert("HTTP ERROR","Error");
 	});
 	xhr.send();
 }
@@ -1156,7 +1156,7 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 			bm.data[a] = oldr;
 			bm.data[a + 1] = oldr;
 			bm.data[a + 2] = oldr;
-			bm.data[a + 3] = 255;
+			bm.data[a + 3] = 0;
 		}
 	}
 	// dither it
@@ -1207,9 +1207,9 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 					pxstop = Math.max(pxstop, i);
 				}
 				gc += cc;
-				bm.data[a + 0] = newr;
-				bm.data[a + 1] = newr;
-				bm.data[a + 2] = newr;
+				bm.data[a + 0] = 0;
+				bm.data[a + 1] = 0;
+				bm.data[a + 2] = 255;
 				bm.data[a + 3] = newr ? 0 : 255;
 				if (metode == 0) {
 					// 7 3 5 1 floyd
