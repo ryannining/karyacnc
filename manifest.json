@@ -21,9 +21,8 @@
     "background": {
       "scripts": ["background.js"]
     }
-  },
-  "content_security_policy": {"extension_pages": "script-src 'self' 'nonce-baz'"},
-  "permissions": [
-   "serial","storage","http://*/upload","http://*/startprint","http://*/stopprint"
-   ]
+  }
+  ,"permissions": ["serial","storage","*://*/*/*","http://*/upload","http://*/startprint","http://*/stopprint"]
+  ,"content_security_policy": "script-src 'nonce-xyz123'; style-src 'nonce-xyz123'"
+
 }

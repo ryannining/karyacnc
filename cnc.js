@@ -14,13 +14,13 @@ function urlopen(s, cb_ok=0, cb_err=0,wx=1) {
 	xhr.open("GET", "http://" + getcncip() + "/" + s, true);
 	xhr.onload = function(e) {
 		//alert(xhr.response);
-		if (cb_ok) cb_ok();
-		if (wx)wxAlert("HTTP Response",xhr.response);
+		if (cb_ok) cb_ok(xhr.response);
+		else if (wx)wxAlert("HTTP Response",xhr.response);
 	};
 	xhr.addEventListener('error', function(e) {
 		$("alert1").innerHTML = "ERROR";
-		if (cb_err) cb_err();
-		if (wx)wxAlert("HTTP ERROR","Error");
+		if (cb_err) cb_err(e);
+		else if (wx)wxAlert("HTTP ERROR","Error");
 	});
 	xhr.send();
 }
@@ -163,15 +163,17 @@ function startprint() {
 	//urlopen("startprint");
 	urlopen("startjob?jobname=/" + getvalue("jobname") + ".gcode",
 		function() {
-			hideId("btuploadstart");
-			hideId("btuploadresume");
-			showId2("btuploadstop");
-			showId2("btuploadpause");
-			stopinfo = 1;
-			etime = new Date();
-			console.log("Start " + etime);
-			setvalue("applog", getvalue("applog") + "Start " + etime + "\n");
-			waitforwait = 1;
+			if (wsconnected){
+				hideId("btuploadstart");
+				hideId("btuploadresume");
+				showId2("btuploadstop");
+				showId2("btuploadpause");
+				stopinfo = 1;
+				etime = new Date();
+				console.log("Start " + etime);
+				setvalue("applog", getvalue("applog") + "Start " + etime + "\n");
+				waitforwait = 1;
+			}
 		}, null);
 }
 
@@ -197,6 +199,7 @@ function resetflashbutton() {
 function stopprint() {
 	wxAlert("Confirmation","Stop running Job ?","Yes,No",function(){
 		urlopen("stopprint");
+		resetflashbutton();
 	},null);	
 }
 
@@ -211,7 +214,7 @@ function upload(fn) {
 		$("alert1").innerHTML = "<br>PLT MODE !";
 		//return;
 	}
-
+    uploadimage=getchecked("upimg");
 	function uploadjpg() {
 		if (!uploadimage) return;
 		c = $("myCanvas1");
@@ -230,10 +233,15 @@ function uploadpreview() {
 
 
 function realupload(gcode, fname, callback) {
+	if (space[0]-space[1]-gcode.size<0) {
+		wxalert("Not enough space in machine, job size is "+parseInt(gcode.size/1000)+"Kb !");
+		return;
+	}
+	updatespace(gcode.size);
 	var xhr = new XMLHttpRequest();
 	form = new FormData();
 	form.append("file1", gcode, fname);
-
+	
 
 	xhr.open(
 		"POST",
@@ -1083,7 +1091,10 @@ function imagedata_to_image(imagedata) {
 	return image;
 }
 
-function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
+
+
+
+function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 	var sierra2 = [6, 2, 1, 4, 7, 4, 1, 1, 5, 1];
 	var sierra2 = [5, 3, 2, 4, 5, 4, 2, 2, 3, 2];
 	var floyd1 = [7, 4, 4, 1];
@@ -1094,10 +1105,31 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	mwidth = rwidth / maxpoint;
 	mheight = rheight / maxpoint;
 
-	c.width = mwidth;
-	c.height = mheight;
+	// transform canvas size
+
+	var p1=mx1([0,0],mtx);
+	var p2=mx1([mwidth,0],mtx);
+	var p3=mx1([mwidth,mheight],mtx);
+	var p4=mx1([0,mheight],mtx);
+	var pxmin=Math.min(...[p1[0],p2[0],p3[0],p4[0]]);
+	var pxmax=Math.max(...[p1[0],p2[0],p3[0],p4[0]]);
+	var pymin=Math.min(...[p1[1],p2[1],p3[1],p4[1]]);
+	var pymax=Math.max(...[p1[1],p2[1],p3[1],p4[1]]);
+	
+	
+	
+	c.width = pxmax-pxmin;
+	c.height = pymax-pymin;
 	var ctx = c.getContext("2d");
-	ctx.drawImage(img, 0, 0, c.width, c.height);
+	ctx.transform(mtx[0],mtx[1],mtx[2],mtx[3],-pxmin,-pymin);
+
+
+	ofx+=pxmin*maxpoint;
+	ofy+=pymin*maxpoint;
+	
+	//ctx.transform(1,0,0,1,0,0);
+	ctx.drawImage(img, 0, 0, mwidth, mheight);
+	ctx.resetTransform();
 	var bm = ctx.getImageData(0, 0, c.width, c.height);
 	// invert colors
 	var i, j;
@@ -1125,11 +1157,11 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	var inv = $("imginvert").checked;
 	var gamma = getvalue("gamma") * 1.0;
 	var bright = getvalue("brightness") * 1;
-	var mw = rwidth;
-	var mh = rheight;
+	var mw = c.width*rwidth/mwidth;
+	var mh = c.height*rheight/mheight;
 	var dotscale = mw / c.width;
 
-	var ystep = mh / c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
+	var ystep = mh / c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,   
 	var gcode = "M3 S" + Math.round(pw) + "\nG0 F" + speed + "\nG1 F" + speed + "\n";
 	bmd = [];
 	for (j = 0; j < c.height; j += 1) {
@@ -1323,6 +1355,9 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	ctx.putImageData(bm, 0, 0);
 	// draw the engrave
 	var img1 = new Image();
+	rwidth=rwidth*(c.width/mwidth);
+	rheight=rheight*(c.height/mheight);
+		
 	img1.src = canv.toDataURL();
 	img1.onload = function() {
 		var c = $("myCanvas1");
@@ -1332,7 +1367,7 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight) {
 };
 
 
-function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
+function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 	var maxi = 0;
 	var mini = 255;
 	var bmd = [];
@@ -1342,6 +1377,8 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	var mw = 0;
 	var mh = 0;
 	var gcodes = [];
+	var maxpoint = 1;
+
 
 	var feedmethod = getvalue("egfeedmethod");
 	var endmill = getnumber("egendmill");
@@ -1356,21 +1393,41 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	var c = canv;
 	var img = imgpic;
 
-	c.width = getnumber("egwidth");
-	c.height = getnumber("egheight");
 	var isclimb = getchecked("egclimb");
 	var canreverse = getchecked("egreverse");
-	var ctx = c.getContext("2d");
 	var flip = $("egflip").checked;
 	var d = 0; //getvalue("dia")*0.75;
 	var dx = 0;
 	var dy = 0;
 
-	ctx.fillStyle = "#FFFFFF";
-	ctx.fillRect(0, 0, c.width, c.height);
-	ctx.drawImage(img, dx, dy, c.width, c.height);
 	//if ($("egsharpen").checked)sharpen(ctx,c.width,c.height,0.5);
+	var p1=mx1([0,0],mtx);
+	var p2=mx1([rwidth,0],mtx);
+	var p3=mx1([rwidth,rheight],mtx);
+	var p4=mx1([0,rheight],mtx);
+	var pxmin=Math.min(...[p1[0],p2[0],p3[0],p4[0]]);
+	var pxmax=Math.max(...[p1[0],p2[0],p3[0],p4[0]]);
+	var pymin=Math.min(...[p1[1],p2[1],p3[1],p4[1]]);
+	var pymax=Math.max(...[p1[1],p2[1],p3[1],p4[1]]);
+	var mwidth=getnumber("egwidth");
+	var scX=mwidth/rwidth;
+	var scY=scX;//mheight/rheight;
+	var mheight=rheight*scY;
+	c.width = (pxmax-pxmin)*scX;
+	c.height = (pymax-pymin)*scY;
+	var ctx = c.getContext("2d");
+	ctx.fillStyle = getchecked("eginvert")?"#000000":"#FFFFFF";
+	ctx.fillRect(0, 0, c.width, c.height);
+	ctx.transform(mtx[0],mtx[1],mtx[2],mtx[3],-pxmin*scX,-pymin*scY);
 
+
+	ofx+=pxmin;
+	ofy+=pymin;
+	
+	//ctx.transform(1,0,0,1,0,0);
+	ctx.drawImage(img, 0, 0, mwidth, mheight);
+//	ctx.drawImage(img, 0, 0, c.width, c.height);
+	ctx.resetTransform();
 	var bm = ctx.getImageData(0, 0, c.width, c.height);
 	// invert colors
 	var isinvert = getchecked("eginvert");
@@ -1380,8 +1437,8 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 	var row = bmw * 4;
 	// make it grayscale first
 	var gamma = getnumber("eggamma");
-	mw = rwidth * 1.0;
-	mh = rheight * 1.0;
+	var mw = c.width*rwidth/mwidth;
+	var mh = c.height*rheight/mheight;
 	var stepx = mw / bmw;
 	var stepy = mh / bmh;
 	$("vstepx").innerHTML = mround2(stepx) + "mm";
@@ -1525,7 +1582,7 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 			bm.data[a] = 255 - oldr;
 			bm.data[a + 1] = 255 - oldr;
 			bm.data[a + 2] = 255 - oldr;
-			bm.data[a + 3] = oldr == 0 ? 0 : 255;
+			bm.data[a + 3] = oldr <2 ? 0 : 255;
 		}
 		zmline.push(zmax);
 	}
@@ -1913,6 +1970,8 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight) {
 		setvalue("engcode", gc);
 
 		var img1 = new Image();
+		rwidth=rwidth*(c.width/mwidth);
+		rheight=rheight*(c.height/mheight);
 		img1.src = canv.toDataURL();
 		img1.onload = function() {
 			var c = $("myCanvas1");

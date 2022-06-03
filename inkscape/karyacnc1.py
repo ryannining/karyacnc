@@ -30,8 +30,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 import inkex, cspsubdiv
 from inkex.transforms import Transform, BoundingBox, cubic_extrema
 from inkex.paths import Path
-import simplestyle, simplepath
-import cubicsuperpath, simpletransform, bezmisc
 
 import os
 import math
@@ -60,7 +58,7 @@ G90
 
 intersection_recursion_depth = 10
 intersection_tolerance = 0.00001
-
+xyscale=1
 
 
 
@@ -83,7 +81,7 @@ def print_(*arg):
 ###        Gcodetools class
 ###
 ################################################################################
-
+import re
 class laser_gcode(inkex.Effect):
 
       
@@ -93,7 +91,9 @@ class laser_gcode(inkex.Effect):
         #ymin=0
         if (self.options.directory!="") :
             f = open(self.options.directory+self.options.filename, "w")
-        gcodes=[]
+        ss="X:"+str(xyscale)+"\n"
+        gcodes=[ss]
+        if (f):f.write(ss)
         for pp in paths:
             style=pp[0]
             ss="P:"+style["fill:"]+":"+style["stroke:"]+":"+style["stroke-width:"]+"\n"
@@ -110,24 +110,29 @@ class laser_gcode(inkex.Effect):
                 if xlink.startswith('data:'):
                     xx=float(i.get("x"))
                     yy=float(i.get("y"))
-                    xmin=min(xmin,xx)
-                    ymin=min(ymin,yy)
-
+                    #xmin=min(xmin,xx)
+                    #ymin=min(ymin,yy)
+        nn=0
         for i in self.images:
             xlink = i.get('xlink:href')
-            
             if xlink.startswith('data:'):
+                if (nn==0):
+                  nn=1
+                  ss="K,"+str(xmin)+","+str(ymin)+"\n"
+                  gcodes.append(ss)		
+                  if (f):f.write(ss)
                 data = xlink[5:]
                 (mimetype, data) = data.split(';', 1)
                 (base, data) = data.split(',', 1)
                 xx=float(i.get("x"))
                 yy=float(i.get("y"))
                 
-                ss="I,"+str(xx-xmin)+","
-                ss+=str(yy-ymin)+","		
-                ss+=i.get("width")+","+i.get("height")
-                #if (i.get("transform")):ss+=","+i.get("transform")
-                ss+="\n"+data+"\n"
+                ss="I,"+str(xx)+","
+                ss+=str(yy)+","		
+                tt=i.get("transform")
+                if (tt is None):
+                  tt=""
+                ss+=i.get("width")+","+i.get("height")+","+tt+"\n"+data+"\n"
                 gcodes.append(ss)		
                 if (f):f.write(ss)
         
@@ -177,34 +182,22 @@ class laser_gcode(inkex.Effect):
 
 
     def get_transforms(self,g):
-        return 
-
-
-    def apply_transforms(self,g,csp):
-        trans = g.composed_transform()
-        return Path(csp).transform(trans).to_superpath()
-    
-    """ 
-    def get_transforms(self,g):
         root = self.document.getroot()
-        trans = []
+        trans = None
         while (g!=root):
             if 'transform' in g.keys():
-                t = g.get('transform')
-                t = simpletransform.parseTransform(t)
-                trans = simpletransform.composeTransform(t,trans) if trans != [] else t
-                print_(trans)
+                t = Transform(g.get('transform'))
+                trans = (t@trans) if trans else t
             g=g.getparent()
-        return trans 
-        
+        return trans
+
 
     def apply_transforms(self,g,csp):
         trans = self.get_transforms(g)
-        if trans == []:
-            trans = simpletransform.parseTransform("scale(1,1)")
-        simpletransform.applyTransformToPath(trans, csp)
-        return csp
-    """
+        return Path(csp).transform(trans).to_superpath() if trans else csp
+
+
+    
 
 
 ################################################################################
@@ -269,7 +262,19 @@ class laser_gcode(inkex.Effect):
                     #self.error(_("This extension works with Paths and Dynamic Offsets and groups of them only! All other objects will be ignored!\nSolution 1: press Path->Object to path or Shift+Ctrl+C.\nSolution 2: Path->Dynamic offset or Ctrl+J.\nSolution 3: export all contours to PostScript level 2 (File->Save As->.ps) and File->Import this file."),"selection_contains_objects_that_are_not_paths")
 
 
-        recursive_search(self.document.getroot(),self.document.getroot())
+        root=self.document.getroot()
+        try:
+          vb=root.get('viewBox').split(' ')
+          vws=root.get('width')
+          vw=float(re.search("-?[0-9]*\.?\d+",vws)[0])
+          #vh=float(root.get('height'))
+          global xyscale
+          xyscale=vw/(float(vb[2])-float(vb[0]))
+          if (vws.find("pt")>0):xyscale=xyscale*127/360
+        except:
+          xyscale=1.0
+          
+        recursive_search(root,root)
 
 
 ################################################################################
@@ -318,22 +323,20 @@ class laser_gcode(inkex.Effect):
                 for path in paths[layer] :
                     pstyle=getStyles(path)
                     col=pstyle["fill:"]
-                    #xpath=path.to_path_element()
-                    #xpath.apply_transform()
-                    #if "d" not in xpath.keys() :
-                    #    self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
-                    #    continue
+                    xpath=path.to_path_element()
+                    if "d" not in xpath.keys() :
+                        self.error(_("Warning: One or more paths dont have 'd' parameter, try to Ungroup (Ctrl+Shift+G) and Object to Path (Ctrl+Shift+C)!"),"selection_contains_objects_that_are_not_paths")
+                        continue
 
                     from inkex.paths import CubicSuperPath
-                    d = path.get_path()
-                    trans = path.composed_transform()
-                    csp1=Path(d).transform(trans).to_superpath()
-    
+                    d = xpath.get('d')
+                    csp1 = CubicSuperPath(d)      
+                    csp1 = self.apply_transforms(path, csp1)
+                    #Ryan modification
                     # flatten if contain BICUBIC or ARC
-                    try:
-                        if ( (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0)):
-                            inkex.bezier.cspsubdiv(csp1, self.options.flatten*0.5)
-                    except:pass
+                    if (d.find("A")>=0 or d.find("C")>=0 or d.find("Q")>=0 or d.find("a")>=0 or d.find("c")>=0 or d.find("q")>=0):
+                        inkex.bezier.cspsubdiv(csp1, self.options.flatten*0.5)
+                           
                     np = []
 
                     for sp in csp1:

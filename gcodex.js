@@ -221,6 +221,7 @@ function gcodeline(bh,G,num,x,y,z,dx,dy,dz,I,J,R){
 	steplx = dx - (stepx * (num - 1)); // to make sure total move is same
 	steply = dy - (stepy * (num - 1));
 	steplz = dz - (stepz * (num - 1));
+	
 	if (G == 0) {
 		F = F0;
 		lf = lF0;
@@ -228,7 +229,9 @@ function gcodeline(bh,G,num,x,y,z,dx,dy,dz,I,J,R){
 		F = F1;
 		lf = lF1;
 	}
+	
 	var isF = F != lf;
+	//lf=F;
 	if (G == 0) lF0 = F0; else lF1 = F1;
 	var isX = Math.abs(dx)>0;
 	var isY = Math.abs(dy)>0;

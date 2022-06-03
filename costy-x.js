@@ -86,7 +86,7 @@ function getvalue(el) {
 	} else if (el == "pdn") {
         v=v.trim();
 		if (v == "") {
-			if (cmd == CMD_CNC) v = "G0 F2500 Z=cncz";
+			if (cmd == CMD_CNC) v = "G1 F2500 Z=cncz";
 		}
         if (cmd == CMD_LASER){
             //v+="\nG0 F2000 Z0";
@@ -207,7 +207,7 @@ function gcoden(g, f, x2, y2, z2 = 10000, e2 = 1000000) {
 	gcntr += 1;
 	if (gcntr > 30) {
 		gcntr = 0;
-		fm = 0;
+		//fm = 0;
 	}
 	if (fm != f) {
 		fm = f;
@@ -964,6 +964,7 @@ function doengrave() {
         var lofs=getnumber("leftofset");
 		var tlx = 1000;
 		var tly = 1000;
+        var lsofs=getnumber("laserofs");
 		while (run && maxrun) {
 			run = 0;
 			maxrun--;
@@ -1064,6 +1065,7 @@ function doengrave() {
 					pdata.splice(0, ashift);
 					// return the data
 					aengrave[y] = pdata;
+                    var ooox1=0;
 					for (var r = 0; r < _re; r++) {
 						ri++;
                         var ofsx=(((ri) & 1) ? lofs : 0)
@@ -1113,6 +1115,12 @@ function doengrave() {
 								cpw = "";
 							else
 								lpw = cpw;
+                            lso=Math.min(lsofs,Math.abs(oox2-ooox1)*0.8);
+							if (cmd == CMD_LASER) {
+                            // add offset for broken PSU laser that have delay on
+                                if (oox2<=oox1) oox2-=lso; else oox2+=lso;                                 
+                            }            
+                            ooox1=oox1;    
 							xy1 = rotateclimb(0, 0, oox1, ogy);
 							xy2 = rotateclimb(0, 0, oox2, ogy);
 							ox = xy1[0];
@@ -1824,14 +1832,13 @@ function getspindleon(dw = 1,dwt=0) {
 var fnl = 0;
 var hasfnl = 0;
 
+var laddz=0;
 function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer = 1, snum, f2, flip, shift, cutpos,penaway=0) {
 	// the idea is make a cutting tab in 4 posisiton,:
 	//
-	addz = getvalue("addz");
-	if (lastlayer && addz > 0) {
-		z2 -= addz;
-		//z-=addz;
-		cuttabz -= addz;
+	if (lastlayer && laddz > 0) {
+		z2 -= laddz;
+		cuttabz -= laddz;
 	}
 
 	if (z2 > skipz) {
@@ -2011,10 +2018,6 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	// deactivate tools and move to cut position
 	div = div + "\n;SHAPE #" + num + "\n";
 	if (!closed && isnotpoint) div += pup + "\n";
-    if (cmd==CMD_LASER && firstlayer){
-        // to allow resume from controller
-        div+="G0 Z0.1 F2000\nG0 Z0\n";
-    }
 	if (cmd == CMD_3D) {
 		z = -z; // if 3D then move up
 		if (z <= layerheight) {
@@ -2059,6 +2062,10 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 
     div += "G0 F" + f1 + "\n";
 	div += "G1 F" + f2 + "\n";
+    if (cmd==CMD_LASER && firstlayer){
+        // to allow resume from controller
+        div+="G0 Z0.1 F2000\nG0 Z0\n";
+    }
 
 	//if (cmd == 3) div = div + "G0 Z" + mround(lastz) + "\n";
 
@@ -2067,11 +2074,11 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	if (cmd == CMD_LASER) {
 		//if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
 		//div = div + pdn.replace("=cncz", mround(z)) + '\n';
-        div+=pdn+"\n";
+        //div+=pdn+"\n";
     } else
 	if (cmd != CMD_3D) {
         if (fnl){
-            div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
+            div += pdn.replace("=cncz", mround(z)) + '\n';// + "G1 F" + f2 + "\n";
         } else {
             //if (drillf)div = div + pdn.replace("=cncz", mround(z-1.5)) + '\n';
             if (z < 0 && firstlayer) div = div + "G0 Z0 F" + speedretract + "\n";
@@ -2081,7 +2088,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
                 div += "\nG1 F" + f2 + " Z" + mround(z) + " X" + mround(X1) + " Y" + mround(Y1) + "\n";
             } else {
                 if (getchecked("acpmode")) div += pdn.replace("=cncz", mround(z - 1)) + '\n';
-                div += pdn.replace("=cncz", mround(z)) + '\n' + "G1 F" + f2 + "\n";
+                div += pdn.replace("=cncz", mround(z)) + '\n';// + "G1 F" + f2 + "\n";
             }
         }
 	}
@@ -2388,10 +2395,10 @@ function gcode_verify(en = 0) {
 		for (var i = 0; i < ink_images.length; i++) {
 			if (cache_ink_img[i][0].complete) {
 				if (cmd == CMD_LASER) {
-					imagedither(cache_ink_img[i][0], $("dithercanv"), ink_images[i][0], ink_images[i][1], ink_images[i][2], ink_images[i][3]);
+					imagedither(cache_ink_img[i][0], $("dithercanv"), ink_images[i][0], ink_images[i][1], ink_images[i][2], ink_images[i][3],ink_images[i][5]);
 				}
 				if (cmd == CMD_CNC) {
-					cncengrave(cache_ink_img[i][0], $("engrcanv"), ink_images[i][0], ink_images[i][1], ink_images[i][2], ink_images[i][3]);
+					cncengrave(cache_ink_img[i][0], $("engrcanv"), ink_images[i][0], ink_images[i][1], ink_images[i][2], ink_images[i][3],ink_images[i][5]);
 				}
 			}
 		}
@@ -2488,7 +2495,7 @@ function gcode_verify(en = 0) {
 	td = getvalue('offset');
 	if (getchecked("pltmode")) td = "PLT"
 	ctx.fillText("Width x Height:" + mround1(w) + " x " + mround1(h) + "cm  DOC:" + mround1(getnumber("zdown")/getnumber('repeat')) + "mm x " + getvalue('repeat'), 5, c.height - 13);
-	ctx.fillText("Feed:" + getvalue("feed") + "mm/s, Tool \u2300:" + td + "mm  Est:" + mround1(menit*0.7) + "minute", 5, c.height - 35);
+	ctx.fillText("Feed:" + getvalue("feed") + "mm/s, Tool \u2300:" + td + "mm  Est:" + mround1(menit*(cmd==CMD_LASER?1:0.7)) + "minute", 5, c.height - 35);
 	ctx.fillText("Profile: " + getvalue("profilename")+ ", Start:"+getvalue('startat'), 5, c.height - 57);
 
 	if (cmd == CMD_3D) {
@@ -2625,8 +2632,8 @@ function sortedgcode() {
                         if (subch == 0 && sty.subchilds > 0) continue;
                         if (sty.childs > 0 ) continue; // if still have child do not process
                     }
-					var dis = 1000000;
-                    if (usefinishpart && (sparent==sty.topparent || sparent==sty.idp))dis=0;
+					var dis = 0;
+                    if (sparent!=-1 && usefinishpart && (sparent==sty.topparent || sparent==sty.idp))dis=-10000;
                     
                     var newx = 0;
                     var newy = 0;
@@ -2966,6 +2973,10 @@ function sortedgcode() {
 				if (_rampdown) z2 = cncz2;
 				else z2 = cncz;
 				if (acpengrave && iseng) cncz = z2 = _re * zdown;
+				if (iseng && sepcut) {
+                    laddz=0;
+				} else laddz=getnumber("addz");
+
 				sr = lines2gcode(sgcodes[j][1], sgcodes[j][0], z2, cncz, vcuttab, sgcodes[j][0][5], i == _re - 1, isfirst && (i == 0), snum, f2 + fff, climb, shift, rcutpos,penaway);
 				if (sgcodes[j][0][4].length == 1) sr += "\nG0 F3000 Z" + (cncz - zdown) + "\n"; // drill pecking
 				if (docarve) sr = '';
@@ -3503,6 +3514,39 @@ function intersect_point(a, b, c, d) {
 		},
 	}*/
 }
+function StrToNum(s){
+    
+    var r=s.replace(/[^0-9.]/g, '');
+    if (r=='')return 0;
+    return parseFloat(r);
+}
+
+function degSin(d){
+    return Math.sin(Math.PI*d/180);
+}
+function degCos(d){
+    return Math.cos(Math.PI*d/180);
+}
+
+function getMatrix(tr){
+    if (tr=="scale(-1, 1)")return [-1,0,0,1,0,0];
+    if (tr=="scale(1, -1)")return [1,0,0,-1,0,0];
+    if (tr=="scale(-1)" || tr=="scale(-1, -1)")return [-1,0,0,-1,0,0];
+    if (tr.indexOf("rotate")==0){
+        var d=StrToNum(tr);
+        return [degCos(d),degSin(d),-degSin(d),degCos(d),0,0];
+    }
+    // transform matrix
+    if (tr.indexOf("matrix")==0){
+        return JSON.parse(tr.replace("matrix(","[").replace(")","]").replaceAll(" ",","));
+    }
+    return [1,0,0,1,0,0];
+}
+function mx1(p,mt){
+	return [p[0]*mt[0]+p[1]*mt[2]+mt[4],
+			p[0]*mt[1]+p[1]*mt[3]+mt[5]];	
+}
+
 
 function intersects_p(a, b, c, d, p, q, r, s) {
 	var A = {
@@ -3598,6 +3642,9 @@ function pathstoText1(gx) {
 	var yellow, dyellow, outer;
 	var flips = [];
 	var xmi, xma, ymi, yma;
+    imgX=0;
+    imgY=0;
+    var xyscale=1.0;
 	for (var i in gs) {
 		var lns = gs[i];
 		if (lns[0] == "P") {
@@ -3613,16 +3660,29 @@ function pathstoText1(gx) {
 			sty["stroke-width"] = parseFloat(ss[3]);
 
 
+		} else if (lns[0] == "X") {
+			var ss = lns.split(":");
+            xyscale=ss[1]*1;
+            
+
+		} else if (lns[0] == "K") {
+			var ss = lns.split(",");
+            imgX=ss[1]*xyscale;
+            imgY=ss[2]*xyscale;
+            
+
 		} else if (lns[0] == "I") {
 			var ss = lns.split(",");
 			//[P:fill:stroke:strikewidth\n]
 			inimg = 1;
-			imagex = ss[1];
-			imagey = ss[2];
+            if (ss.length>6)ss[5]=ss[5]+","+ss[6];
+            imagetr= getMatrix(ss[5]);
+			var p0=mx1([ss[1],ss[2]],imagetr);
+            imagex = p0[0]-imgX;
+			imagey = p0[1]-imgY;
+            
 			imagew = ss[3];
 			imageh = ss[4];
-
-
 
 		} else {
 			if (lns == "") {
@@ -3658,14 +3718,14 @@ function pathstoText1(gx) {
 				if (inimg) {
 					// save the image data here
 					inimg = 0;
-					ink_images.push([imagex * 1, imagey * 1, imagew * 1, imageh * 1, lns]);
+					ink_images.push([imagex * 1, imagey * 1, imagew * 1, imageh * 1, lns,imagetr]);
 
 				} else {
 					// X,Y
 					inpath++;
 					var ss = lns.split(",");
-					var x = parseFloat(ss[0]);
-					var y = parseFloat(ss[1]);
+					var x = parseFloat(ss[0])*xyscale;
+					var y = parseFloat(ss[1])*xyscale;
 					if (inpath == 1) {
 						fx = x;
 						fy = y;
@@ -3970,7 +4030,7 @@ function pathstoText1(gx) {
 		sty.ochilds = sty.childs;
         // fint the topparent (biggest childs
         var bc=0;
-        var tp=0;
+        var tp=-1;
         for (var pi in sty.parent){
             var j=sty.parent[pi];
             var s=paths[j][9];

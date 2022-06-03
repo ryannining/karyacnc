@@ -76,7 +76,7 @@
         bottom: 0;
         left: 0;
         background: rgba(0, 0, 0, 0.8);
-        z-index: 2;
+        z-index: 2000;
       }
 
       .popup {
@@ -196,6 +196,7 @@
 							    <input id=vcarvefeed class=saveit size=3 value=40><span  class=notsimple><input id=vcarvepw class=saveit size=2 value=100>%</span></td></tr>
 							    
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Engrave </td><td colspan=2><input size=2 type=checkbox id=enableraster checked class=saveit></td></tr>
+							<tr  class="notsimple notcnc notplasma"><td colspan=2>Laser offset </td><td colspan=2><input size=2 id=laserofs size=3 value=0.1 class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Overshoot </td><td colspan=2><input size=2 id=overshoot size=3 value=5 class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Left Offset </td><td colspan=2><input size=2 id=leftofset size=3 value=0 class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Outline </td><td colspan=2><input size=2 type=checkbox id=rasteroutline class=saveit></td></tr>
@@ -353,7 +354,7 @@
 
 				<tr class="tonoff notsimple" style="" class=hdr1><td colspan=2><span class=notsimple>Tools Off / </span>Z-Up</td><td colspan=1 ><span class=notsimple>Tools On/ </span>Z-Down</td></tr>
 				<tr class="tonoff notsimple" ><td colspan=2><input id=pup size=13 value="G0 F3000 Z10" class=saveit></td>
-					<td colspan=1><input id=pdn size=16 value="G0 F700 Z=cncz" class="saveit"></td>
+					<td colspan=1><input id=pdn size=16 value="G1 F700 Z=cncz" class="saveit"></td>
 				</tr>
 				<tr style="" class=hdr1 class=notsimple><td colspan=3>Flip X <input id=flipx type=checkbox class=saveit>
 					&nbsp;Rotate 90'<input id=rotate type=checkbox class=saveit><span class="notsimple notplasma"> Pow <input id=cutpw size=2 value=100 class=saveit>%</span></tr>
@@ -368,10 +369,17 @@
             <hr>
 			Graph scale <input id=zoom1 value=1 size=2 class=saveit><button id=btzoom>Scale</button>&nbsp;&nbsp;&nbsp;&nbsp;
 			<button id=btcopycanvas>Copy Canvas</button><br>
-			<span class=notsimple>
+			<span class=notsimple style="display:none">
 			For real gcode simulator, visit <a href="https://nraynaud.github.io/webgcode/" target="_blank" >ncviewer</a> and paste gcode there.<br>
 			<textarea style="rfont-size: 10;width:100%;height:50px" id="applog"></textarea>
 			</span>
+			<span class=notsimple><hr>
+			Data History:<br>
+			<div id=dhistory>
+			test
+			</div>
+			</span>
+			
 				</td></tr>
 		</table>
 		<div id=gcodeinit>
@@ -481,7 +489,8 @@
                 </div><button id=btmotoroff class=hideit>MOTOROFF</button>
             </div>
             <div id=machine_ws class="xisconnected">
-                <b>Upload Job</b><br>
+                <b>Upload Job</b> | <input type="checkbox" id="upimg" class=saveit> upload preview <br>
+                <button id=btcheckspace>Check space</button> | <span id=infospace></span><br>
                 <progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
                 <div class=notsimple>Jobs <select id=jobs class=saveit><option value="gcode">gcode</option></select><br></div>
                 Job name <input id=jobname size=10 class=saveit value='gcode'><br>
@@ -546,7 +555,7 @@
 		<script src="Potrace.js"></script>
 		<script src="costy-x.js"></script>
 		<script src="clipper.js"></script>
-		<script src="serial.js"></script>
+		<script src="serial.js" data-csp-nonce="xyz-123"></script>
 		<script src="gcodex.js"></script>
 		<script src="cnc.js"></script>
 		
