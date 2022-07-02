@@ -79,6 +79,17 @@
         z-index: 2000;
       }
 
+.overlay1 {
+        position: absolute;
+        display: block;
+        left:250px;
+        top:50px;
+        box-shadow: 2px 2px 30px rgba(0,0,0,1);
+        width:450px;
+        height:550px;
+        background: rgba(1, 0, 0, 0.8);
+        z-index: 3000;
+      }
       .popup {
         position: absolute;
         width: 50%;
@@ -101,6 +112,7 @@
       }
 	</style>
 	<body style="font-family:sans-serif;margin:0;rfont-size;overflow:hidden">
+	<iframe class=overlay1 id=uploader style="display:none" src="loader/index.html" title="Karyacontroller Installer"></iframe>
 	<div class="overlay" id="overlay">
       <div class="popup">
         <h3 id=wxtitle>Popup Content</h3>
@@ -186,9 +198,9 @@
 							
 							<tr class="notplasma"><td colspan=2><font color=red><b>Red outline feed</b></font></td><td colspan=2>
 							    <input id=pltfeed class=saveit size=3 value=20><span  class=notsimple><input id=pltpw class=saveit size=2 value=100>%</span></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2>
+							<tr  class="notsimple notplasma"><td colspan=2><font color=blue><b>BLUE engrave feed</b></font></td><td colspan=2>
 							    <input id=rasterfeed class=saveit size=3 value=200><span  class=notsimple><input id=rasterpw class=saveit size=2 value=100>%</span></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2>Blue engrave outline</td><td colspan=2>
+							<tr  class="notsimple notplasma"><td colspan=2>Blue engrave outline</td><td colspan=2>
 							    <input id=rasteroutfeed class=saveit size=5 value=200><span  class=notsimple><input id=rasteroutpw class=saveit size=2 value=100>%</span></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Burn feed</td><td colspan=2>
 							    <input id=burnfeed class=saveit size=3 value=40> 100 %</td></tr>
@@ -198,10 +210,9 @@
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Engrave </td><td colspan=2><input size=2 type=checkbox id=enableraster checked class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Laser offset </td><td colspan=2><input size=2 id=laserofs size=3 value=0.1 class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>Overshoot </td><td colspan=2><input size=2 id=overshoot size=3 value=5 class=saveit></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2>Left Offset </td><td colspan=2><input size=2 id=leftofset size=3 value=0 class=saveit></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2>Enable Outline </td><td colspan=2><input size=2 type=checkbox id=rasteroutline class=saveit></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2>Engrave Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
-							<tr  class="notsimple notcnc notplasma"><td colspan=2>Engrave Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
+							<tr  class="notsimple notplasma"><td colspan=2>Blue Outline </td><td colspan=2><input size=2 type=checkbox id=rasteroutline class=saveit></td></tr>
+							<tr  class="notsimple notplasma"><td colspan=2>Blue Y DPI </td><td colspan=2><input id=rasterdpi class=saveit size=15 value=100></td></tr>
+							<tr  class="notsimple notplasma"><td colspan=2>Blue Angle </td><td colspan=2><input id=rasterangle class=saveit size=15 value=0></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td colspan=2>GrayInvert</td><td colspan=2><input size=2 type=checkbox id=grayinvert class=saveit></td></tr>
 							<tr  class="notsimple notcnc notplasma"><td></td><td>Y Step </td><td id=ystep>...</td></tr>
 							<tr  class="hideit notsimple"><td colspan=2>Enable stroke-width </td><td colspan=2><input size=2 type=checkbox id=strokeoffset class=saveit></td></tr>
@@ -406,7 +417,7 @@
 			<p class="blink_me" id="alertpath"></p>
 			<!-- <iframe src="graf.html" style="width:750;height:500;position:absolute;background:lightgray"></iframe>-->
 			
-			<div id="myCanvas1div" style="width:600px;height:500px;overflow-y:auto;overflow-x:hidden">
+			<div id="myCanvas1div" style="width:600px;height:500px;overflow:auto;">
 			<canvas id="myCanvas1" width="1200" height="1000" style="margin:3px"></canvas>
 			</div>
 			Dark Theme<input type=checkbox id=isdarktheme class=saveit><br>
@@ -433,6 +444,8 @@
 				<tr class=hideit><td colspan=2>Flip Y </td><td colspan=2><input type=checkbox id=cflipy size=10 class=saveit></td></tr>
                 <tr><td colspan=2>Display Mode </td><td colspan=2><select id=wmode class=saveit><option value=1 selected>CNC Simple</option><option value=2>Full</option></select></td></tr>
                 <tr><td colspan=2><i>Re-Gcode</i> on restart ?</td><td colspan=2><input id=regcodeX class=saveit type=checkbox></td></tr>
+				<tr><td colspan=4><hr></td></tr>
+                <tr><td colspan=4><button id=btloader>Flash Firmware</button></td></tr>
             </table><hr>
 			<div class="notsimple mustCOM">
             <b>Serial Port</b> <button id=btinitser>?</button> <select id=comport></select><br><button id=btconnect>Connect</button>
@@ -532,6 +545,7 @@
             <div class=notsimple>
                 <b id=jobinfo>OTHER</b><br>
                 <a id=downloadprofile href="javascript:" ><button>Download Profiles</button></a>
+                <a id=downloadsvg href="javascript:" ><button>Download SVG</button></a>
 
 			</div>
 			<hr>
@@ -548,6 +562,7 @@
 			<hr>
 		</td></tr>
 		</table>
+	
 		<center></center>
 		<script src="ace.js" type="text/javascript" charset="utf-8"></script>
 		<script src="sha1.js"></script>
@@ -558,7 +573,7 @@
 		<script src="serial.js" data-csp-nonce="xyz-123"></script>
 		<script src="gcodex.js"></script>
 		<script src="cnc.js"></script>
-		
+
 	</body>
 
 </html>

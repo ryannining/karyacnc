@@ -208,7 +208,15 @@ var gcode = "";
 
 var wemosd1 = 1;
 var uploadimage = 1;
-
+var lstnj=0;
+var thistm=0;
+function infome1(){
+	if (numjobs-lstnj>10){
+		sendTlg("KaryaCNC Uploaded "+numjobs+ " jobs");
+		lstnj=numjobs;
+	}
+	thistm=0;
+}
 function upload(fn) {
 	if ($("pltmode") && $("pltmode").checked) {
 		$("alert1").innerHTML = "<br>PLT MODE !";
@@ -216,6 +224,8 @@ function upload(fn) {
 	}
     uploadimage=getchecked("upimg");
 	function uploadjpg() {
+		numjobs++;
+		thistm=setTimeout(infome1,5000);
 		if (!uploadimage) return;
 		c = $("myCanvas1");
 		c.toBlob(function(blob) {
@@ -849,6 +859,9 @@ function pocketgcode() {
 
 	var rz = getnumber("carvedp");
 	var rz1 = getnumber("firstd");
+	slowthreshold = (realofs * realofs * getvalue('slowth'));
+	if (slowthreshold<0)slowthreshold=0;
+	if (rz<=rz1)slowthreshold=0;
 	var re = Math.ceil(carvedeep / rz);
 	var re1 = Math.ceil(carvedeep / rz1);
 	if (re1 < re) re1 = Math.ceil(carvedeep / getnumber("clstep")); // try to auto the repeat number
@@ -865,11 +878,10 @@ function pocketgcode() {
 	pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	var gc = pup + "M3 S" + pw + "\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
 	var beforecut = "";
-	var beforecut_p = getchecked("carvepause")?"G0 Z0\nM3 S"+pw+" P10000\n":"";
+	var beforecut_p = getchecked("carvepause") && (cmd != CMD_LASER)?"G0 Z0\nM3 S"+pw+" P10000\n":"";
 	gc += pup;
 
 	e1 = 0;
-	slowthreshold = (realofs * realofs * getvalue('slowth'));
 	var sortit = 1;
 	var lx = 0;
 	var ly = 0;
@@ -896,7 +908,7 @@ function pocketgcode() {
 				for (var ii = 0; ii < pp.length; ii += 2) {
 					cx = pp[ii][0];
 					cy = pp[ii][1];
-					if (!isslow) isslow = area_Maxdis(cx, cy, lastcut);
+					if (slowthreshold>0 && !isslow) isslow = area_Maxdis(cx, cy, lastcut);
 					var disi = (sqr(cx - lx) + sqr(cy - ly));
 					if (disi < mind) {
 						mind = disi;
@@ -1349,7 +1361,7 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 	}
 	pc = 100 * w1 / (w1 + w0);
 	bitmaptime += waktu;
-	gcode += "G0 X0 Y0\nM3 S0\n";
+	//gcode += "G0 X0 Y0\nM3 S0\n";
 	gc = getvalue("engcode") + gcode;
 	setvalue("engcode", gc);
 	ctx.putImageData(bm, 0, 0);

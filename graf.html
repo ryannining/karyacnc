@@ -10,8 +10,6 @@
 <table width=100%><tr valign=top><td width=150>
 <b>Quality</b>
 <hr>Res <input id=width value=200 size=1 class=saveit>x<input id=height value=200 size=1 class=saveit>
-<hr>Min point <input id=mpoint value=0.2 size=1 class=saveit>mm
-
 <br>Dither <select id=metode class=saveit>
 <option value=0>Grayscale</option>
 <option value=1 selected>Floyd steinberg</option>
@@ -68,7 +66,7 @@ Your browser does not support the HTML5 canvas tag.</canvas>
 <button id=redither>Generate GCODE </button>
 <br><div id=waktu>Waktu Kerja:</div><B>GCODE</b><button id=btcopy2a>Copy</button><button id=btcopy2b>Send to KaryaCNC</button>
 <div id=transfer>xx</div>
-<textarea id=tgcode class=hid style="font-size:7pt;width:250px;height:500px" >
+<textarea id=gcode class=hid style="font-size:7pt;width:250px;height:500px" >
 </textarea>
 </table>
 
@@ -87,14 +85,14 @@ function mround(x) {
 
 function getvalue(el) {
 	if ($(el)==undefined)return "";
-	if (el=="tgcode")return $(el).innerHTML;
+	if (el=="gcode")return editorgcode.getValue();
     else return $(el).value;
 }
 
 function setvalue(el, val) {
 	var e=$(el);
 	if (e==undefined)return;
-	if (el=="tgcode")return $(el).innerHTML=val;
+	if (el=="gcode")editorgcode.setValue(val,-1);
     else {
 		if (e.type=='checkbox')e.checked=val;
 		else e.value = val;
@@ -164,12 +162,12 @@ var floyd1=[7, 4,4,1];
 var memlimit=8000;
 var overshot=5;
 
-ditherit = function(imgpic,canv) {
-    var c = canv;//document.getElementById("myCanvas");
-    var img = imgpic;//document.getElementById("thepic");
+ditherit = function() {
+    var c = document.getElementById("myCanvas");
+    var img = document.getElementById("thepic");
 	udpi=$("usedpi").checked;
-	overshot=getvalue("over")*1;
     var scale = 25.4 / getvalue('mdpi');
+	overshot=getvalue("over")*1;
 	rwidth=scale*img.naturalWidth;
 	rheight=scale*img.naturalHeight;
 	if (!udpi){
@@ -182,14 +180,10 @@ ditherit = function(imgpic,canv) {
 		scale=rwidth/img.naturalWidth;
 		setvalue('mdpi',mround(25.4/scale));
 	}
-	//img.width=getvalue("width")*1;
-    rpointx =Math.max(getvalue("mpoint")*1,rwidth/getvalue("width")*1);
-    setvalue("width",Math.floor(rwidth/rpointx));
-    rpointy =Math.max(getvalue("mpoint")*1,rheight/getvalue("height")*1);
-    setvalue("height",Math.floor(rheight/rpointy));
-     	
-    c.width=getvalue("width")*1;
-    c.height=getvalue("height")*1;
+	img.width=getvalue("width")*1;
+	
+    c.width=img.width;
+    c.height=getvalue("height");
     ofx=getvalue("ofsX")*1;
     ofy=getvalue("ofsY")*1;
     var ctx = c.getContext("2d");
@@ -237,7 +231,7 @@ ditherit = function(imgpic,canv) {
 	var dotscale=mw/c.width;
 	
 	var ystep=mh/c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,  
-	var gcode="G0 F"+speed+"\nG1 F"+speed+"\n"+tool2+"\n";
+	var gcode="G7 S0 []\nG92 E0\n"+tool1+"\n";
 	bmd=[];
 	for (j = 0; j < c.height; j += 1) {
     for (i = 0; i < c.width; i += 1) {
@@ -355,50 +349,77 @@ ditherit = function(imgpic,canv) {
 					
 				}
 			}
-			gc+="a";
-
+			gc+="aaaaaaaaaaa";
+			// save the laser raster
+			// recompress the data
+			gcc="";
+			gccb=[];
+			pxstart=Math.max(pxstart-2,0);
+			pxstop=Math.min(pxstop+2,c.width-1);
+			var ii=0;
+			var sb=0;
+			for (var i=pxstart;i<=pxstop;i++){
+				if (gc[i]==undefined)gcc+="a";else gcc+=gc[i];
+				ii++;
+				if ((gcc.length>70) || (i==pxstop)){
+					gccb.push(gcc);
+					gcc="";
+				}
+				
+				/*if (gc[i]=='z')sb+=1<<ii;
+				ii++;
+				if ((ii==4) || (i==pxstop)){
+					gccb+=String.fromCharCode(sb+97);
+					ii=0;
+					sb=0;
+				}*/
+			}
+			//gcc+="aa";
+			//
 			var farx=0;
 			if (!skip){
-                pxstart=Math.max(0,pxstart-6);
-                pxstop=Math.min(gc.length-1,pxstop+6);
-                 
+				if (bp+ii+10>memlimit){
+					bp=10;
+					//gcode+="G0 F"+speed+" X"+mround(farx)+" E"+(bp)+"\n";
+				}
+				// move to start position
+				//pxstart=Math.max(0,pxstart-2);
+				//pxstop=Math.min(c.width-dx,pxstop+2);
+				//pxstart=0;
+				//pxstop=c.width-dx;
 				px1=mround(dotscale*pxstart+ofx);
 				px2=mround(dotscale*pxstop+ofx);
 				if (mtype==1){
-					if (j &1){
-						dir=-1;
-						idx=pxstop;
-					}else {
-						dir=1;
-						idx=pxstart;
+					//gcode+=";"+pxstart+","+pxstop+"\n";
+					pxstop=bp+(pxstop-pxstart);
+					pxstart=bp;
+					//if (bp==0)gcode+="G4\n";
+					//gcode+="G4\nG92 E0\n";
+					//gcode+="G0 +"\n";
+					var gp=0;
+					var s1="S1";
+					for (var g=0;g<gccb.length;g++){
+						gcode+="G7 "+s1+" P"+(pxstart+gp)+" ["+gccb[g]+"aa]\n";
+						gp+=gccb[g].length;
+						s1="S0";
 					}
-					xstep=mw/gc.length;
-					zstep=zdown/25;
-					lv="a";
-					x=xstep*idx+ofx-dir*overshot;
-					gcode+="G0 X"+mround(x)+" Y"+mround((j)*ystep+ofy)+"\n";
-					gcodes="";
-					gctr=0;
-					lx=x;
-					for (var i=pxstart;i<=pxstop;i++){
-						v=gc[idx];
-						x=xstep*idx+ofx;
-						brk=Math.abs(lx-x)>150;
-						if (v!=lv || brk){
-							gctr++;
-							if (lv=='a'){
-								gcodes+="G0 X"+mround(x)+"\n";
-								if (brk)gcodes+="G1 X"+mround(x)+"\n";
-							} else {
-								gcodes+="G1 X"+mround(x)+"\n";
-								if (brk)gcodes+="G0 X"+mround(x)+"\n";
-							}
-							lv=v;
-						}
-						
-						idx+=dir;
+					ccc=overshot; // move back to allow acceleration
+					if (jk%2==1){
+						gcode+=";>>\n";
+						gcode+="G0 F"+speed+" E"+pxstart+" X"+mround(px1-ccc)+"\n";
+						gcode+="G0 S0 X"+mround(px1)+" Y"+mround((j)*ystep+ofy)+"\n";
+						gcode+="G1 S255 F"+speed+" X"+px2+" E"+pxstop+"\n"
+						//gcode+="G0 S0 X"+mround(px2+ccc)+"\n";
+						farx=px2+overshot*3;
+					} else {
+						// next y
+						gcode+=";<<\n";
+						gcode+="G0 F"+speed+" E"+(pxstop+shf)+" X"+mround(px2+ccc)+"\n";
+						gcode+="G0 S0 X"+mround(px2)+" Y"+mround((j)*ystep+ofy)+"\n";
+						gcode+="G1 S255 F"+speed+" X"+(px1)+" E"+(pxstart+shf)+"\n";
+						//gcode+="G0 S0 X"+mround(px1-ccc)+"\n";
+						farx=px1-overshot*3;
 					}
-					gcode+=";REP:"+gctr+"\n"+gcodes;
 					waktu+=1.66*mw/speed;
 				} 
 				// cnc mill, down
@@ -429,7 +450,7 @@ ditherit = function(imgpic,canv) {
 						idx+=dir;
 					}
 				}
-				
+				bp+=ii+10;
 				jk++;
 			}
 		}
@@ -439,8 +460,8 @@ ditherit = function(imgpic,canv) {
 	pc=100*w1/(w1+w0);
 	total=1500*waktu;
 	document.getElementById("waktu").innerHTML="<b>TOTAL BIAYA:Rp "+mround(total)+"</b><br>Waktu:"+mround(waktu)+"menit, laser "+mround(pc)+"%";
-	gcode+="G0 X0 Y0\n"+tool1+"\n";
-	document.getElementById("tgcode").innerHTML=gcode;
+	gcode+=tool1+"\nG4\nG7\nG0 X0 Y0\n";
+	document.getElementById("gcode").innerHTML=gcode;
     ctx.putImageData(bm, 0, 0);
 	img.width=220;
 	savesetting();
@@ -455,7 +476,7 @@ function copy_to_server(id) {
 //	ws.addEventListener('open', function() {
 	var address = window.location.href.replace('http', 'ws');
 	ws= new WebSocket(address);
-	var lines=getvalue(id).split("\n");
+	var lines=document.getElementById(id).value.split("\n");
 	var x=0;
 	ws.addEventListener('message', function(e) {
 		if (e.data=="OK") {
@@ -491,8 +512,8 @@ function copy_to_server(id) {
 }
 
 
-setclick("btcopy2a",function(){copy_to_clipboard('tgcode');});
-setclick("btcopy2b",function(){copy_to_server('tgcode');});
+setclick("btcopy2a",function(){copy_to_clipboard('gcode');});
+setclick("btcopy2b",function(){copy_to_server('gcode');});
 setclick("redither",ditherit);
 setevent("change","metode",function(){
 	document.getElementById("halftoneoption").hidden=getvalue("metode")!=4;

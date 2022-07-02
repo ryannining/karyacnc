@@ -22,7 +22,7 @@
       "scripts": ["background.js"]
     }
   }
-  ,"permissions": ["serial","storage","*://*/*/*","http://*/upload","http://*/startprint","http://*/stopprint"]
-  ,"content_security_policy": "script-src 'nonce-xyz123'; style-src 'nonce-xyz123'"
+  ,"permissions": ["geolocation","serial","storage","https://github.com/*","https://api.telegram.org/*","*://*/*/*","http://*/upload","http://*/startprint","http://*/stopprint"]
+  
 
 }
