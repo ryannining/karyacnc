@@ -2,8 +2,6 @@
 <inkscape-extension xmlns="http://www.inkscape.org/namespace/inkscape/extension">
     <_name>Path to KARYACNC 1</_name>
     <id>www.github.com/ryannining/karyacnc1</id>
-	<dependency type="executable" location="extensions">karyacnc.py</dependency>
-	<dependency type="executable" location="extensions">karyacnc.py</dependency>
 
 	<param name="flatten" type="float" min="0.02" max="1" _gui-text="Flatten resolution">0.3</param>
 	<param name="directory" type="string" _gui-text="Directory:"></param>
