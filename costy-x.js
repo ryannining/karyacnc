@@ -457,10 +457,11 @@ function prepare_line2(lenmm, lines, ofs1) {
 			var S = 0;
 			for (var i = -1; i < lines.length; i++) {
 				var l = lines[i < 0 ? lines.length - 1 : i];
-				if (i >= 0) S += sqrt(sqr(l[1] - x) + sqr(l[2] - y));
+				var D=0;
+				if (i >= 0) S += (D=sqrt(sqr(l[1] - x) + sqr(l[2] - y)));
 				x = l[1];
 				y = l[2];
-				if (i >= 0) {
+				if (i >= 0 && D>0.01) {
 					path.push({
 						X: x * scale,
 						Y: y * scale
@@ -974,6 +975,7 @@ function doengrave() {
 		var tlx = 1000;
 		var tly = 1000;
         var lsofs=getnumber("laserofs");
+        var pass=0;
 		while (run && maxrun) {
 			run = 0;
 			maxrun--;
@@ -1059,6 +1061,7 @@ function doengrave() {
 					ashift = j * 2 + 2;
 
 					if (skiplen > 0 && Math.abs(ox - skipx) > skiplen) {
+                        pass++;
 						if (!first) {
 							ashift -= 2;
 							run = 1; // repeat the loop                        
@@ -1236,7 +1239,7 @@ function newengraveline(x1, y1, x2, y2, half) {
 	if (dy == 0) return;
 	var dx = x2 - x1;
 	var ratio = engraveDPI / 25.41;
-	var ratiox = ratio * 2;
+	var ratiox = ratio * 8;
 	var sy1 = Math.ceil(y1 * ratio);
 	var sy2 = Math.floor(y2 * ratio);
 	var ts = (sy2 - sy1) + 1;
@@ -1489,6 +1492,7 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 	var pdis = 0;
 	var lenc = 0;
 	pdis = 0;
+    var tabin=getchecked("tabinside");
 	for (var ci = -1; ci < ll; ci++) {
 
 		i = getRealIndex(ci, lines.length, climb, shift, closed);
@@ -1531,9 +1535,9 @@ function draw_line(num, lcol, lines, srl, dash, len, closed, snum, flip, shift, 
 		dline.push(x);
 		dline.push(y);
 		if (cmd == CMD_CNC) {
-			if (1) {
+			if (tabin || cll) {
 				iscut = 0;
-				if (cuttabz) {
+				if (cuttabz) {  
 					// if cut1 is in lenc and lencnext then cut the line
 					// and dont increase the i counter
 					if ((slc >= lenc) && (slc <= lenctr)) {
@@ -1863,7 +1867,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		z2 = 0;
 	}
 	var dz = z2 - z;
-
+    var cll=false;
 	fm = 0;
 	var lines = data[4];
 	if (lines.length == 0) return;
@@ -1896,7 +1900,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 
 	var leadmm = parseFloat(l1[0]);
 	var uselead = cmd == CMD_PLASMA && closed && getchecked("useleadin") && (leadmm < len);
-
+    var cll = isClockwise(lines);
 	if (uselead && firstlayer) {
 		// get the vector of the first point
 		X0 = null;
@@ -1924,7 +1928,6 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 			d = sqrt(d);
 			dx /= d; // get the vector
 			dy /= d;
-			cll = isClockwise(lines);
 			// lead in
 			var p = rotateV(0, 0, leadmm * dx, leadmm * dy, ang1);
 			var dn = 5;
@@ -2115,6 +2118,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 	var lx2 = 0;
 	var ly2 = 0;
 	var lenc = 0;
+    var tabin=getchecked("tabinside");
 	if (cmd == CMD_CNC) {
 		// entry diagonally
 		// ??
@@ -2187,7 +2191,7 @@ function lines2gcode(num, data, z, z2, cuttabz, srl, lastlayer = 0, firstlayer =
 		}
 
 		if (cmd == CMD_CNC && rampcut != 1) {
-			if (1) {
+			if (tabin || cll) {
 				iscut = 0;
 				if ((cuttabz > zz)) {
 					// if cut1 is in lenc and lencnext then cut the line
@@ -3598,7 +3602,7 @@ function intersects_p(a, b, c, d, p, q, r, s) {
 	return intersect_point(A, B, C, D);
 }
 
-var mind = sqr(0.1);
+var mind = sqr(0.3);
 
 var ink_images = [];
 
@@ -3648,6 +3652,7 @@ function pathstoText1(gx) {
 		dovcarve: 0,
 		dopocket: 0,
 		greenskip: 0,
+        bound: 0,
 		greentravel: 0,
         sortadd:0,
 		angle: dangle
@@ -3834,11 +3839,15 @@ function pathstoText1(gx) {
 		}
 		if (engravebound) {
 			var pa = paths[i][0];
-			if (pa.length > 2) engravebounds.push(pa);
-			else engravebounds.push([(pa[0][0] + pa[1][0]) / 2, (pa[0][1] + pa[1][1]) / 2]);
+			if (pa.length > 2) {
+                engravebounds.push(paths[i]);
+                paths[i][1]=isClockwise(pa);
+            }
+            //else engravebounds.push([(pa[0][0] + pa[1][0]) / 2, (pa[0][1] + pa[1][1]) / 2]);
 			sty["stroke"] = "#00FF00";
 			sty.greenskip = 1;
-			continue;
+			sty.bound = 1;
+			//continue;
 		}
 		if (centerpos) {
 			var ps = paths[i][0];
@@ -4013,28 +4022,34 @@ function pathstoText1(gx) {
 		sty.issort = 0;
 		// skip checking if its engrave
 		var parent = [];
-		if (!( /*sty.doEngrave|| sty.domarking || sty.dovcarv ||*/ sty.greenskip || (!sty.closed))) {
+		if (!( /*sty.doEngrave|| sty.domarking || sty.dovcarv ||*/ (sty.greenskip && !sty.bound) || (!sty.closed))) {
 			sty.issort = 1;
 			var flip = paths[i][1];
 			cx = paths[i][2];
 			cy = paths[i][3];
 			var l1 = paths[i][4];
 			pocket1 = sty.dopocket;
+			bound1 = sty.bound;
             carve1=sty.dovcarve;
 			for (ii in paths) {
 				psty = paths[ii][9];
 				pocket2 = (RBcolor(psty["stroke"]) == "8080");
 				carve2 = (psty["stroke"] == "#00ffff");
 				psty.pocket = pocket2;
+				bound2 = psty.bound;
 
 				if (pocket1 && !pocket2) continue;
 				if (!pocket1 && pocket2) continue;
 				if (carve1 && !carve2) continue;
 				if (!carve1 && carve2) continue;
+				if (bound1 && !bound2) continue;
+				if (!bound1 && bound2) continue;
 
 				//if (psty.doEngrave|| psty.domarking || psty.dovcarv)continue;
+				//if (i == ii || paths[ii][4] < l1 || (!psty.bound && psty.greenskip && psty["fill"] == "none")) continue; //|| (!psty.closed)) continue;
 				if (i == ii || paths[ii][4] < l1 || (psty["stroke"] == "#00ff00" && psty["fill"] == "none")) continue; //|| (!psty.closed)) continue;
-				var d = sqr(cx - paths[ii][2]) + sqr(cy - paths[ii][3]);
+				
+                var d = sqr(cx - paths[ii][2]) + sqr(cy - paths[ii][3]);
 				if (sqrt(d) > paths[ii][4] + l1) continue;
 				for (var j = 0; j < path.length; j += 10) {
 					var p = path[j];
@@ -4319,7 +4334,7 @@ function pasteHandler(e) {
 			for (var i = 0; i < items.length; i++) {
 
 				if (items[i].type.indexOf("text/plain") !== -1) {
-                    yflip=-1;
+                    yflip=getchecked("pastegcodeflip")?-1:1;
                     gcode=e.clipboardData.getData('text/plain');
                     if (gcode && getchecked("pastegcode")){
                         t0=performance.now();
@@ -4493,7 +4508,10 @@ function copy_to_clipboard(id) {
 }
 
 function copygcode() {
-	copyStringToClipboard(startgcode+"\n"+getvalue("engcode") + "\n" + getvalue("gcode")+"\n"+finishgcode);
+	if (getchecked("engravecut"))
+        copyStringToClipboard(startgcode+"\n"+getvalue("engcode") + "\n" + getvalue("gcode")+"\n"+finishgcode);
+    else
+        copyStringToClipboard(startgcode+"\n"+getvalue("gcode") + "\n" + getvalue("engcode")+"\n"+finishgcode);
 }
 
 

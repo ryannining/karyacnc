@@ -264,6 +264,7 @@ function realupload(gcode, fname, callback) {
 	//xhr.setRequestHeader('Access-Control-Allow-Origin', '*');
 
 	var progressBar = $('progress1');
+	$("alert1").innerHTML = "Upload file...";
 	xhr.addEventListener('error', function(e) {
 		progressBar.value = 100;
 		$("alert1").innerHTML = "Upload ERROR";
@@ -287,7 +288,11 @@ function realupload(gcode, fname, callback) {
 
 
 setclick("btupload", function() {
-	begincompress(startgcode+"\n"+getvalue("engcode") + "\n" + getvalue("gcode") + finishgcode);
+	if (getchecked("engravecut")){
+		begincompress(startgcode+"\n"+getvalue("engcode") + "\n" + getvalue("gcode") + finishgcode);
+	} else {
+		begincompress(startgcode+"\n"+getvalue("gcode") + "\n" + getvalue("engcode") + finishgcode);
+	}
 	upload(getvalue("jobname") + ".gcode");
 });
 setclick("btjob5", function() {
@@ -335,6 +340,12 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	var s = 0;
 	carvetime = 0;
 	gcodecarve = "";
+	var pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
+	var beforecut_p = getchecked("carvepause") && (cmd != CMD_LASER)?"G0 Z0\nM3 S"+pw+" P10000\n":"";
+	var pausedist=getnumber("carvepausedist");
+	if (pausedist<20)pausedist=20;
+	pausedist*=pausedist;
+
 	var pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	segmentation = function(nd, path, rev) {
 		PL = path.length / 2 - 1; // skip last point is same as first
@@ -422,7 +433,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 	// create toolpath
 	// s= number of line
 	var n = 0;
-	var gc = "M3 " + pw + "\nG0 F6000 Z4\nG1 F2000\n";
+	var gc = "M3 S" + pw + "\nG0 F6000 Z"+getnumber("safez")+"\nG1 F2000\n";
 	ve = 1 / Math.tan(angle * Math.PI / 360);
 	
 	var minz=-(getvalue("vdiamin")/2*ve);
@@ -554,6 +565,10 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 				segsvdraw.push(gfirst[0]);
 			}
 		}		
+		var lpx=0;
+		var lpy=0;
+		var cx=0;
+		var cy=0;
 		for (var i = 0; i < segsv.length; i++) {
 			seg1 = segsv[i];
 			//rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
@@ -564,8 +579,10 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			r = seg1[6] * dpm;
 			*/
 			if (lnd != seg1[11]) {
-				trav= "G0 Z4\n";
-				trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
+				trav= "G0 Z"+getnumber("safez")+"\n";
+				cx=seg1[3];
+				cy=seg1[4];
+				trav += "G0 F" + ftrav + " X" + mround2(cx) + " Y" + mround2(cy) + "\n";
 				trav += "G0 Z0\n";
 				lnd = seg1[11];
 				continue;
@@ -575,6 +592,12 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 				gen_gcode(points);
 				points=[];
 				gc+=trav;
+				var dist2=sqr(lpx - cx) + sqr(lpy - cy);
+				if (dist2>pausedist){
+					gc+=beforecut_p;					
+					lpx=cx;
+					lpy=cy;
+				}
 				trav="";
 			}
 			// F is depend on 2*phi*radius
@@ -597,7 +620,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 			rdis = sqrt(sqr(lx - seg1[3]) + sqr(ly - seg1[4]));
 
 			if (lnd != seg1[11]) {
-				trav= "G0 Z4\n";
+				trav= "G0 Z"+getnumber("safez")+"\n";
 				trav += "G0 F" + ftrav + " X" + mround2(seg1[3]) + " Y" + mround2(seg1[4]) + "\n";
 				trav += "G0 Z0\n";
 				lnd = seg1[11];
@@ -634,7 +657,7 @@ function vcarve(maxr, angle, step, path, dstep, dstep2) {
 		}
 	}
 	if (fs && totalmm>0) carvetime+=totalmm/(fs/60.0);
-	gc += "G0 Z4\n";
+	gc += "G0 Z"+getnumber("safez")+"\n";
 	gcodecarve = gc;
 	//gcode_verify();
 }
@@ -706,6 +729,7 @@ var realofs = 0;
 
 function pocketcarve(tofs, ofs1, clines) {
 	realofs = tofs;
+	if (cmd == CMD_LASER)tofs=getnumber("clstep");
 	if (cmd == CMD_CNC) tofs = Math.min(tofs * 0.8, getnumber("clstep"));
 	if (tofs < 0.2) tofs = 0.2;
 	if (ofs1 < 0.2) ofs1 = 0.2;
@@ -875,12 +899,14 @@ function pocketgcode() {
 		pup = getvalue('pup') + "\n";
 		pup2 = pup;
 	}
-	pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
+	var pw = parseInt(getvalue('vcarvepw') * 255 * 0.01);
 	var gc = pup + "M3 S" + pw + "\nG0 F" + f1 + "\nG1 F" + f2 + "\n";
 	var beforecut = "";
 	var beforecut_p = getchecked("carvepause") && (cmd != CMD_LASER)?"G0 Z0\nM3 S"+pw+" P10000\n":"";
+	var pausedist=getnumber("carvepausedist");
+	if (pausedist<20)pausedist=20;
+	pausedist*=pausedist;
 	gc += pup;
-
 	e1 = 0;
 	var sortit = 1;
 	var lx = 0;
@@ -1005,7 +1031,7 @@ function pocketgcode() {
 					jump = ((r == 0) && ((sqr(ox - cx) + sqr(oy - cy) > sqr(realofs * 2)))); // decide we need to move up z or not
 					var dist2=sqr(lpx - cx) + sqr(lpy - cy);
 					var bfc=beforecut;
-					if (dist2>10000){
+					if (dist2>pausedist){
 						bfc=beforecut_p;
 						lpx=cx;
 						lpy=cy;
@@ -1055,8 +1081,8 @@ function drawpocket() {
 		ctx.setLineDash([]);
 		if (already[j][1]) ctx.setLineDash([]);
 		else ctx.setLineDash([]);
-		if (already[j][2]) ctx.strokeStyle = "#C00080";
-		else ctx.strokeStyle = "#C040C0";
+		if (already[j][2]) ctx.strokeStyle = "#F000F0";
+		else ctx.strokeStyle = "#C080C0";
 		var ox, oy;
 		for (var ni = -1; ni < gline.length; ni++) {
 			var i = ni;
@@ -1174,6 +1200,7 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 	var dotscale = mw / c.width;
 
 	var ystep = mh / c.height; // y machine step, each step will be lasered by ystep/0.2 zigzag,   
+	var xstep = mw / c.width; // y machine step, each step will be lasered by ystep/0.2 zigzag,   
 	var gcode = "M3 S" + Math.round(pw) + "\nG0 F" + speed + "\nG1 F" + speed + "\n";
 	bmd = [];
 	for (j = 0; j < c.height; j += 1) {
@@ -1183,10 +1210,24 @@ function imagedither(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 			oldr = (0.3 * bm.data[a] + 0.5 * bm.data[a + 1] + 0.2 * bm.data[a + 2]);
 			oldr = Math.min(255, oldr + bright)
 			if (inv) oldr = 255 - oldr;
-			oldr = Math.pow((oldr / 255.0), (1.0 / gamma)) * 255;
-			alp = (bm.data[a + 3]) / 255;
-			oldr = (oldr * (alp)) + (255 * (1 - alp));
+			
+			var isin = 1;
+			if (engravebounds.length) {
+				var xp = i * xstep + ofx;
+				var yp = j * ystep + ofy;
+				isin = false;
+				for (var b = 0; b < engravebounds.length; b++) {
+					isin = isInside(xp, yp, engravebounds[b][0]);
+					if (engravebounds[b][9].parent.length)isin = !isin;
+					if (!isin) break;
+				}
+			}
+			if (isin) {							
+				oldr = Math.pow((oldr / 255.0), (1.0 / gamma)) * 255;
+				alp = (bm.data[a + 3]) / 255;
+				oldr = (oldr * (alp)) + (255 * (1 - alp));
 
+			} else oldr=255;
 			var a = j * c.width + i;
 			bmd[a] = oldr;
 		}
@@ -1564,9 +1605,11 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 				var xp = i * stepx + ofx;
 				var yp = j * stepy + ofy;
 				isin = false;
+				isin = false;
 				for (var b = 0; b < engravebounds.length; b++) {
-					if (engravebounds[b].length > 2) isin = isInside(xp, yp, engravebounds[b]);
-					if (isin) break;
+					isin = isInside(xp, yp, engravebounds[b][0]);
+					if (engravebounds[b][9].parent.length)isin = !isin;
+					if (!isin) break;
 				}
 			}
 			var cp = j * row + i;
@@ -1994,6 +2037,7 @@ function cncengrave(imgpic, canv, ofx, ofy, rwidth, rheight,mtx) {
 	}
 }
 
+getAddress();
 
 //urlopen("https://ryannining.goatcounter.com/count");
 //data-goatcounter="https://ryannining.goatcounter.com/count";

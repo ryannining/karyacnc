@@ -1,4 +1,4 @@
-<html>
+<html manifest="cache.manifest">
 	<head>
 		<title>KaryaCNC</title>
 	</head>
@@ -143,7 +143,7 @@
 						<td colspan=3 align=left><button id=bthidden>Option</button>
 						<table id=vars class=smallwindow style="">
 							<tr class=notsimple><td colspan=3>Retrace Smoothness </td><td colspan=1><input id=smooth size=2 value="1" class=saveit></td></tr>
-							<tr class=notsimple><td colspan=3>Render Paste Gcode </td><td colspan=1><input size=2 type=checkbox id=pastegcode checked class=saveit></td></tr>
+							<tr class=notsimple><td colspan=3>Ctrl+V Gcode </td><td colspan=1>Process<input size=2 type=checkbox id=pastegcode checked class=saveit>Flip Y<input size=2 type=checkbox id=pastegcodeflip checked class=saveit></td></tr>
 							<tr class=notsimple><td colspan=3>As </td><td colspan=1>
 							<select id=pasteas value="0" class=saveit>
 								<option value=0>Cutting</option>
@@ -161,6 +161,7 @@
 							<tr class="notsimple notlaser"><td colspan=2>Final Z </td><td colspan=2><input id=finalz class=saveit size=5 value="0"></td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Auto tab in (mm,max tab)</td><td colspan=2><input id=tabevery class=saveit value='200' size=5><input id=tabmax class=saveit value='6' size=1></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Tab ofs </td><td colspan=2><input id=tabofs class=saveit value='0' size=5></td></tr>
+							<tr class="notsimple notlaser notplasma"><td colspan=2>Tab inside </td><td colspan=2><input type=checkbox id=tabinside class=saveit checked></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Min length convert drill </td><td colspan=2><input id=drill class=saveit value='7' size=5></td></tr>
 							<tr class="notsimple"><td colspan=2>Slow down small &lt; <input id=slowsmall class=saveit value='30' size=5></td><td colspan=2>F x <input id=slowsmallval class=saveit value='0.5' size=2><input size=2 type=checkbox id=useslowsmall checked class=saveit></td></tr>
 							<tr class="notsimple notlaser notplasma"><td colspan=2>Finish line </td><td colspan=2><input id=finishline class=saveit size=5 value="0.1"> <input size=2 type=checkbox id=usefinish class=saveit></td></tr>
@@ -225,7 +226,7 @@
 							<tr class="notlaser notplasma notsimple"><td colspan=2>Slow threshold</td><td colspan=2><input size=2 id=slowth value=10 class=saveit>x</td></tr>
 							<tr class="notlaser notplasma"><td colspan=2>Fast pass</td><td colspan=2><input size=2 id=carvedp value=1 class=saveit>mm</td></tr>
 							<tr class="notlaser notsimple"><td colspan=2>Climb cut</td><td colspan=2><input type=checkbox id=carveclimb class=saveit></td></tr>
-							<tr class="notlaser notsimple"><td colspan=2>Pause</td><td colspan=2><input type=checkbox id=carvepause class=saveit></td></tr>
+							<tr class="notlaser notsimple"><td colspan=2>Pause</td><td colspan=2><input size=3 id=carvepausedist value=100 class=saveit>mm<input type=checkbox id=carvepause class=saveit></td></tr>
 							<tr class="notlaser notsimple"><td colspan=2>Dogbone</td><td colspan=2><input type=checkbox id=overcut2 class=saveit></td></tr>
 						</table></td>
                         <td align=left class="notlaser notplasma"><img src="pocketinfo.png">
@@ -311,28 +312,28 @@
 				<tr class=hdr2><td colspan=3 align=left><b style="color:white">Select</b><select  id=profile><option value=set1>set1</option></select><br>
 				<b style="color:white">Profile</b><input class=saveit id=profilename size=8><button id=btloadp>Load</button><button id=btsavep>Save</button><button id=btdelp>Del</button></td></tr>
 				<tr style="" class="hdr1 notsimple"><td colspan=3>Preset <select id=material class=saveit>
-					<option value="10,1,25,1500">Laser Akrilik 1.5mm</option>
-					<option value="8,1,27,1500">Laser Akrilik 2mm</option>
-					<option value="8,1,32,1500">Laser Akrilik 2mm Warna</option>
-					<option value="6,1,37,1500">Laser Akrilik 3mm</option>
-					<option value="6,1,42,1500">Laser Akrilik 3mm Warna</option>
-					<option value="4,1,47,1500">Laser Akrilik 4mm</option>
-					<option value="4,1,52,1500">Laser Akrilik 4mm Warna</option>
-					<option value="3,1,57,1500">Laser Akrilik 5mm</option>
-					<option value="3,1,62,1500">Laser Akrilik 5mm Warna</option>
-					<option value="2,1,67,1500">Laser Akrilik 6mm</option>
-					<option value="2,1,72,1500">Laser Akrilik 6mm Warna</option>
-					<option value="8,1,3,1500">Laser Triplek 3mm</option>
-					<option value="6,1,5,1500">Laser Triplek 5mm</option>
-					<option value="6,2,9,1500">Laser Triplek 9mm</option>
-					<option value="6,3,15,1500">Laser Triplek 15mm</option>
-					<option value="6,1,6,1500">MDF Hijau 3mm</option>
-					<option value="30,3,7,1500,7">CNC MDF-H 6mm</option>
-					<option value="30,4,11,1500,10">CNC MDF-H 9.5mm</option>
-					<option value="20,1,20,1500,4.5">CNC ACP 3mm</option>
-					<option value="25,2,27,1500,6">CNC ACP 4mm</option>
-					<option value="40,1,20,1500,6">CNC PVC 5mm</option>
-					<option value="40,2,32,1500,10">CNC PVC 9mm</option>
+					<option value="10,1,27,1500">Laser Akrilik 1.5mm</option>
+					<option value="8,1,29,1500">Laser Akrilik 2mm</option>
+					<option value="8,1,34,1500">Laser Akrilik 2mm Warna</option>
+					<option value="6,1,39,1500">Laser Akrilik 3mm</option>
+					<option value="6,1,44,1500">Laser Akrilik 3mm Warna</option>
+					<option value="4,1,49,1500">Laser Akrilik 4mm</option>
+					<option value="4,1,54,1500">Laser Akrilik 4mm Warna</option>
+					<option value="3,1,59,1500">Laser Akrilik 5mm</option>
+					<option value="3,1,64,1500">Laser Akrilik 5mm Warna</option>
+					<option value="2,1,69,1500">Laser Akrilik 6mm</option>
+					<option value="2,1,74,1500">Laser Akrilik 6mm Warna</option>
+					<option value="8,1,4,1500">Laser Triplek 3mm</option>
+					<option value="6,1,6,1500">Laser Triplek 5mm</option>
+					<option value="6,2,10,1500">Laser Triplek 9mm</option>
+					<option value="6,3,16,1500">Laser Triplek 15mm</option>
+					<option value="6,1,7,1500">MDF Hijau 3mm</option>
+					<option value="30,3,9,1500,7">CNC MDF-H 6mm</option>
+					<option value="30,4,12,1500,10">CNC MDF-H 9.5mm</option>
+					<option value="20,1,22,1500,4.5">CNC ACP 3mm</option>
+					<option value="25,2,29,1500,6">CNC ACP 4mm</option>
+					<option value="40,1,25,1500,6">CNC PVC 5mm</option>
+					<option value="40,2,35,1500,10">CNC PVC 9mm</option>
 				</select></td></tr>
 				<tr style="" class=hdr1><td colspan=2>Machine
 
@@ -497,12 +498,13 @@
                 <button id=btexecute>Execute</button>
                 <button id=btexecute2>Engrave</button>
                 <button id=btpause>Pause</button><br>
-                Cut after engrave <input size=2 type=checkbox id=engravecut checked class=saveit>
+                
                 <br><div class=hideit><input id=alres size=2 value=400><button id=btautolevel1>A.Level Probe</button><button id=btautolevel2>A.Level Off</button>
                 </div><button id=btmotoroff class=hideit>MOTOROFF</button>
             </div>
             <div id=machine_ws class="xisconnected">
-                <b>Upload Job</b> | <input type="checkbox" id="upimg" class=saveit> upload preview <br>
+                <b>Upload Job</b> <br> <input type="checkbox" id="upimg" class=saveit> Upload preview <br>
+                <input size=2 type=checkbox id=engravecut checked class=saveit> Engrave first <hr>
                 <button id=btcheckspace>Check space</button> | <span id=infospace></span><br>
                 <progress id=progress1 min="0" max="100" value="0" style="width:150px">0% complete</progress><br>
                 <div class=notsimple>Jobs <select id=jobs class=saveit><option value="gcode">gcode</option></select><br></div>

@@ -433,10 +433,11 @@ function addgcode(g) {
 
 			if (G == 1) lf = F1;
 			else lf = F0;
+			
 			F = Math.min(Math.round(gd['F'] / (fScale * 60)), 255); // 
 			if (G == 1) F1 = F;
 			else F0 = F;
-			isF = 0; // we dont care about the precission here :D  
+			isF = lf!=F; // we dont care about the precission here :D  
 		}
 		I=J=R=0;
 		if (isI) {
